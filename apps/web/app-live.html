@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · WebApp (Live API)</title>
+<style>
+  :root{--bg:#06070c;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);--border:oklch(0.26 0.02 265);
+    --txt:oklch(0.96 0.005 262);--mut:oklch(0.62 0.02 265);--acc:oklch(0.66 0.17 264);--acc2:oklch(0.52 0.15 264);--ok:oklch(0.74 0.16 158);--err:oklch(0.72 0.13 25);--gold:oklch(0.8 0.13 75)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Sans',system-ui,sans-serif;min-height:100vh;line-height:1.5}
+  h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600}
+  .kicker{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
+  code{font-family:ui-monospace,monospace;color:oklch(0.82 0.08 264);font-size:11px}
+  .bar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surf2);flex-wrap:wrap}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Space Grotesk'}
+  .tabs{display:flex;gap:6px;margin-left:8px}
+  .tab{padding:8px 14px;border-radius:10px;font-size:13px;color:var(--mut);cursor:pointer;border:1px solid transparent}
+  .tab.on{color:#fff;background:linear-gradient(135deg,oklch(0.3 0.1 264),oklch(0.2 0.06 264));border-color:oklch(0.45 0.12 264)}
+  .api{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--mut)}.dot.ok{background:var(--ok)}.dot.err{background:var(--err)}
+  input,select{background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--txt);font-size:13px}
+  .content{padding:22px;max-width:1000px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--mut);font-size:12px}.price{font-family:'Space Grotesk';font-weight:600}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2))}
+  button.sm{padding:7px 11px;font-size:12px}button.ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  label{font-size:11px;color:var(--mut)}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .crumb{font-size:12px;color:var(--mut);cursor:pointer;margin-bottom:8px}
+  .pill{font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid var(--border);color:var(--mut)}
+  .pill.gold{color:var(--gold);border-color:oklch(0.5 0.12 75)}.pill.ok{color:var(--ok);border-color:oklch(0.4 0.1 158)}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--surf);border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:13px;z-index:9;max-width:90vw}
+  .toast.err{border-color:oklch(0.5 0.12 25);color:oklch(0.85 0.08 25)}
+  .listrow{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}.listrow:last-child{border:none}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="logo">◆</div><b style="font-family:'Space Grotesk'">TINFT · Live API</b>
+    <div class="tabs">
+      <div class="tab on" data-r="organizzatore">Organizzatore</div>
+      <div class="tab" data-r="cliente">Cliente</div>
+      <div class="tab" data-r="validatore">Validatore</div>
+    </div>
+    <div class="api"><span class="dot" id="dot"></span><span class="kicker">API</span><input id="api" value="http://localhost:3001" style="width:200px"><button class="sm ghost" onclick="init()">Connetti</button></div>
+  </div>
+  <div class="content" id="content"><div class="muted">Connessione…</div></div>
+  <div id="toast"></div>
+<script>
+"use strict";
+var $=function(i){return document.getElementById(i)};
+var ctx={role:'organizzatore',orgId:null,clientId:null,clubId:null};
+var eur=function(c){return '€ '+((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
+function base(){return $('api').value.replace(/\/$/,'')}
+function toast(m,e){var t=$('toast');t.innerHTML='<div class="toast'+(e?' err':'')+'">'+m+'</div>';clearTimeout(window.__t);window.__t=setTimeout(function(){t.innerHTML=''},3000)}
+async function api(path,method,body){
+  var r=await fetch(base()+path,{method:method||'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  var j=await r.json().catch(function(){return {}});
+  if(!r.ok)throw new Error(j.message||('HTTP '+r.status));
+  return j;
+}
+function setDot(s,msg){$('dot').className='dot '+(s?'ok':'err');if(msg)toast(msg,!s)}
+
+async function init(){
+  $('content').innerHTML='<div class="muted">Connessione all\'API…</div>';
+  try{
+    var org=await api('/accounts','POST',{role:'ORGANIZER',nome:'Club',cognome:'Owner',email:'org'+Date.now()+'@tinft.io'});
+    ctx.orgId=org.id;
+    var cli=await api('/register','POST',{nome:'Marco',cognome:'Bianchi',email:'cli'+Date.now()+'@email.it',cf:'CF'+Date.now(),dateOfBirth:'1990-01-01',address:'Via Roma 1',city:'Milano',province:'MI'});
+    ctx.clientId=cli.id;
+    setDot(true);toast('Connesso · org+cliente creati nel backend');
+  }catch(e){setDot(false);$('content').innerHTML='<div class="card">⚠️ API non raggiungibile a <code>'+base()+'</code>.<br><div class="muted" style="margin-top:8px">Avvia il backend: <code>pnpm --filter @tinft/api dev</code> poi premi Connetti.</div></div>';return}
+  render();
+}
+function setRole(r){ctx.role=r;ctx.clubId=null;document.querySelectorAll('.tab').forEach(function(el){el.classList.toggle('on',el.dataset.r===r)});render()}
+document.querySelectorAll('.tab').forEach(function(el){el.onclick=function(){setRole(el.dataset.r)}});
+
+async function render(){
+  if(!ctx.orgId){return}
+  try{ if(ctx.role==='organizzatore')await renderOrg(); else if(ctx.role==='cliente')await renderCli(); else await renderVal(); }
+  catch(e){$('content').innerHTML='<div class="card">Errore: '+e.message+'</div>'}
+}
+
+// ---- Organizzatore
+async function renderOrg(){
+  var c=$('content');
+  if(ctx.clubId){
+    var clubs=await api('/clubs');var club=clubs.find(function(x){return x.id===ctx.clubId});
+    var evs=await api('/clubs/'+ctx.clubId+'/events');
+    c.innerHTML='<div class="crumb" onclick="ctx.clubId=null;render()">← Tutti i club</div><h2>'+club.name+'</h2><div class="muted">'+club.city+(club.fidelityUses>0?' · Fidelity '+club.fidelityUses+' ingressi · '+eur(club.fidelityPriceCents):'')+'</div>'+
+      '<div class="card" style="margin:14px 0"><div class="kicker">Crea evento</div><div class="formgrid"><input id="et" placeholder="Titolo"><input id="ed" placeholder="Data (es. 21 GIU)"><input id="ep" placeholder="Prezzo € (es. 31,50)"><input id="ec" placeholder="Capienza"></div><button style="margin-top:10px" onclick="oCreateEvent()">Crea evento</button></div>'+
+      '<div class="grid">'+evs.map(function(e){return '<div class="card"><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+' · '+eur(e.priceCents)+'</div><div class="muted" style="margin-top:6px">'+e.sold+' / '+e.capacity+' venduti</div></div>'}).join('')+'</div>';
+    return;
+  }
+  var clubs=await api('/clubs');
+  c.innerHTML='<div class="card" style="margin-bottom:14px"><div class="kicker">Crea club</div><div class="formgrid"><input id="cn" placeholder="Nome club"><input id="cc" placeholder="Città"><input id="cfp" placeholder="Prezzo Fidelity € (0=nessuno)"><input id="cfu" placeholder="Ingressi Fidelity"></div><button style="margin-top:10px" onclick="oCreateClub()">Crea club</button></div>'+
+    '<div class="grid">'+(clubs.length?clubs.map(function(c2){return '<div class="card"><div class="row"><div><div style="font-weight:600">'+c2.name+'</div><div class="muted">'+c2.city+'</div></div>'+(c2.fidelityUses>0?'<span class="pill gold">FIDELITY</span>':'')+'</div><button class="sm" style="margin-top:12px" onclick="ctx.clubId=\''+c2.id+'\';render()">Entra →</button></div>'}).join(''):'<div class="muted">Nessun club. Creane uno.</div>')+'</div>';
+}
+async function oCreateClub(){var p=Math.round(parseFloat(($('cfp').value||'0').replace(',','.'))*100)||0;
+  try{await api('/clubs','POST',{organizerId:ctx.orgId,name:$('cn').value.trim(),city:$('cc').value.trim(),fidelityPriceCents:p,fidelityUses:parseInt($('cfu').value||'0',10)||0});toast('Club creato (salvato nel backend)');render()}catch(e){toast(e.message,true)}}
+async function oCreateEvent(){var p=Math.round(parseFloat(($('ep').value||'0').replace(',','.'))*100)||0;
+  try{await api('/clubs/'+ctx.clubId+'/events','POST',{organizerId:ctx.orgId,title:$('et').value.trim(),venue:'—',date:$('ed').value.trim(),priceCents:p,capacity:parseInt($('ec').value||'0',10)||0});toast('Evento creato');render()}catch(e){toast(e.message,true)}}
+
+// ---- Cliente
+async function renderCli(){
+  var c=$('content');
+  if(ctx.clubId){
+    var clubs=await api('/clubs');var club=clubs.find(function(x){return x.id===ctx.clubId});
+    var evs=await api('/clubs/'+ctx.clubId+'/events');
+    var h='<div class="crumb" onclick="ctx.clubId=null;render()">← Club</div><h2>'+club.name+'</h2>';
+    if(club.fidelityUses>0)h+='<div class="card" style="margin:12px 0;border-color:oklch(0.5 0.12 75)"><div class="row"><div><span class="pill gold">FIDELITY DEL CLUB</span><div style="margin-top:6px">'+club.fidelityUses+' ingressi · valido sugli eventi del club</div></div><div style="text-align:right"><div class="price">'+eur(club.fidelityPriceCents)+'</div><button class="sm" style="margin-top:6px" onclick="cBuyFid(\''+club.id+'\')">Acquista</button></div></div></div>';
+    h+='<div class="grid">'+evs.map(function(e){return '<div class="card"><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.priceCents)+'</span><button class="sm" onclick="cBuy(\''+e.id+'\')" '+(e.sold>=e.capacity?'disabled':'')+'>'+(e.sold>=e.capacity?'Esaurito':'Acquista')+'</button></div></div>'}).join('')+'</div>';
+    c.innerHTML=h;return;
+  }
+  var clubs=await api('/clubs');var tks=await api('/accounts/'+ctx.clientId+'/tickets');
+  c.innerHTML='<h3 style="margin-bottom:10px">I miei biglietti ('+tks.length+')</h3>'+
+    (tks.length?'<div class="grid" style="margin-bottom:18px">'+tks.map(function(t){return '<div class="card"><div class="row"><div style="font-weight:600">'+(t.kind==='FIDELITY'?'Fidelity':t.title||'Biglietto')+'</div><span class="pill '+(t.status==='ACTIVE'?'ok':'')+'">'+t.status+'</span></div><div class="muted" style="margin-top:6px">tokenId <code>#'+t.tokenId+'</code> · '+eur(t.paidCents)+(t.kind==='FIDELITY'?' · '+(t.used||0)+'/'+t.uses:'')+'</div></div>'}).join('')+'</div>':'<div class="muted" style="margin-bottom:18px">Nessun biglietto ancora.</div>')+
+    '<h3 style="margin-bottom:10px">Club & eventi</h3><div class="grid">'+clubs.map(function(c2){return '<div class="card"><div style="font-weight:600">'+c2.name+'</div><div class="muted">'+c2.city+'</div><button class="sm" style="margin-top:10px" onclick="ctx.clubId=\''+c2.id+'\';render()">Esplora →</button></div>'}).join('')+'</div>';
+}
+async function cBuy(eventId){try{var t=await api('/events/'+eventId+'/purchase','POST',{buyerId:ctx.clientId});toast('Acquistato · tokenId #'+t.tokenId);render()}catch(e){toast(e.message,true)}}
+async function cBuyFid(clubId){try{var t=await api('/clubs/'+clubId+'/fidelity','POST',{buyerId:ctx.clientId});toast('Fidelity acquistata · tokenId #'+t.tokenId);render()}catch(e){toast(e.message,true)}}
+
+// ---- Validatore
+async function renderVal(){
+  var c=$('content');var tks=await api('/accounts/'+ctx.clientId+'/tickets');
+  var act=tks.filter(function(t){return t.status==='ACTIVE'});
+  c.innerHTML='<div class="card" style="max-width:520px"><div class="kicker">Varco · validazione</div><div class="muted" style="margin:8px 0">Biglietti del cliente da validare (dati reali dal backend).</div>'+
+    (act.length?act.map(function(t){return '<div class="listrow"><div><div style="font-weight:600">'+(t.kind==='FIDELITY'?'Fidelity':t.title||'Biglietto')+'</div><div class="muted">tokenId #'+t.tokenId+(t.kind==='FIDELITY'?' · '+(t.used||0)+'/'+t.uses:'')+'</div></div><button class="sm" onclick="vValidate(\''+t.id+'\')">Valida</button></div>'}).join(''):'<div class="muted">Nessun biglietto attivo. Compra qualcosa nel profilo Cliente.</div>')+'</div>';
+}
+async function vValidate(id){try{var v=await api('/tickets/'+id+'/validate','POST',{});toast('Esito: '+v.outcome);render()}catch(e){toast(e.message,true)}}
+
+init();
+</script>
+</body>
+</html>

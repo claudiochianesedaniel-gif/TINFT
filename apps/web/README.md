@@ -1,24 +1,20 @@
 # TINFT — Web (frontend)
 
-## `demo.html` — WebApp a dashboard (autonoma, visibile)
-Singolo file, **zero dipendenze**: si apre in qualsiasi browser. Layout a **dashboard**
-con sidebar e **profilo selezionabile** — ogni utente ha la sua dashboard dedicata:
+Pagine **autonome, zero dipendenze** (si aprono nel browser). Applicano le **regole reali**
+(royalty 1% 0,5/0,5, tetto +5%, limite 2/evento, fee export 25%, commissione 5%) — le stesse di
+`services/api/src/domain/rules.ts` e dei contratti M1–M5.
 
-- **Organizzatore**: panoramica (club, eventi, venduti, incasso, royalty) · **Club & Eventi**:
-  crea club, **entra nel club** ed entra in una sezione dedicata per **creare gli eventi** del club.
-- **Cliente**: **Esplora** club → eventi del club + **Fidelity del club** (carnet associato al CLUB,
-  valido su tutti i suoi eventi) · **I miei biglietti** (check-in QR rotante, vendi→escrow con timer,
-  regala, esporta).
-- **Validatore**: scansione con i 5 esiti; il Fidelity consuma un ingresso alla volta.
+| File | Cosa |
+|---|---|
+| `sito.html` | **Sito Web pubblico**: vetrina/news, eventi in evidenza, acquisto → biglietto nel wallet. |
+| `registrazione.html` | **Registrazione completa**: tutti i dati SPID (CF, data/luogo nascita, indirizzo, ecc.), manuale **o** SPID. Invia a `POST /register` (API reale). |
+| `demo.html` | **WebApp offline** (dati in memoria, sempre testabile): dashboard Cliente / Validatore / Organizzatore, Club + Fidelity, escrow con timer, QR rotante. |
+| `app-live.html` | **WebApp connessa all'API reale**: club/eventi/acquisti/biglietti/validazioni via `fetch` → dati **persistenti e condivisi** tra i ruoli. |
 
-**Modello**: l'organizzatore ha **più club**; ogni club ha i suoi **eventi**; il **Fidelity è del club**.
-
-Applica le **regole reali** (royalty 1% 0,5/0,5, tetto +5%, limite 2/evento, fee export 25%,
-commissione primario 5%) — le stesse di `services/api/src/domain/rules.ts` e dei contratti M1–M5.
-La barra in alto mostra i **ricavi piattaforma** live.
-
-Apri: `apps/web/demo.html`.
-
-## In arrivo
-- **Sito Web pubblico** (HTML): vetrina + acquisto che deposita il biglietto nel wallet.
-- Conversione in app **Next.js** reale collegata all'API di `services/api`.
+## Modalità Live (app-live.html / registrazione.html)
+Avvia il backend e apri la pagina:
+```bash
+pnpm --filter @tinft/api dev   # API su http://localhost:3001 (CORS abilitato)
+```
+Flusso verificato end-to-end: organizzatore crea club ed eventi → cliente si registra (SPID),
+compra evento o Fidelity → validatore valida → i dati restano nel backend (sopravvivono al refresh).
