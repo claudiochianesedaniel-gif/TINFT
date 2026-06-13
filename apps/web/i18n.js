@@ -22,7 +22,8 @@
       hero_cta1: "Scopri gli eventi", hero_cta2: "Come funziona",
       // app chrome
       p_org: "Organizzatore", p_cli: "Cliente", p_val: "Validatore",
-      n_dash: "Dashboard", n_club: "Club & Eventi", n_esplora: "Esplora", n_biglietti: "I miei biglietti", n_scan: "Scansione", n_accessi: "Accessi"
+      n_dash: "Dashboard", n_club: "Club & Eventi", n_esplora: "Esplora", n_biglietti: "I miei biglietti", n_scan: "Scansione", n_accessi: "Accessi",
+      b_buy: "Acquista", b_soldout: "Esaurito", b_limit: "Limite 2", b_checkin: "Check-in", b_sell: "Vendi", b_gift: "Regala", b_pay: "Compratore paga", b_cancel: "Annulla", b_exp_free: "Esporta (fee 25%)", b_exp_enf: "Esporta enforced", b_newclub: "Crea club", b_newevent: "Crea evento", b_enter: "Entra nel club →", b_scan: "Scansiona prossimo ospite"
     },
     en: {
       brand: "TINFT", reg_title: "Create your account", reg_sub: "Verified identity, all in-app. Plaintext data stays off-chain; on-chain only the hash of the tax code.",
@@ -41,7 +42,8 @@
       hero_kicker: "NFT ticketing · all in-app", hero_title: "The ticket is truly yours.",
       hero_cta1: "Browse events", hero_cta2: "How it works",
       p_org: "Organizer", p_cli: "Customer", p_val: "Validator",
-      n_dash: "Dashboard", n_club: "Clubs & Events", n_esplora: "Explore", n_biglietti: "My tickets", n_scan: "Scan", n_accessi: "Entries"
+      n_dash: "Dashboard", n_club: "Clubs & Events", n_esplora: "Explore", n_biglietti: "My tickets", n_scan: "Scan", n_accessi: "Entries",
+      b_buy: "Buy", b_soldout: "Sold out", b_limit: "Limit 2", b_checkin: "Check-in", b_sell: "Sell", b_gift: "Gift", b_pay: "Buyer pays", b_cancel: "Cancel", b_exp_free: "Export (25% fee)", b_exp_enf: "Export enforced", b_newclub: "Create club", b_newevent: "Create event", b_enter: "Enter club →", b_scan: "Scan next guest"
     }
   };
 

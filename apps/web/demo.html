@@ -105,7 +105,7 @@ var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractio
 var ART=['linear-gradient(135deg,oklch(0.45 0.17 264),oklch(0.28 0.1 285))','linear-gradient(135deg,oklch(0.45 0.13 200),oklch(0.28 0.09 235))','linear-gradient(135deg,oklch(0.46 0.12 75),oklch(0.3 0.08 50))','linear-gradient(135deg,oklch(0.45 0.13 320),oklch(0.3 0.09 350))'];
 
 // i18n opzionale: se i18n.js non è presente (file aperto da solo) usa un fallback IT, così NON si rompe nulla.
-if(typeof window.t!=='function'){var _IT={p_org:'Organizzatore',p_cli:'Cliente',p_val:'Validatore',n_dash:'Dashboard',n_club:'Club & Eventi',n_esplora:'Esplora',n_biglietti:'I miei biglietti',n_scan:'Scansione',n_accessi:'Accessi'};window.tinftLang='it';window.t=function(k){return _IT[k]||k};window.setLang=function(){};window.applyI18n=function(){};}
+if(typeof window.t!=='function'){var _IT={p_org:'Organizzatore',p_cli:'Cliente',p_val:'Validatore',n_dash:'Dashboard',n_club:'Club & Eventi',n_esplora:'Esplora',n_biglietti:'I miei biglietti',n_scan:'Scansione',n_accessi:'Accessi',b_buy:'Acquista',b_soldout:'Esaurito',b_limit:'Limite 2',b_checkin:'Check-in',b_sell:'Vendi',b_gift:'Regala',b_pay:'Compratore paga',b_cancel:'Annulla',b_exp_free:'Esporta (fee 25%)',b_exp_enf:'Esporta enforced',b_newclub:'Crea club',b_newevent:'Crea evento',b_enter:'Entra nel club →',b_scan:'Scansiona prossimo ospite'};window.tinftLang='it';window.t=function(k){return _IT[k]||k};window.setLang=function(){};window.applyI18n=function(){};}
 var idSeq=100; function uid(p){return p+(++idSeq)}
 var state={
   role:'organizzatore', page:'dash', clubId:null,
@@ -245,11 +245,11 @@ function orgClubs(){
     '<div><label>Città</label><input class="input" id="f_ccity" placeholder="Milano"></div>'+
     '<div><label>Prezzo Fidelity (€) — 0 se nessuno</label><input class="input" id="f_cfp" placeholder="120"></div>'+
     '<div><label>Ingressi Fidelity</label><input class="input" id="f_cfu" placeholder="5"></div></div>'+
-    '<button style="margin-top:12px" onclick="createClub()">Crea club</button></div>';
+    '<button style="margin-top:12px" onclick="createClub()">'+window.t('b_newclub')+'</button></div>';
   h+='<div class="grid">'+state.clubs.map(function(c){var n=clubEvents(c.id).length;
     return '<div class="card"><div class="row"><div><div style="font-weight:600;font-size:15px">'+c.name+'</div><div class="muted">'+c.city+'</div></div>'+(c.fidelityUses>0?'<span class="pill gold">FIDELITY '+c.fidelityUses+'×</span>':'')+'</div>'+
       '<div class="muted" style="margin:10px 0">'+n+' eventi · Fidelity '+(c.fidelityUses>0?eur(c.fidelityPrice):'—')+'</div>'+
-      '<button class="sm" onclick="enterClub(\''+c.id+'\')">Entra nel club →</button></div>'}).join('')+'</div>';
+      '<button class="sm" onclick="enterClub(\''+c.id+'\')">'+window.t('b_enter')+'</button></div>'}).join('')+'</div>';
   return h;
 }
 function orgClubDetail(){
@@ -263,7 +263,7 @@ function orgClubDetail(){
     '<div><label>Data</label><input class="input" id="f_edate" placeholder="21 GIU"></div>'+
     '<div><label>Prezzo (€)</label><input class="input" id="f_eprice" placeholder="31,50"></div>'+
     '<div><label>Capienza</label><input class="input" id="f_ecap" placeholder="500"></div></div>'+
-    '<button style="margin-top:12px" onclick="createEvent()">Crea evento</button></div>';
+    '<button style="margin-top:12px" onclick="createEvent()">'+window.t('b_newevent')+'</button></div>';
   h+='<h3 style="margin:6px 0 12px">Eventi del club</h3>';
   h+=evs.length?('<div class="grid">'+evs.map(function(e){var pct=Math.min(100,Math.round(e.sold/e.capacity*100));
     return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+' · '+eur(e.price)+'</div><div class="muted" style="margin-top:8px">'+e.sold+' / '+e.capacity+' venduti</div><div class="bar"><i style="width:'+pct+'%"></i></div></div>'}).join('')+'</div>'):'<div class="card muted">Nessun evento. Creane uno qui sopra.</div>';
@@ -276,21 +276,21 @@ function cliEsplora(){
     var h='<div class="crumb" onclick="state.clubId=null;render()">← Tutti i club</div><div class="row" style="margin-bottom:14px"><div><h2>'+c.name+'</h2><div class="muted">'+c.city+'</div></div></div>';
     if(c.fidelityUses>0)h+='<div class="card" style="margin-bottom:16px;border-color:oklch(0.5 0.12 75)"><div class="row"><div><span class="pill gold">FIDELITY DEL CLUB</span><div style="font-weight:600;margin-top:8px">Carnet '+c.fidelityUses+' ingressi · valido su tutti gli eventi di '+c.name+'</div></div><div style="text-align:right"><div class="price">'+eur(c.fidelityPrice)+'</div><button class="sm" style="margin-top:8px" onclick="buyFidelity(\''+c.id+'\')">Acquista Fidelity</button></div></div></div>';
     h+='<div class="grid">'+evs.map(function(e){var full=e.sold>=e.capacity,lim=heldFor(e.id)>=MAX_PER_EVENT;
-      return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="buyEvent(\''+e.id+'\')" '+((full||lim)?'disabled':'')+'>'+(full?'Esaurito':lim?'Limite 2':'Acquista')+'</button></div>'+(heldFor(e.id)>0?'<div class="muted" style="margin-top:6px">Possiedi '+heldFor(e.id)+'/2</div>':'')+'</div>'}).join('')+'</div>';
+      return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="buyEvent(\''+e.id+'\')" '+((full||lim)?'disabled':'')+'>'+(full?window.t('b_soldout'):lim?window.t('b_limit'):window.t('b_buy'))+'</button></div>'+(heldFor(e.id)>0?'<div class="muted" style="margin-top:6px">Possiedi '+heldFor(e.id)+'/2</div>':'')+'</div>'}).join('')+'</div>';
     return h;}
   var feat=state.events[0],fc=feat?club(feat.clubId):null;
   var h='<div class="kicker">Novità</div><div class="grid" style="margin:8px 0 20px">'+NEWS.map(function(n){return '<div class="card"><div style="font-weight:600">'+n.t+'</div><div class="muted" style="margin-top:4px">'+n.d+'</div></div>'}).join('')+'</div>';
   if(feat)h+='<div class="card" style="margin-bottom:20px;overflow:hidden;padding:0"><div class="art" style="height:150px;margin:0;border-radius:0;background:'+ART[feat.art||0]+'"><span class="badge">IN VETRINA</span></div><div style="padding:16px"><div class="row"><div><div style="font-weight:600;font-size:16px">'+feat.title+'</div><div class="muted">'+(fc?fc.name:'')+' · '+feat.date+'</div></div><div style="text-align:right"><div class="price">'+eur(feat.price)+'</div><button class="sm" style="margin-top:8px" onclick="buyEvent(\''+feat.id+'\')">Acquista</button></div></div></div></div>';
   h+='<h3 style="margin:0 0 12px">Prossimi eventi</h3><div class="grid" style="margin-bottom:22px">'+state.events.map(function(e){var c=club(e.clubId),lim=heldFor(e.id)>=MAX_PER_EVENT,full=e.sold>=e.capacity;
-    return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+(c?c.name:'')+' · '+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="buyEvent(\''+e.id+'\')" '+((lim||full)?'disabled':'')+'>'+(full?'Esaurito':lim?'Limite 2':'Acquista')+'</button></div></div>'}).join('')+'</div>';
+    return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+(c?c.name:'')+' · '+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="buyEvent(\''+e.id+'\')" '+((lim||full)?'disabled':'')+'>'+(full?window.t('b_soldout'):lim?window.t('b_limit'):window.t('b_buy'))+'</button></div></div>'}).join('')+'</div>';
   h+='<h3 style="margin:0 0 12px">Club</h3><div class="grid">'+state.clubs.map(function(c){
-    return '<div class="card"><div class="row"><div><div style="font-weight:600;font-size:15px">'+c.name+'</div><div class="muted">'+c.city+' · '+clubEvents(c.id).length+' eventi</div></div>'+(c.fidelityUses>0?'<span class="pill gold">FIDELITY</span>':'')+'</div><button class="sm" style="margin-top:12px" onclick="state.clubId=\''+c.id+'\';render()">Entra nel club →</button></div>'}).join('')+'</div>';
+    return '<div class="card"><div class="row"><div><div style="font-weight:600;font-size:15px">'+c.name+'</div><div class="muted">'+c.city+' · '+clubEvents(c.id).length+' eventi</div></div>'+(c.fidelityUses>0?'<span class="pill gold">FIDELITY</span>':'')+'</div><button class="sm" style="margin-top:12px" onclick="state.clubId=\''+c.id+'\';render()">'+window.t('b_enter')+'</button></div>'}).join('')+'</div>';
   return h;
 }
 function tkCard(t){var a='',secs;
-  if(t.status==='attivo')a='<button class="sm ghost" onclick="openCheckin(\''+t.id+'\')">Check-in</button> <button class="sm ghost" onclick="sell(\''+t.id+'\')">Vendi</button> <button class="sm ghost" onclick="gift(\''+t.id+'\')">Regala</button>';
-  else if(t.status==='vendita'){secs=Math.max(0,Math.ceil(((t.expiresAt||0)-Date.now())/1000));a='<div class="muted" style="margin-bottom:8px">In escrow a '+eur(t.salePrice||0)+' · scade tra <b>'+secs+'s</b></div><button class="sm" onclick="payMarket(\''+t.id+'\')">Compratore paga</button> <button class="sm ghost" onclick="cancelSale(\''+t.id+'\')">Annulla</button>';}
-  else if(t.status==='usato')a='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">Esporta (fee 25%)</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">Esporta enforced</button>';
+  if(t.status==='attivo')a='<button class="sm ghost" onclick="openCheckin(\''+t.id+'\')">'+window.t('b_checkin')+'</button> <button class="sm ghost" onclick="sell(\''+t.id+'\')">'+window.t('b_sell')+'</button> <button class="sm ghost" onclick="gift(\''+t.id+'\')">'+window.t('b_gift')+'</button>';
+  else if(t.status==='vendita'){secs=Math.max(0,Math.ceil(((t.expiresAt||0)-Date.now())/1000));a='<div class="muted" style="margin-bottom:8px">In escrow a '+eur(t.salePrice||0)+' · scade tra <b>'+secs+'s</b></div><button class="sm" onclick="payMarket(\''+t.id+'\')">'+window.t('b_pay')+'</button> <button class="sm ghost" onclick="cancelSale(\''+t.id+'\')">'+window.t('b_cancel')+'</button>';}
+  else if(t.status==='usato')a='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">'+window.t('b_exp_free')+'</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">'+window.t('b_exp_enf')+'</button>';
   else a='<span class="muted">Collectible esportato</span>';
   var st={attivo:'pill ok',vendita:'pill warn',usato:'pill warn',exported:'pill plat'}[t.status]||'pill';
   return '<div class="card"><div class="row"><div style="font-weight:600">'+t.title+'</div><span class="'+(t.kind==='fidelity'?'pill gold':st)+'">'+(t.kind==='fidelity'?'FIDELITY':t.status.toUpperCase())+'</span></div><div class="muted">'+(t.sub||'')+'</div>'+
@@ -309,7 +309,7 @@ function valScan(){
   var log=state.valLog.length?state.valLog.slice(0,9).map(function(l){var col={valid:'var(--ok)',duplicate:'var(--err)',fake:'var(--err)',screenshot:'var(--warn)',escrow:'var(--warn)'}[l.outcome]||'var(--mut)';return '<div class="listrow"><div><div style="font-weight:600">'+l.holder+'</div><div class="muted">'+(l.meta||l.outcome)+'</div></div><div style="text-align:right"><div style="color:'+col+';font-size:11px;text-transform:uppercase">'+l.outcome+'</div><div class="muted">'+l.time+'</div></div></div>'}).join(''):'<div class="muted" style="margin-top:8px">Nessuna scansione ancora.</div>';
   return '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">'+
     '<div class="card" style="flex:1;min-width:300px"><div class="row"><div class="kicker">Scansione varco</div><span class="pill '+(state.offline?'warn':'ok')+'" style="cursor:pointer" onclick="state.offline=!state.offline;render()">'+(state.offline?'OFFLINE · coda sync':'ONLINE')+'</span></div>'+
-    '<button style="width:100%;margin-top:12px" onclick="doScan()">Scansiona prossimo ospite</button>'+
+    '<button style="width:100%;margin-top:12px" onclick="doScan()">'+window.t('b_scan')+'</button>'+
     '<div class="muted" style="margin-top:8px">Fidelity: consuma un ingresso per volta. Tocca uno stato per simulare un esito.</div>'+
     '<div class="formgrid" style="margin-top:12px"><button class="sm ghost" onclick="doScan(\'screenshot\')">Screenshot</button><button class="sm ghost" onclick="doScan(\'duplicate\')">Già usato</button><button class="sm ghost" onclick="doScan(\'escrow\')">In escrow</button><button class="sm ghost" onclick="doScan(\'fake\')">Falso</button></div>'+res+'</div>'+
     '<div class="card" style="width:300px"><div class="kicker">Ultimi accessi</div>'+log+'</div></div>';
