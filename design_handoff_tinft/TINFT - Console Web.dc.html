@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#06070c;font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+  .scr::-webkit-scrollbar{width:8px;height:8px}
+  .scr::-webkit-scrollbar-thumb{background:oklch(0.28 0.02 265);border-radius:4px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</helmet>
+
+<div style="display:flex;flex-direction:{{ rootDir }};height:100vh;width:100%;color:oklch(0.96 0.005 262);background:#06070c;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(900px 500px at 18% -8%,oklch(0.5 0.2 264/.14),transparent 60%)"></div>
+
+  <!-- WIDE SIDEBAR -->
+  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+    <aside style="width:248px;flex-shrink:0;border-right:1px solid oklch(0.2 0.02 265);background:oklch(0.09 0.01 265);display:flex;flex-direction:column;padding:22px 16px;position:relative;z-index:1">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 8px 4px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:30px;border-radius:7px"/><div><div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;letter-spacing:0.02em">TINFT</div><div style="font-family:'IBM Plex Mono';font-size:9px;letter-spacing:0.16em;color:oklch(0.58 0.02 265)">CONSOLE</div></div></div>
+      <div style="height:1px;background:oklch(0.2 0.02 265);margin:18px 6px"></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+          <div onClick="{{ n.go }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }};font-weight:{{ n.weight }};font-size:13.5px">
+            <span style="width:20px;text-align:center;font-size:15px">{{ n.icon }}</span>{{ n.label }}
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:1"></div>
+      <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.24 0.02 265);border-radius:15px;padding:13px;display:flex;align-items:center;gap:11px">
+        <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,oklch(0.55 0.16 264),oklch(0.35 0.1 280));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:14px;color:#fff;flex-shrink:0">CA</div>
+        <div style="flex:1;min-width:0"><div style="font-family:'Space Grotesk';font-weight:600;font-size:13px">Club Astra</div><div style="font-size:10.5px;color:oklch(0.58 0.02 265)">Organizzatore</div></div>
+        <span style="color:oklch(0.5 0.02 265);font-size:16px;cursor:pointer">⎋</span>
+      </div>
+    </aside>
+  </sc-if>
+
+  <!-- MAIN COLUMN -->
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;z-index:1">
+
+    <!-- NARROW TOPBAR -->
+    <sc-if value="{{ narrow }}">
+      <div style="border-bottom:1px solid oklch(0.2 0.02 265);background:oklch(0.09 0.01 265)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px">
+          <div style="display:flex;align-items:center;gap:9px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:26px;border-radius:6px"/><span style="font-family:'Space Grotesk';font-weight:600;font-size:15px">TINFT <span style="font-family:'IBM Plex Mono';font-size:9px;color:oklch(0.58 0.02 265);letter-spacing:0.14em">CONSOLE</span></span></div>
+          <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,oklch(0.55 0.16 264),oklch(0.35 0.1 280));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:12px;color:#fff">CA</div>
+        </div>
+        <div class="scr" style="display:flex;gap:6px;padding:0 14px 12px;overflow-x:auto">
+          <sc-for list="{{ nav }}" as="n">
+            <div onClick="{{ n.go }}" style="white-space:nowrap;padding:8px 14px;border-radius:10px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }};font-weight:{{ n.weight }};font-size:12.5px">{{ n.label }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 28px 16px;flex-wrap:wrap">
+      <div>
+        <div style="font-family:'Space Grotesk';font-weight:600;font-size:clamp(22px,2.4vw,28px)">{{ pageTitle }}</div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 265);margin-top:3px">{{ pageSub }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:11px;padding:9px 14px;font-size:12.5px;color:oklch(0.56 0.02 265);min-width:200px">Cerca eventi, holder…</div>
+        <div onClick="{{ goCreate }}" style="background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));color:#fff;font-weight:600;font-size:12.5px;padding:10px 16px;border-radius:11px;cursor:pointer;white-space:nowrap;box-shadow:0 0 20px oklch(0.55 0.2 264/.3)">+ Crea evento</div>
+      </div>
+    </div>
+
+    <div class="scr" style="flex:1;overflow-y:auto;padding:6px 28px 40px">
+
+      <!-- DASHBOARD -->
+      <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,oklch(0.22 0.07 264),oklch(0.15 0.04 280));border:1px solid oklch(0.4 0.12 264);border-radius:18px;padding:16px 20px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:7px"><div style="width:8px;height:8px;border-radius:50%;background:oklch(0.74 0.16 158);box-shadow:0 0 8px oklch(0.74 0.18 158)"></div><span style="font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.12em;color:oklch(0.78 0.1 158)">LIVE · DAL MONDO TINFT</span></div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;margin-left:auto">
+            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px">{{ liveValidated }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">validati (app)</div></div>
+            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px;color:oklch(0.8 0.13 264)">{{ liveP2PCount }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">scambi P2P</div></div>
+            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px;color:oklch(0.82 0.12 70)">{{ liveP2PRoyalty }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">tua royalty P2P</div></div>
+            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px;color:oklch(0.78 0.1 300)">{{ liveExported }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">NFT esportati</div></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:{{ k.bg }};border:1px solid {{ k.border }};border-radius:18px;padding:18px 20px;position:relative;overflow:hidden">
+              <div style="font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:0.12em;color:{{ k.kickerColor }}">{{ k.kicker }}</div>
+              <div style="font-family:'Space Grotesk';font-weight:700;font-size:clamp(22px,2vw,28px);margin-top:10px;color:{{ k.valColor }}">{{ k.value }}</div>
+              <div style="font-size:11px;color:oklch(0.62 0.02 265);margin-top:6px">{{ k.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:18px">
+          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><span style="font-family:'Space Grotesk';font-weight:600;font-size:15px">Vendite · ultimi 7 giorni</span><span style="font-family:'IBM Plex Mono';font-size:10px;color:oklch(0.6 0.02 265)">€ totali</span></div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;height:150px;gap:12px">
+              <sc-for list="{{ salesBars }}" as="b">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px">
+                  <div style="width:100%;height:{{ b.h }};border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,oklch(0.62 0.17 264),oklch(0.4 0.13 264))"></div>
+                  <span style="font-size:10px;color:oklch(0.5 0.02 265);font-family:'IBM Plex Mono'">{{ b.day }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:20px">
+            <div style="font-family:'Space Grotesk';font-weight:600;font-size:15px;margin-bottom:14px">Vendite recenti</div>
+            <sc-for list="{{ recentSales }}" as="r">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid oklch(0.18 0.02 265)">
+                <div style="width:34px;height:34px;border-radius:9px;background:{{ r.art }};flex-shrink:0"></div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">{{ r.who }}</div><div style="font-size:10.5px;color:oklch(0.58 0.02 265)">{{ r.what }}</div></div>
+                <div style="text-align:right"><div style="font-family:'Space Grotesk';font-weight:600;font-size:13px;color:oklch(0.78 0.14 264)">{{ r.amount }}</div><div style="font-size:9.5px;color:oklch(0.5 0.02 265)">{{ r.when }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- EVENTI -->
+      <sc-if value="{{ isEventi }}">
+        <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;gap:12px;padding:14px 22px;font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.08em;color:oklch(0.56 0.02 265);border-bottom:1px solid oklch(0.2 0.02 265);min-width:640px">
+            <span>EVENTO</span><span>DATA</span><span>VENDUTI</span><span>INCASSO</span><span>STATO</span>
+          </div>
+          <sc-for list="{{ eventRows }}" as="e" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;gap:12px;align-items:center;padding:15px 22px;border-bottom:1px solid oklch(0.16 0.02 265);min-width:640px">
+              <div><div style="font-family:'Space Grotesk';font-weight:600;font-size:13.5px">{{ e.title }}</div><div style="font-size:10.5px;color:oklch(0.56 0.02 265);margin-top:1px">{{ e.type }}</div></div>
+              <span style="font-size:12.5px;color:oklch(0.7 0.02 265)">{{ e.date }}</span>
+              <div><div style="font-size:11.5px;color:oklch(0.7 0.02 265);margin-bottom:5px">{{ e.soldLabel }}</div><div style="height:6px;border-radius:4px;background:oklch(0.24 0.02 265);overflow:hidden"><div style="height:100%;width:{{ e.pct }};background:linear-gradient(90deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264))"></div></div></div>
+              <span style="font-family:'Space Grotesk';font-weight:600;font-size:13px;color:oklch(0.78 0.14 264)">{{ e.revenue }}</span>
+              <span style="font-family:'IBM Plex Mono';font-size:9.5px;color:{{ e.statusColor }};border:1px solid {{ e.statusBorder }};padding:4px 8px;border-radius:6px;justify-self:start;white-space:nowrap">{{ e.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- INCASSI -->
+      <sc-if value="{{ isIncassi }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+          <div style="border-radius:20px;padding:22px;background:linear-gradient(135deg,oklch(0.28 0.09 158),oklch(0.18 0.05 170));border:1px solid oklch(0.4 0.1 158)">
+            <div style="font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.12em;color:oklch(0.85 0.1 158)">PROSSIMO BONIFICO</div>
+            <div style="font-family:'Space Grotesk';font-weight:700;font-size:32px;margin-top:10px">{{ nextPayout }}</div>
+            <div style="font-size:11.5px;color:oklch(0.85 0.06 158);margin-top:8px">Entro 72h dalla fine evento · IBAN ••• 8841</div>
+          </div>
+          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
+            <sc-for list="{{ payoutLines }}" as="p">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid oklch(0.18 0.02 265)"><div><div style="font-size:13px;font-weight:500">{{ p.label }}</div><div style="font-size:10.5px;color:oklch(0.56 0.02 265);margin-top:1px">{{ p.note }}</div></div><div style="font-family:'Space Grotesk';font-weight:600;font-size:15px;color:{{ p.color }}">{{ p.value }}</div></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-family:'IBM Plex Mono';font-size:10.5px;color:oklch(0.5 0.02 265);line-height:1.7;max-width:70ch">TINFT riconosce il “prezzo prevendita” per ogni biglietto venduto e una quota delle royalty sul mercato secondario, al netto delle commissioni di servizio.</div>
+      </sc-if>
+
+      <!-- HOLDER -->
+      <sc-if value="{{ isHolders }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
+          <sc-for list="{{ holderStats }}" as="s">
+            <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:16px;padding:16px 18px"><div style="font-family:'Space Grotesk';font-weight:700;font-size:24px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:11px;color:oklch(0.62 0.02 265);margin-top:3px">{{ s.label }}</div></div>
+          </sc-for>
+        </div>
+        <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;gap:12px;padding:14px 22px;font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.08em;color:oklch(0.56 0.02 265);border-bottom:1px solid oklch(0.2 0.02 265);min-width:660px">
+            <span>HOLDER</span><span>EMAIL</span><span>BIGLIETTI</span><span>SPESO</span><span>STATO</span>
+          </div>
+          <sc-for list="{{ holderRows }}" as="h" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid oklch(0.16 0.02 265);min-width:660px">
+              <div style="display:flex;align-items:center;gap:11px;min-width:0">
+                <div style="width:34px;height:34px;border-radius:10px;background:{{ h.art }};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:600;font-size:12px;color:#fff;flex-shrink:0">{{ h.initials }}</div>
+                <div style="min-width:0"><div style="display:flex;align-items:center;gap:7px"><span style="font-family:'Space Grotesk';font-weight:600;font-size:13px">{{ h.name }}</span><sc-if value="{{ h.hasTag }}"><span style="font-size:8px;font-family:'IBM Plex Mono';color:{{ h.tagColor }};background:{{ h.tagBg }};padding:2px 6px;border-radius:5px">{{ h.tag }}</span></sc-if></div><div style="font-size:10px;color:oklch(0.52 0.02 265)">{{ h.city }}</div></div>
+              </div>
+              <span style="font-size:12px;color:oklch(0.62 0.02 265);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.email }}</span>
+              <span style="font-size:12.5px">{{ h.tickets }}</span>
+              <span style="font-family:'Space Grotesk';font-weight:600;font-size:12.5px;color:oklch(0.78 0.14 264)">{{ h.spent }}</span>
+              <div style="display:flex;align-items:center;gap:7px"><div style="width:7px;height:7px;border-radius:50%;background:{{ h.dot }}"></div><span style="font-size:11.5px;color:{{ h.presentColor }}">{{ h.presentLabel }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- ACCESSI -->
+      <sc-if value="{{ isAccessi }}">
+        <div style="border:1px solid oklch(0.4 0.1 75);background:oklch(0.15 0.03 75);border-radius:14px;padding:14px 18px;font-size:12px;color:oklch(0.85 0.1 75);margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;max-width:80ch">
+          <span style="font-size:16px;line-height:1">⛨</span>
+          <span style="line-height:1.55"><b>Sola lettura.</b> La validazione degli accessi avviene esclusivamente dall'app TINFT sullo smartphone dello staff. Questa console rispecchia i dati in tempo reale ma non può validare ingressi.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.45 0.14 264);border-radius:20px;padding:22px;box-shadow:0 0 36px oklch(0.5 0.18 264/.12)">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Space Grotesk';font-weight:600;font-size:15px">Notte Elettronica · Vol.4</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:oklch(0.74 0.16 158);box-shadow:0 0 8px oklch(0.74 0.18 158);animation:pulse 1.6s infinite"></span><span style="font-size:11px;color:oklch(0.74 0.12 158)">LIVE</span></span></div>
+            <div style="display:flex;align-items:flex-end;gap:10px;margin-top:18px"><span style="font-family:'Space Grotesk';font-weight:700;font-size:46px;color:oklch(0.78 0.14 264)">{{ validated }}</span><span style="font-size:13px;color:oklch(0.6 0.02 265);padding-bottom:10px">/ {{ capacity }} ingressi</span></div>
+            <div style="margin-top:14px;height:9px;border-radius:5px;background:oklch(0.24 0.02 265);overflow:hidden"><div style="height:100%;width:{{ validatedPct }};background:linear-gradient(90deg,oklch(0.62 0.17 264),oklch(0.74 0.16 158))"></div></div>
+          </div>
+          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:20px">
+            <div style="font-family:'Space Grotesk';font-weight:600;font-size:15px;margin-bottom:12px">Ultimi ingressi</div>
+            <sc-for list="{{ recentEntries }}" as="r">
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid oklch(0.18 0.02 265)">
+                <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.5 0.13 158);display:flex;align-items:center;justify-content:center;color:#062;font-size:13px;font-weight:700">✓</div>
+                <span style="flex:1;font-size:12.5px;font-weight:500">{{ r.name }}</span>
+                <span style="font-size:10.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono'">{{ r.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { route:'dash', narrow:false, now:Date.now(), D:null, world:null };
+
+  componentDidMount(){
+    this.onResize = ()=>{ const n = window.innerWidth < 880; if(n!==this.state.narrow) this.setState({ narrow:n }); };
+    this.onResize();
+    // mondo condiviso (stesso di App e Banco di Prova)
+    try{
+      const raw=localStorage.getItem('tinft_world'); if(raw) this.setState({ world:JSON.parse(raw) });
+      this._bc=new BroadcastChannel('tinft_world');
+      this._bc.onmessage=(e)=>{ if(e.data&&e.data.t==='world') this.setState({ world:e.data }); };
+      this._onStorage=(ev)=>{ if(ev.key==='tinft_world'&&ev.newValue){ try{ this.setState({ world:JSON.parse(ev.newValue) }); }catch(_){} } };
+      window.addEventListener('storage', this._onStorage);
+    }catch(e){}
+    window.addEventListener('resize', this.onResize);
+    this.t = setInterval(()=> this.setState({ now:Date.now() }), 1000);
+    import('./tinft-data.js').then(D=> this.setState({ D }));
+  }
+  componentWillUnmount(){ window.removeEventListener('resize', this.onResize); clearInterval(this.t); if(this._bc){try{this._bc.close();}catch(e){}} if(this._onStorage) window.removeEventListener('storage', this._onStorage); }
+
+  eur(n){ return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+  renderVals(){
+    const S=this.state, R=S.route;
+    const D=S.D||{HOLDERS:[],ORG_EVENTS:[],ROYALTY:0};
+    // ---- LIVE dal mondo condiviso (App / Banco di Prova) ----
+    const W=S.world||{tickets:[],transfers:[],accounts:{}};
+    const eur2=(n)=>'\u20AC '+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const liveValidated=(W.tickets||[]).filter(t=>t.status==='usato').length;
+    const p2pDoneC=(W.transfers||[]).filter(x=>x.status==='done' && x.mode==='pagamento');
+    const liveP2PCount=p2pDoneC.length;
+    const liveP2PRoyalty=p2pDoneC.reduce((a,x)=> a + (x.royC!=null? x.royC : (x.royalty||0)/2), 0);
+    const liveExported=(W.tickets||[]).filter(t=>t.status==='exported').length;
+    const ACT='oklch(0.76 0.14 264)', MUT='oklch(0.62 0.02 265)';
+    const go=r=>()=>this.setState({ route:r });
+    const nav=[
+      {key:'dash',label:'Dashboard',icon:'◫'},
+      {key:'eventi',label:'Eventi',icon:'◆'},
+      {key:'incassi',label:'Incassi',icon:'€'},
+      {key:'accessi',label:'Accessi',icon:'⛨'},
+      {key:'holders',label:'Holder',icon:'◉'}
+    ].map(n=>({ ...n, go:go(n.key),
+      bg: R===n.key? 'oklch(0.22 0.06 264)':'transparent',
+      color: R===n.key? '#fff':MUT,
+      weight: R===n.key? '600':'500' }));
+
+    const titles={ dash:['Dashboard','Panoramica della stagione in corso'], eventi:['Eventi','Gestisci titoli, capienze e stato vendite'], incassi:['Incassi & payout','Bonifici, commissioni e royalty'], accessi:['Accessi live','Validazioni in tempo reale dallo staff'], holders:['Holder & community','Chi possiede i tuoi titoli NFT'] };
+    const [pageTitle,pageSub]=titles[R]||titles.dash;
+
+    const kpis=[
+      { kicker:'INCASSO · STAGIONE', value:this.eur(34224), note:'▲ +12,4% vs mese scorso', bg:'linear-gradient(135deg,oklch(0.34 0.13 264),oklch(0.2 0.07 285))', border:'oklch(0.45 0.12 264)', kickerColor:'oklch(0.86 0.06 264)', valColor:'#fff' },
+      { kicker:'BIGLIETTI VENDUTI', value:'932', note:'su 4 eventi attivi', bg:'oklch(0.14 0.013 265)', border:'oklch(0.26 0.02 265)', kickerColor:MUT, valColor:'#fff' },
+      { kicker:'EVENTI IN VENDITA', value:'3', note:'1 concluso in archivio', bg:'oklch(0.14 0.013 265)', border:'oklch(0.26 0.02 265)', kickerColor:MUT, valColor:'#fff' },
+      { kicker:'VALIDATI · LIVE', value:'312', note:'Vol.4 · 62% capienza', bg:'oklch(0.14 0.013 265)', border:'oklch(0.26 0.02 265)', kickerColor:MUT, valColor:ACT }
+    ];
+    const barH=[46,62,38,72,55,84,68], days=['L','M','M','G','V','S','D'];
+    const salesBars=barH.map((h,i)=>({ h:h+'%', day:days[i] }));
+    const recentSales=[
+      { who:'Marco B.', what:'Ticket NFT · Vol.4', amount:'€ 31,50', when:'2 min fa', art:'linear-gradient(135deg,oklch(0.5 0.16 264),oklch(0.35 0.1 285))' },
+      { who:'Giulia V.', what:'Fidelity · Stagione', amount:'€ 120', when:'18 min fa', art:'linear-gradient(135deg,oklch(0.5 0.12 75),oklch(0.34 0.08 55))' },
+      { who:'Luca R.', what:'Ticket NFT · Jazz', amount:'€ 24,00', when:'41 min fa', art:'linear-gradient(135deg,oklch(0.5 0.12 200),oklch(0.34 0.08 235))' },
+      { who:'Sara C.', what:'Special · Location Ed.', amount:'€ 65,00', when:'1 h fa', art:'linear-gradient(135deg,oklch(0.5 0.13 320),oklch(0.34 0.09 350))' }
+    ];
+
+    const eventsData=D.ORG_EVENTS;
+    const eventRows=eventsData.map(e=>{
+      const inSale=e.status==='in vendita';
+      return { title:e.title, type:e.type, date:e.date, soldLabel:e.sold+' / '+e.capacity, pct:Math.round(e.sold/e.capacity*100)+'%', revenue:this.eur(e.sold*e.payout), status:e.status, statusColor:inSale?'oklch(0.78 0.13 264)':'oklch(0.7 0.04 158)', statusBorder:inSale?'oklch(0.42 0.12 264)':'oklch(0.4 0.08 158)' };
+    });
+    const totalRevenue=eventsData.reduce((a,e)=>a+e.sold*e.payout,0), royalty=D.ROYALTY;
+    const nextPayout=this.eur(9360);
+    const payoutLines=[
+      { label:'Incasso lordo eventi', note:'somma prezzi prevendita', value:this.eur(totalRevenue), color:'#fff' },
+      { label:'Commissioni TINFT', note:'servizio e-commerce', value:'– '+this.eur(Math.round(totalRevenue*0.04)), color:'oklch(0.7 0.1 25)' },
+      { label:'Royalty mercato secondario', note:'Re-Selling + Collection', value:'+ '+this.eur(royalty), color:'oklch(0.78 0.13 264)' },
+      { label:'Netto maturato', note:'pronto al payout', value:this.eur(totalRevenue-Math.round(totalRevenue*0.04)+royalty), color:'oklch(0.78 0.16 158)' }
+    ];
+
+    const holders=D.HOLDERS;
+    const holderRows=holders.map((h,i)=>({
+      name:h.nome+' '+h.cognome, initials:(h.nome[0]+h.cognome[0]).toUpperCase(), email:h.email, city:h.city,
+      tickets:h.tickets, spent:this.eur(h.spent), tag:h.tag, hasTag:!!h.tag,
+      tagColor:h.tag==='Top fan'?'oklch(0.8 0.13 75)':h.tag==='Nuovo'?'oklch(0.74 0.14 158)':'oklch(0.74 0.1 264)',
+      tagBg:h.tag==='Top fan'?'oklch(0.22 0.06 75)':h.tag==='Nuovo'?'oklch(0.2 0.05 158)':'oklch(0.2 0.05 264)',
+      art:'linear-gradient(135deg,oklch(0.5 0.14 '+(200+i*40)+'),oklch(0.34 0.09 '+(230+i*35)+'))',
+      dot:h.present?'oklch(0.74 0.16 158)':'oklch(0.3 0.02 265)',
+      presentColor:h.present?'oklch(0.74 0.13 158)':'oklch(0.5 0.02 265)',
+      presentLabel:h.present?'In sala':'Non in sala'
+    }));
+    const holderStats=[
+      { value:holders.length, label:'Holder totali', color:'#fff' },
+      { value:holders.filter(h=>h.present).length, label:'In sala ora', color:'oklch(0.78 0.14 158)' },
+      { value:holders.filter(h=>h.tag==='Top fan').length, label:'Top fan', color:'oklch(0.8 0.13 75)' },
+      { value:this.eur(holders.reduce((a,h)=>a+h.spent,0)), label:'Speso aggregato', color:ACT }
+    ];
+
+    const recentEntries=[
+      { name:'Marco Bianchi', time:'23:14' },{ name:'Sara Conti', time:'23:11' },{ name:'Davide Neri', time:'23:09' },{ name:'Elisa Fabbri', time:'23:06' },{ name:'Giulia Verdi', time:'23:02' }
+    ];
+
+    return {
+      rootDir: S.narrow? 'column':'row',
+      wide: !S.narrow, narrow: S.narrow,
+      nav, pageTitle, pageSub,
+      goCreate: ()=>this.setState({ route:'eventi' }),
+      isDash:R==='dash', isEventi:R==='eventi', isIncassi:R==='incassi', isHolders:R==='holders', isAccessi:R==='accessi',
+      kpis, salesBars, recentSales,
+      eventRows,
+      nextPayout, payoutLines,
+      holderRows, holderStats,
+      validated:312, capacity:500, validatedPct:'62%', recentEntries,
+      liveValidated, liveP2PCount, liveP2PRoyalty:eur2(liveP2PRoyalty), liveExported
+    };
+  }
+}
+</script>
+</body>
+</html>
