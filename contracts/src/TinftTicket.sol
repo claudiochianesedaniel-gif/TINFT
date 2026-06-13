@@ -14,10 +14,10 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 ///         la royalty 1% enforced sul secondario.
 ///
 /// @dev    M1: mint + blocco trasferimenti fuori allowlist.
-///         M2: memorizza `originalPrice` (base immutabile della royalty 1%, R1)
-///         oltre a `paid` (costo base corrente, base del tetto +5% R2/R3).
-///         La trattenuta esatta dell'1% sul prezzo originale e l'instradamento
-///         allo SplitRoyalty avvengono nel modulo di vendita/escrow (M3).
+///         M2: `originalPrice` (base immutabile della royalty 1%, R1) + `paid`
+///         (costo base corrente, base del tetto +5% R2/R3).
+///         M3: `setPaid` (il costo base viaggia col token a ogni vendita, R3),
+///         richiamabile solo dai moduli di vendita autorizzati (escrow).
 contract TinftTicket is ERC721, ERC2981, Ownable {
     /// @notice royalty in basis point (100 = 1%)
     uint96 public constant ROYALTY_BPS = 100;
@@ -37,9 +37,15 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
     mapping(uint256 tokenId => TicketData data) private _ticket;
     /// @notice se true, il token è soggetto alla transfer policy (default al mint)
     mapping(uint256 tokenId => bool bound) public policyBound;
+    /// @notice moduli di vendita autorizzati ad aggiornare il costo base (escrow)
+    mapping(address operator => bool allowed) public isSaleOperator;
 
     event TransferValidatorUpdated(address indexed validator);
+    event SaleOperatorUpdated(address indexed operator, bool allowed);
     event TicketMinted(uint256 indexed tokenId, address indexed to, uint256 indexed eventId, uint256 price);
+    event PaidUpdated(uint256 indexed tokenId, uint256 newPaid);
+
+    error NotSaleOperator();
 
     /// @param name_            nome collezione
     /// @param symbol_          simbolo
@@ -56,6 +62,12 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
     function setTransferValidator(address validator) external onlyOwner {
         transferValidator = validator;
         emit TransferValidatorUpdated(validator);
+    }
+
+    /// @notice Autorizza/revoca un modulo di vendita (escrow) a `setPaid`.
+    function setSaleOperator(address operator, bool allowed) external onlyOwner {
+        isSaleOperator[operator] = allowed;
+        emit SaleOperatorUpdated(operator, allowed);
     }
 
     /// @notice Conia un biglietto verso `to` al prezzo `price` (face). Il backend
@@ -78,11 +90,19 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
     /// @notice Royalty TINFT dovuta su una vendita: 1% del PREZZO ORIGINALE (R1),
     ///         indipendente dal prezzo di rivendita. La incassa il modulo di
     ///         vendita e la instrada allo SplitRoyalty (0,5%/0,5%).
-    /// @dev    Lavora nella minima unità del prezzo (es. centesimi/wei). La
-    ///         ripartizione 50/50 e l'eventuale resto sono gestiti dallo Split.
     function royaltyDue(uint256 tokenId) external view returns (uint256) {
         _requireOwned(tokenId);
         return (_ticket[tokenId].originalPrice * ROYALTY_BPS) / 10_000; // 1%
+    }
+
+    /// @notice Aggiorna il costo base del token (R3: il costo base viaggia col
+    ///         token). Solo i moduli di vendita autorizzati (escrow) possono
+    ///         chiamarla — è la base su cui M4 applicherà il tetto +5%.
+    function setPaid(uint256 tokenId, uint256 newPaid) external {
+        if (!isSaleOperator[msg.sender]) revert NotSaleOperator();
+        _requireOwned(tokenId);
+        _ticket[tokenId].paid = newPaid;
+        emit PaidUpdated(tokenId, newPaid);
     }
 
     /// @dev Applica la policy su ogni trasferimento reale (esclusi mint e burn).

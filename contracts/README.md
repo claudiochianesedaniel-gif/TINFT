@@ -25,6 +25,7 @@ In CI vengono ripristinate con `actions/checkout` (`submodules: recursive`).
 | `TinftTicket` | ERC-721 + EIP-2981; ogni biglietto è *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (base immutabile della royalty 1%, R1) e `paid` (costo base per il tetto +5%, R2/R3). |
 | `TinftTransferValidator` | Allowlist di operatori; `validateTransfer` fa revert se il caller non è un modulo TINFT autorizzato. |
 | `TinftRoyaltySplit` | Split royalty **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
+| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock), `pay` (release atomico token+prezzo+royalty, aggiorna il costo base), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
 | `ITransferValidator` | Interfaccia del validator. |
 
 ### Modello di enforcement
@@ -45,6 +46,12 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 - ✅ la royalty EIP-2981 confluisce nello split e si divide 50/50 (`test_Eip2981RoyaltyFlowsToSplit`)
 - ✅ incasso a prova di blocco + ritiri isolati (`test_WithdrawFailureIsIsolated`), conservazione fondi (fuzz)
 
+### Definition of Done — M3 (coperta dai test)
+- ✅ il compratore paga → riceve il token e il venditore i fondi in **una** tx (`test_PaySettlesAtomically`)
+- ✅ senza pagamento entro il `ttl`, `reclaim()` restituisce il token al venditore (`test_ReclaimAfterTtlReturnsToSeller`)
+- ✅ il costo base viaggia col token (R3) e la royalty 1% va allo split 0,5/0,5
+- ✅ sicurezza: reentrancy del venditore non ruba né blocca (`test_ReentrantSellerCannotExploit`)
+
 ## Roadmap contratti
-M3 escrow `list/pay/reclaim` · M4 tetto +5% e limite 2/evento ·
-M5 `exportFree`/`exportEnforced` · M10 audit. Vedi `../docs/SPEC-VERIFICATA.md`.
+M4 tetto +5% e limite 2/evento (`hash(CF)`) · M5 `exportFree`/`exportEnforced` ·
+M10 audit. Vedi `../docs/SPEC-VERIFICATA.md`.
