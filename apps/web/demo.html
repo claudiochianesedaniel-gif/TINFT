@@ -109,9 +109,9 @@ var primaryFee=function(p){return Math.floor(p*PRIMARY_FEE_BPS/BPS)};
 var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 
 var EVENTS=[
-  {id:'vol4',title:'Notte Elettronica · Vol.4',venue:'Magazzino Generali · 21 GIU',price:3150,art:'linear-gradient(135deg,oklch(0.45 0.17 264),oklch(0.28 0.1 285))'},
-  {id:'jazz',title:'Blue Room · Jazz Sessions',venue:'Auditorium · 03 LUG',price:2400,art:'linear-gradient(135deg,oklch(0.45 0.13 200),oklch(0.28 0.09 235))'},
-  {id:'live',title:'Stagione Live · Fidelity',venue:'Club Astra · carnet 5 serate',price:12000,art:'linear-gradient(135deg,oklch(0.46 0.12 75),oklch(0.3 0.08 50))'}
+  {id:'vol4',title:'Notte Elettronica · Vol.4',venue:'Magazzino Generali · 21 GIU',price:3150,type:'Ticket NFT',art:'linear-gradient(135deg,oklch(0.45 0.17 264),oklch(0.28 0.1 285))'},
+  {id:'jazz',title:'Blue Room · Jazz Sessions',venue:'Auditorium · 03 LUG',price:2400,type:'Ticket NFT',art:'linear-gradient(135deg,oklch(0.45 0.13 200),oklch(0.28 0.09 235))'},
+  {id:'live',title:'Stagione Live · Fidelity',venue:'Club Astra · carnet 5 serate',price:12000,type:'Fidelity',uses:5,art:'linear-gradient(135deg,oklch(0.46 0.12 75),oklch(0.3 0.08 50))'}
 ];
 var state={profile:'cliente',tab:'eventi',tokenSeq:0,tickets:[],held:{},ledger:{prim:0,royT:0,royO:0,exit:0},
   aggr:{sold:0,gross:0,accessi:0},buy:null,checkin:null,scan:null};
@@ -127,7 +127,7 @@ function buy(ev){
   if(heldFor(ev)>=MAX_PER_EVENT){toast('Limite raggiunto · max 2 per evento (identità)',true);return}
   var e=EVENTS.find(function(x){return x.id===ev});
   state.tokenSeq++;
-  state.tickets.unshift({id:'t'+state.tokenSeq,tokenId:state.tokenSeq,eventId:ev,title:e.title,venue:e.venue,originalPrice:e.price,paid:e.price,status:'attivo',exportMode:'none',holder:'Marco Bianchi'});
+  state.tickets.unshift({id:'t'+state.tokenSeq,tokenId:state.tokenSeq,eventId:ev,title:e.title,venue:e.venue,originalPrice:e.price,paid:e.price,status:'attivo',exportMode:'none',holder:'Marco Bianchi',fidelity:e.type==='Fidelity',uses:e.uses||1,used:0});
   state.held[ev]=heldFor(ev)+1; state.ledger.prim+=primaryFee(e.price);
   state.aggr.sold++; state.aggr.gross+=e.price;
   state.buy=null; state.tab='biglietti';
@@ -172,8 +172,10 @@ function doScan(scenario){
   if(scenario){state.scan={outcome:scenario};render();return}
   var t=activeTickets()[0];
   if(!t){state.scan={outcome:'fake'};render();return}
-  t.status='usato'; state.aggr.accessi++;
-  state.scan={outcome:'valid',holder:t.holder,meta:t.title};
+  state.aggr.accessi++;
+  if(t.fidelity){ t.used=(t.used||0)+1; if(t.used>=t.uses) t.status='usato';
+    state.scan={outcome:'valid',holder:t.holder,meta:t.title+' · ingresso '+t.used+'/'+t.uses}; }
+  else { t.status='usato'; state.scan={outcome:'valid',holder:t.holder,meta:t.title}; }
   toast('Accesso valido · '+t.holder); render();
 }
 
@@ -185,7 +187,7 @@ function qrCells(seed){var x=(seed*2654435761)%4294967296,out='';
     out+='<i style="background:'+(on?'#0a0c12':'#fff')+'"></i>'}
   return out;}
 
-function evCard(e){return '<div class="card"><div class="ev-art" style="background:'+e.art+'"><span class="badge">TICKET NFT</span></div>'+
+function evCard(e){return '<div class="card"><div class="ev-art" style="background:'+e.art+'"><span class="badge">'+(e.type||'Ticket NFT').toUpperCase()+'</span></div>'+
   '<div class="row"><div><div class="ttl">'+e.title+'</div><div class="muted">'+e.venue+'</div></div></div>'+
   '<div class="row" style="margin-top:11px"><div class="price">'+eur(e.price)+'</div>'+
   '<button class="sm" onclick="buy(\''+e.id+'\')" '+(heldFor(e.id)>=MAX_PER_EVENT?'disabled':'')+'>'+(heldFor(e.id)>=MAX_PER_EVENT?'Limite 2/evento':'Acquista')+'</button></div>'+
@@ -199,7 +201,7 @@ function tkCard(t){var a='';
   else if(t.status==='usato')a='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">Esporta (fee 25%)</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">Esporta enforced</button>';
   else a='<span class="muted">Collectible esportato</span>';
   return '<div class="card"><div class="row"><div class="ttl">'+t.title+'</div>'+tkStatus(t)+'</div><div class="muted">'+t.venue+'</div>'+
-    '<div class="legend">tokenId <code>#'+t.tokenId+'</code> · costo base '+eur(t.paid)+' · tetto '+eur(resaleCap(t.paid))+'</div><div class="step">'+a+'</div></div>';}
+    '<div class="legend">tokenId <code>#'+t.tokenId+'</code> · costo base '+eur(t.paid)+' · tetto '+eur(resaleCap(t.paid))+(t.fidelity?' · <b>Fidelity '+(t.used||0)+'/'+t.uses+' usati</b>':'')+'</div><div class="step">'+a+'</div></div>';}
 
 function clienteView(){
   if(state.checkin){var t=state.tickets.find(function(x){return x.id===state.checkin});
