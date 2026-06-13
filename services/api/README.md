@@ -10,6 +10,12 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   split 0,5/0,5, tetto +5%, fee 25%, limite 2/evento, in **centesimi interi** per rispecchiare
   1:1 la matematica dei contratti (test in `rules.test.ts`). È la sorgente unica che evita
   derive tra on-chain e off-chain.
+- **Servizio applicativo** ([`src/services/ticketing.ts`](./src/services/ticketing.ts)): i flussi
+  dei 4 profili — acquisto primario (limite 2/evento), rivendita (tetto +5%), escrow P2P
+  (`createTransfer`/`acceptTransfer`/`reclaimTransfer`), validazione (5 esiti, incl. escrow→accesso negato)
+  ed export (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
+- **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify): account, eventi, acquisto,
+  biglietti, trasferimenti, validazione, export. Testata via `inject` (`server.test.ts`).
 
 ## Comandi
 ```bash
@@ -18,9 +24,10 @@ pnpm --filter @tinft/api test
 ```
 
 ## Prossimi step M6
-- Attivazione runtime: `PrismaClient` + PostgreSQL (docker-compose), migrazioni.
-- API REST per i 4 profili (eventi, biglietti, trasferimenti, account) sopra al modello dati.
-- Job: `pagamento→mint` e settlement escrow (si aggancia ai contratti M1–M5).
-- Integrazione CI con un servizio Postgres per i test e2e.
+- Persistenza reale: adapter **Prisma + PostgreSQL** dietro la stessa interfaccia dati
+  (lo store in-memory resta per i test), migrazioni, docker-compose, Postgres in CI per gli e2e.
+- Autenticazione/ruoli sulle route (cliente/organizzatore/validatore/piattaforma).
+- Job `pagamento→mint` e settlement escrow agganciati ai contratti M1–M5 (M7).
 
-Stack previsto: NestJS + Prisma + Redis/BullMQ (cfr. README di progetto).
+> Nota: per il runtime HTTP si è scelto **Fastify** (leggero, testabile via `inject` senza
+> rete/DB → CI affidabile). Resta compatibile con l'evoluzione verso una struttura più ricca.

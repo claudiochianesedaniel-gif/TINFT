@@ -5,8 +5,12 @@
   "type": "module",
   "description": "TINFT backend API (eventi, biglietti, trasferimenti, account) — M6+",
   "scripts": {
+    "dev": "node --experimental-strip-types src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^5.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
