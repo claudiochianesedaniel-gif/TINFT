@@ -55,11 +55,37 @@
 <script>
 "use strict";
 var $=function(i){return document.getElementById(i)};
-var ctx={role:'organizzatore',orgId:null,clientId:null,clubId:null};
+var ctx={role:'organizzatore',orgId:null,clientId:null,clubId:null,mock:false};
 var eur=function(c){return '€ '+((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 function base(){return $('api').value.replace(/\/$/,'')}
 function toast(m,e){var t=$('toast');t.innerHTML='<div class="toast'+(e?' err':'')+'">'+m+'</div>';clearTimeout(window.__t);window.__t=setTimeout(function(){t.innerHTML=''},3000)}
+// Store MOCK in-memory: usato quando l'API non è raggiungibile → l'app funziona anche offline (mai vuota).
+var MOCK={seq:100,tokenSeq:0,
+  clubs:[{id:'c1',organizerId:'org',name:'Club Astra',city:'Milano',fidelityPriceCents:12000,fidelityUses:5},{id:'c2',organizerId:'org',name:'Magazzino Generali',city:'Milano',fidelityPriceCents:9000,fidelityUses:4}],
+  events:[{id:'e1',clubId:'c1',title:'Notte Elettronica · Vol.4',date:'21 GIU',priceCents:3150,capacity:500,sold:312},{id:'e2',clubId:'c1',title:'Blue Room · Jazz',date:'03 LUG',priceCents:2400,capacity:200,sold:36},{id:'e3',clubId:'c2',title:'Opening Night',date:'28 GIU',priceCents:2800,capacity:300,sold:120}],
+  accounts:{},tickets:[]};
+function mid(p){return p+(++MOCK.seq)}
+function mockApi(path,method,body){
+  body=body||{};var R=function(d){return Promise.resolve(d)};
+  if(path==='/accounts'&&method==='POST'){var a={id:mid('acc'),role:body.role||'CLIENTE',nome:body.nome,cognome:body.cognome,email:body.email};MOCK.accounts[a.id]=a;return R(a)}
+  if(path==='/register'&&method==='POST'){var a2={id:mid('acc'),role:'CLIENTE',nome:body.nome,cognome:body.cognome,email:body.email,cf:body.cf,cfHash:'0xMOCKHASH',verified:true};MOCK.accounts[a2.id]=a2;return R(a2)}
+  if(path==='/clubs'&&method==='GET')return R(MOCK.clubs);
+  if(path==='/clubs'&&method==='POST'){var c={id:mid('club'),organizerId:body.organizerId,name:body.name,city:body.city||'—',fidelityPriceCents:body.fidelityPriceCents||0,fidelityUses:body.fidelityUses||0};MOCK.clubs.push(c);return R(c)}
+  var mE=path.match(/^\/clubs\/([^/]+)\/events$/);
+  if(mE&&method==='GET')return R(MOCK.events.filter(function(e){return e.clubId===mE[1]}));
+  if(mE&&method==='POST'){var ev={id:mid('evt'),clubId:mE[1],title:body.title,date:body.date,priceCents:body.priceCents,capacity:body.capacity,sold:0};MOCK.events.push(ev);return R(ev)}
+  var mF=path.match(/^\/clubs\/([^/]+)\/fidelity$/);
+  if(mF&&method==='POST'){var cl=MOCK.clubs.find(function(x){return x.id===mF[1]})||{};var ft={id:mid('tkt'),tokenId:++MOCK.tokenSeq,kind:'FIDELITY',clubId:mF[1],title:'Fidelity · '+(cl.name||''),ownerId:body.buyerId,originalPriceCents:cl.fidelityPriceCents||0,paidCents:cl.fidelityPriceCents||0,status:'ACTIVE',uses:cl.fidelityUses||0,used:0};MOCK.tickets.push(ft);return R(ft)}
+  var mP=path.match(/^\/events\/([^/]+)\/purchase$/);
+  if(mP&&method==='POST'){var e3=MOCK.events.find(function(x){return x.id===mP[1]})||{};e3.sold=(e3.sold||0)+1;var tk={id:mid('tkt'),tokenId:++MOCK.tokenSeq,kind:'EVENT',clubId:e3.clubId,eventId:mP[1],title:e3.title||'',ownerId:body.buyerId,originalPriceCents:e3.priceCents||0,paidCents:e3.priceCents||0,status:'ACTIVE'};MOCK.tickets.push(tk);return R(tk)}
+  var mT=path.match(/^\/accounts\/([^/]+)\/tickets$/);
+  if(mT&&method==='GET')return R(MOCK.tickets.filter(function(t){return t.ownerId===mT[1]}));
+  var mV=path.match(/^\/tickets\/([^/]+)\/validate$/);
+  if(mV&&method==='POST'){var t2=MOCK.tickets.find(function(x){return x.id===mV[1]});var out='FAKE';if(t2){if(t2.status==='USED')out='DUPLICATE';else{out='VALID';if(t2.kind==='FIDELITY'){t2.used=(t2.used||0)+1;if(t2.used>=t2.uses)t2.status='USED'}else t2.status='USED'}}return R({outcome:out})}
+  return Promise.reject(new Error('mock: '+method+' '+path+' non gestito'));
+}
 async function api(path,method,body){
+  if(ctx.mock)return mockApi(path,method||'GET',body);
   var r=await fetch(base()+path,{method:method||'GET',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
   var j=await r.json().catch(function(){return {}});
   if(!r.ok)throw new Error(j.message||('HTTP '+r.status));
@@ -69,13 +95,14 @@ function setDot(s,msg){$('dot').className='dot '+(s?'ok':'err');if(msg)toast(msg
 
 async function init(){
   $('content').innerHTML='<div class="muted">Connessione all\'API…</div>';
+  try{ await api('/clubs'); ctx.mock=false; }catch(e){ ctx.mock=true; }
   try{
     var org=await api('/accounts','POST',{role:'ORGANIZER',nome:'Club',cognome:'Owner',email:'org'+Date.now()+'@tinft.io'});
     ctx.orgId=org.id;
     var cli=await api('/register','POST',{nome:'Marco',cognome:'Bianchi',email:'cli'+Date.now()+'@email.it',cf:'CF'+Date.now(),dateOfBirth:'1990-01-01',address:'Via Roma 1',city:'Milano',province:'MI'});
     ctx.clientId=cli.id;
-    setDot(true);toast('Connesso · org+cliente creati nel backend');
-  }catch(e){setDot(false);$('content').innerHTML='<div class="card">⚠️ API non raggiungibile a <code>'+base()+'</code>.<br><div class="muted" style="margin-top:8px">Avvia il backend: <code>pnpm --filter @tinft/api dev</code> poi premi Connetti.</div></div>';return}
+    setDot(true);toast(ctx.mock?'Modalità DEMO offline · dati locali (avvia l\'API per i dati reali)':'Connesso · dati reali dal backend');
+  }catch(e){setDot(false);$('content').innerHTML='<div class="card">Errore init: '+e.message+'</div>';return}
   render();
 }
 function setRole(r){ctx.role=r;ctx.clubId=null;document.querySelectorAll('.tab').forEach(function(el){el.classList.toggle('on',el.dataset.r===r)});render()}
