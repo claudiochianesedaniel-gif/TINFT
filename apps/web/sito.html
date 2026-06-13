@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Biglietti NFT nominativi</title>
+<style>
+  :root{
+    --bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);
+    --border:oklch(0.26 0.02 265);--txt:oklch(0.96 0.005 262);--mut:oklch(0.64 0.02 265);
+    --acc:oklch(0.66 0.17 264);--acc2:oklch(0.52 0.15 264);--ok:oklch(0.74 0.16 158);--gold:oklch(0.8 0.13 75);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600;letter-spacing:-.02em}
+  a{color:inherit;text-decoration:none}
+  .kicker{font-family:ui-monospace,'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--acc);text-transform:uppercase}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  /* nav */
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:oklch(0.08 0.01 265/.7);border-bottom:1px solid var(--border)}
+  .navin{display:flex;align-items:center;gap:14px;height:62px}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700}
+  nav b{font-family:'Space Grotesk';font-size:16px}
+  .nlinks{margin-left:auto;display:flex;gap:22px;align-items:center}
+  .nlinks a{font-size:14px;color:var(--mut)}.nlinks a:hover{color:var(--txt)}
+  .wallet{font-size:12px;color:var(--mut);border:1px solid var(--border);border-radius:99px;padding:6px 12px}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:12px;padding:12px 18px;font-size:14px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));transition:transform .05s}
+  button:active{transform:scale(.98)}
+  button.ghost{background:var(--surf);color:var(--txt);border:1px solid var(--border)}
+  button.sm{padding:9px 13px;font-size:13px}
+  /* hero */
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+  .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(900px 500px at 75% -20%,oklch(0.34 0.16 285/.6),transparent),radial-gradient(700px 400px at 10% 10%,oklch(0.28 0.12 200/.35),transparent);pointer-events:none}
+  .heroin{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:72px 0 80px}
+  .hero h1{font-size:46px;line-height:1.05}
+  .hero p{color:var(--mut);font-size:17px;margin:18px 0 26px;max-width:34ch}
+  .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+  .chip{font-size:12px;color:var(--mut);border:1px solid var(--border);border-radius:99px;padding:6px 12px;background:var(--surf2)}
+  /* ticket mock */
+  .tk{background:linear-gradient(160deg,oklch(0.2 0.05 285),oklch(0.13 0.02 265));border:1px solid oklch(0.4 0.1 264);border-radius:22px;padding:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);transform:rotate(2deg)}
+  .tk .art{height:120px;border-radius:14px;background:linear-gradient(135deg,oklch(0.5 0.17 264),oklch(0.3 0.1 285));position:relative;overflow:hidden}
+  .tk .art .b{position:absolute;top:10px;left:10px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.12em;background:rgba(0,0,0,.45);padding:4px 9px;border-radius:99px}
+  .tk .nm{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+  .tk .qr{display:grid;grid-template-columns:repeat(9,7px);grid-template-rows:repeat(9,7px);background:#fff;padding:5px;border-radius:7px}
+  .tk .qr i{width:7px;height:7px}
+  /* sections */
+  section{padding:64px 0;border-bottom:1px solid var(--border)}
+  .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .fc{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:18px}
+  .fc .i{font-size:20px}.fc h3{font-size:15px;margin:10px 0 6px}.fc p{font-size:13px;color:var(--mut)}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+  .stp{background:var(--surf2);border:1px solid var(--border);border-radius:16px;padding:20px}
+  .stp .n{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Space Grotesk';margin-bottom:12px}
+  .evgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+  .ev{background:var(--surf);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .ev .art{height:120px;position:relative}
+  .ev .b{position:absolute;top:10px;left:10px;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.1em;background:rgba(0,0,0,.45);padding:4px 9px;border-radius:99px}
+  .ev .bd{padding:15px}.ev .bd .t{font-weight:600}.ev .bd .m{font-size:12px;color:var(--mut)}
+  .ev .row{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+  .price{font-family:'Space Grotesk';font-weight:600}
+  .orgcta{display:flex;justify-content:space-between;align-items:center;gap:20px;background:linear-gradient(135deg,oklch(0.22 0.07 264),oklch(0.14 0.03 280));border:1px solid oklch(0.4 0.12 264);border-radius:20px;padding:26px}
+  footer{padding:36px 0;color:var(--mut);font-size:13px}
+  .h2c{text-align:center;max-width:46ch;margin:0 auto}
+  /* overlay */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+  .ov.on{display:flex}
+  .modal{width:420px;max-width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:22px}
+  .input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:11px;padding:12px;color:var(--txt);font-size:14px;margin-top:7px}
+  label{font-size:12px;color:var(--mut)}
+  .pill{display:inline-block;font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border);color:var(--ok)}
+  @media(max-width:780px){.heroin{grid-template-columns:1fr;padding:48px 0}.hero h1{font-size:34px}.feat{grid-template-columns:1fr 1fr}.steps,.evgrid{grid-template-columns:1fr}.nlinks a{display:none}}
+</style>
+</head>
+<body>
+<nav><div class="wrap navin"><div class="logo">◆</div><b>TINFT</b>
+  <div class="nlinks"><a href="#come">Come funziona</a><a href="#eventi">Eventi</a><a href="#org">Organizzatori</a>
+    <span class="wallet" id="wallet">Wallet · 0 biglietti</span><button class="sm" onclick="alert('Demo: registrazione SPID simulata. Vai su un evento e premi Acquista.')">Crea account</button></div></div></nav>
+
+<header class="hero"><div class="wrap heroin">
+  <div>
+    <div class="kicker">Biglietteria NFT · tutto in app</div>
+    <h1>Il biglietto è tuo. <br>Davvero.</h1>
+    <p>Biglietti <b>NFT nominativi</b> su L2. Niente bagarini, niente screenshot: QR che ruota ogni 5s, rivendita con tetto <b>+5%</b> e royalty <b>1%</b> all'organizzatore, tutto enforced on-chain. Acquisti in euro, senza seed né gas.</p>
+    <div class="cta"><button onclick="scrollTo2('#eventi')">Scopri gli eventi</button><a href="#come"><button class="ghost">Come funziona</button></a></div>
+    <div class="chips"><span class="chip">◆ NFT nominativo</span><span class="chip">↻ QR anti-screenshot</span><span class="chip">SPID</span><span class="chip">niente seed/gas</span></div>
+  </div>
+  <div class="tk">
+    <div class="art"><span class="b">TICKET NFT · #1042</span></div>
+    <div class="nm"><div><div style="font-weight:600">Notte Elettronica · Vol.4</div><div style="font-size:12px;color:var(--mut)">Club Astra · 21 GIU</div></div>
+      <div class="qr" id="heroqr"></div></div>
+  </div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="feat">
+    <div class="fc"><div class="i">🔒</div><h3>Anti-bagarinaggio</h3><p>Rivendita solo via TINFT, tetto +5% e max 2 biglietti per evento per identità.</p></div>
+    <div class="fc"><div class="i">💸</div><h3>Royalty 1% enforced</h3><p>0,5% TINFT + 0,5% organizzatore su ogni rivendita, garantita on-chain.</p></div>
+    <div class="fc"><div class="i">📱</div><h3>Tutto in app</h3><p>Acquisto, validazione e trasferimento solo dallo smartphone. QR che ruota ogni 5s.</p></div>
+    <div class="fc"><div class="i">🪪</div><h3>SPID + custodial</h3><p>Identità verificata, wallet senza seed né gas. Paghi in euro.</p></div>
+  </div>
+</div></section>
+
+<section id="come"><div class="wrap">
+  <div class="kicker">Come funziona</div><h2 style="margin-top:8px">Dal sito al tuo wallet</h2>
+  <div class="steps">
+    <div class="stp"><div class="n">1</div><h3>Scegli e paga in euro</h3><p>Niente crypto: carta o Apple Pay. Intesti il biglietto a te (SPID).</p></div>
+    <div class="stp"><div class="n">2</div><h3>Il biglietto arriva nel wallet</h3><p>Coniato come NFT nominativo sul tuo wallet custodial. Nessun seed da gestire.</p></div>
+    <div class="stp"><div class="n">3</div><h3>Entri con il QR rotante</h3><p>All'ingresso mostri il codice che ruota ogni 5s. Dopo l'evento resta come collectible.</p></div>
+  </div>
+</div></section>
+
+<section id="eventi"><div class="wrap">
+  <div class="kicker">In evidenza</div><h2 style="margin-top:8px">Eventi disponibili</h2>
+  <div class="evgrid" id="evgrid"></div>
+</div></section>
+
+<section id="org"><div class="wrap">
+  <div class="orgcta">
+    <div><div class="kicker">Per gli organizzatori</div><h2 style="margin-top:8px;font-size:24px">Crea club, emetti biglietti, incassa</h2>
+      <p style="color:var(--mut);margin-top:8px;max-width:48ch">Dashboard per gestire più club ed eventi, royalty del secondario, accessi live e Fidelity per club. Apri la WebApp <code>demo.html</code>.</p></div>
+    <button class="ghost" onclick="alert('Apri apps/web/demo.html (WebApp) e scegli il profilo Organizzatore.')">Vai alla console →</button>
+  </div>
+</div></section>
+
+<footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div>© TINFT · demo</div><div>Biglietti NFT nominativi · royalty 1% · tetto +5% · SPID</div></div></footer>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<script>
+"use strict";
+var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
+var EVENTS=[
+  {id:'e1',club:'Club Astra',title:'Notte Elettronica · Vol.4',date:'21 GIU',price:3150,art:'linear-gradient(135deg,oklch(0.5 0.17 264),oklch(0.3 0.1 285))'},
+  {id:'e2',club:'Club Astra',title:'Blue Room · Jazz',date:'03 LUG',price:2400,art:'linear-gradient(135deg,oklch(0.5 0.13 200),oklch(0.3 0.09 235))'},
+  {id:'e3',club:'Magazzino Generali',title:'Opening Night',date:'28 GIU',price:2800,art:'linear-gradient(135deg,oklch(0.5 0.13 320),oklch(0.32 0.09 350))'}
+];
+var wallet=0, tokenSeq=1041;
+var $=function(i){return document.getElementById(i)};
+function scrollTo2(s){var el=document.querySelector(s);if(el)el.scrollIntoView({behavior:'smooth'})}
+function qr(seed,n){var x=(seed*2654435761)%4294967296,o='';function rnd(){x=(x*1103515245+12345)&0x7fffffff;return(x>>8)/0x7fffff}
+  for(var i=0;i<n*n;i++)o+='<i style="background:'+(rnd()>0.5?'#0a0c12':'#fff')+'"></i>';return o}
+$('heroqr').innerHTML=qr(7,9);
+setInterval(function(){$('heroqr').innerHTML=qr(Math.floor(Date.now()/5000),9)},5000);
+
+function renderEvents(){
+  $('evgrid').innerHTML=EVENTS.map(function(e){
+    return '<div class="ev"><div class="art" style="background:'+e.art+'"><span class="b">TICKET NFT</span></div>'+
+      '<div class="bd"><div class="t">'+e.title+'</div><div class="m">'+e.club+' · '+e.date+'</div>'+
+      '<div class="row"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="checkout(\''+e.id+'\')">Acquista</button></div></div></div>'}).join('');
+}
+function closeOv(){$('ov').classList.remove('on')}
+function checkout(id){
+  var e=EVENTS.find(function(x){return x.id===id});
+  $('modal').innerHTML='<div class="kicker">Acquisto</div><h2 style="margin:6px 0 2px;font-size:20px">'+e.title+'</h2><div class="m" style="color:var(--mut);font-size:13px">'+e.club+' · '+e.date+'</div>'+
+    '<div style="margin-top:16px"><label>Intestatario (SPID)</label><input class="input" id="m_nome" value="Marco Bianchi"></div>'+
+    '<div style="margin-top:12px"><label>Email</label><input class="input" id="m_email" value="marco.b@email.it"></div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><span style="color:var(--mut);font-size:13px">Totale</span><span class="price" style="font-size:18px">'+eur(e.price)+'</span></div>'+
+    '<div style="font-size:11px;color:var(--mut);margin-top:6px">Pagamento in euro → biglietto NFT coniato sul tuo wallet custodial.</div>'+
+    '<button style="width:100%;margin-top:14px" onclick="pay(\''+e.id+'\')">Paga '+eur(e.price)+'</button>'+
+    '<button class="ghost sm" style="width:100%;margin-top:8px" onclick="closeOv()">Annulla</button>';
+  $('ov').classList.add('on');
+}
+function pay(id){
+  var e=EVENTS.find(function(x){return x.id===id});
+  wallet++; tokenSeq++;
+  $('wallet').textContent='Wallet · '+wallet+' biglietti';
+  $('modal').innerHTML='<div style="text-align:center;padding:8px 4px"><div style="width:64px;height:64px;border-radius:50%;border:3px solid var(--ok);color:var(--ok);display:flex;align-items:center;justify-content:center;font-size:30px;margin:6px auto 12px">✓</div>'+
+    '<h2 style="font-size:20px">Biglietto depositato nel wallet</h2>'+
+    '<div style="color:var(--mut);font-size:13px;margin-top:8px">'+e.title+'<br>tokenId <code>#'+tokenSeq+'</code> · intestato a Marco Bianchi</div>'+
+    '<span class="pill" style="margin-top:14px">NFT nominativo · QR rotante in app</span>'+
+    '<button style="width:100%;margin-top:16px" onclick="closeOv()">Fatto</button></div>';
+}
+$('ov').onclick=function(ev){if(ev.target===$('ov'))closeOv()};
+renderEvents();
+</script>
+</body>
+</html>
