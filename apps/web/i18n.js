@@ -35,7 +35,9 @@
       // etichette tile
       tl_revtot:"Ricavi totali", tl_comm5:"Commissioni 5%", tl_roy:"Royalty 1% (0,5/0,5)", tl_exitfee:"Fee export 25%", tl_validated:"Accessi validati", tl_clubs:"Club", tl_events:"Eventi", tl_sold:"Biglietti venduti", tl_gross:"Incasso lordo", tl_royo:"Royalty P2P (org 0,5%)", tl_tickets:"Biglietti", tl_active:"Attivi", tl_collect:"Collectible", tl_fid:"Fidelity", tl_venduti:"Venduti", tl_incasso:"Incasso", tl_activetk:"Biglietti attivi", tl_used:"Usati/collectible",
       // varie
-      m_allclubs:"← Tutti i club", m_buyfid:"Acquista Fidelity", m_fidclub:"FIDELITY DEL CLUB", m_vetrina:"IN VETRINA", m_backtk:"← Torna ai biglietti"
+      m_allclubs:"← Tutti i club", m_buyfid:"Acquista Fidelity", m_fidclub:"FIDELITY DEL CLUB", m_vetrina:"IN VETRINA", m_backtk:"← Torna ai biglietti",
+      // app-live (API)
+      al_connect:"Connetti", al_connecting:"Connessione all'API…", al_offline:"Modalità DEMO offline · dati locali (avvia l'API per i dati reali)", al_online:"Connesso · dati reali dal backend", al_err:"Errore", al_enter:"Entra →", al_explore:"Esplora →", al_noclubs:"Nessun club. Creane uno.", al_notickets:"Nessun biglietto ancora.", al_ticket:"Biglietto", al_gate_val:"Varco · validazione", al_val_desc:"Biglietti del cliente da validare (dati reali dal backend).", al_val_none:"Nessun biglietto attivo. Compra qualcosa nel profilo Cliente.", al_validate:"Valida"
     },
     en: {
       brand: "TINFT", reg_title: "Create your account", reg_sub: "Verified identity, all in-app. Plaintext data stays off-chain; on-chain only the hash of the tax code.",
@@ -61,7 +63,8 @@
       h_recent:"Recent events", h_holders:"Holders & community", h_clubevents:"Club events", h_upcoming:"Upcoming events", h_clubs:"Clubs",
       k_news:"What's new", k_sales7:"Sales · 7 days", k_incassi:"Revenue", k_scan:"Gate scan", k_lastentries:"Last entries",
       tl_revtot:"Total revenue", tl_comm5:"5% commissions", tl_roy:"Royalty 1% (0.5/0.5)", tl_exitfee:"Export fee 25%", tl_validated:"Validated entries", tl_clubs:"Clubs", tl_events:"Events", tl_sold:"Tickets sold", tl_gross:"Gross revenue", tl_royo:"P2P royalty (org 0.5%)", tl_tickets:"Tickets", tl_active:"Active", tl_collect:"Collectible", tl_fid:"Fidelity", tl_venduti:"Sold", tl_incasso:"Revenue", tl_activetk:"Active tickets", tl_used:"Used/collectible",
-      m_allclubs:"← All clubs", m_buyfid:"Buy Fidelity", m_fidclub:"CLUB FIDELITY", m_vetrina:"FEATURED", m_backtk:"← Back to tickets"
+      m_allclubs:"← All clubs", m_buyfid:"Buy Fidelity", m_fidclub:"CLUB FIDELITY", m_vetrina:"FEATURED", m_backtk:"← Back to tickets",
+      al_connect:"Connect", al_connecting:"Connecting to the API…", al_offline:"Offline DEMO mode · local data (start the API for real data)", al_online:"Connected · real data from the backend", al_err:"Error", al_enter:"Enter →", al_explore:"Explore →", al_noclubs:"No clubs yet. Create one.", al_notickets:"No tickets yet.", al_ticket:"Ticket", al_gate_val:"Gate · validation", al_val_desc:"Customer tickets to validate (real data from the backend).", al_val_none:"No active tickets. Buy something in the Customer profile.", al_validate:"Validate"
     }
   };
 

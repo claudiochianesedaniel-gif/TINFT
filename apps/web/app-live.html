@@ -6,6 +6,7 @@
 <title>TINFT · WebApp (Live API)</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#06070c" />
+<script src="i18n.js"></script>
 <style>
   :root{--bg:#06070c;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);--border:oklch(0.26 0.02 265);
     --txt:oklch(0.96 0.005 262);--mut:oklch(0.62 0.02 265);--acc:oklch(0.66 0.17 264);--acc2:oklch(0.52 0.15 264);--ok:oklch(0.74 0.16 158);--err:oklch(0.72 0.13 25);--gold:oklch(0.8 0.13 75)}
@@ -38,22 +39,34 @@
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--surf);border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:13px;z-index:9;max-width:90vw}
   .toast.err{border-color:oklch(0.5 0.12 25);color:oklch(0.85 0.08 25)}
   .listrow{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}.listrow:last-child{border:none}
+  .lang{display:flex;gap:4px}.lang button{padding:6px 9px;font-size:11px;background:var(--surf2);color:var(--mut);border:1px solid var(--border)}.lang button.on{color:#fff;border-color:oklch(0.45 0.12 264)}
 </style>
 </head>
 <body>
   <div class="bar">
     <div class="logo">◆</div><b style="font-family:'Space Grotesk'">TINFT · Live API</b>
     <div class="tabs">
-      <div class="tab on" data-r="organizzatore">Organizzatore</div>
-      <div class="tab" data-r="cliente">Cliente</div>
-      <div class="tab" data-r="validatore">Validatore</div>
+      <div class="tab on" data-r="organizzatore" data-i18n="p_org">Organizzatore</div>
+      <div class="tab" data-r="cliente" data-i18n="p_cli">Cliente</div>
+      <div class="tab" data-r="validatore" data-i18n="p_val">Validatore</div>
     </div>
-    <div class="api"><span class="dot" id="dot"></span><span class="kicker">API</span><input id="api" value="http://localhost:3001" style="width:200px"><button class="sm ghost" onclick="init()">Connetti</button></div>
+    <div class="api"><div class="lang"><button data-l="it" onclick="setLang('it')">IT</button><button data-l="en" onclick="setLang('en')">EN</button></div><span class="dot" id="dot"></span><span class="kicker">API</span><input id="api" value="http://localhost:3001" style="width:200px"><button class="sm ghost" data-i18n="al_connect" onclick="init()">Connetti</button></div>
   </div>
   <div class="content" id="content"><div class="muted">Connessione…</div></div>
   <div id="toast"></div>
 <script>
 "use strict";
+// i18n self-contained: se i18n.js non c'è (file aperto da solo) usa questo dizionario IT/EN.
+if(typeof window.t!=='function'){
+  var _D={
+    it:{p_org:"Organizzatore",p_cli:"Cliente",p_val:"Validatore",b_newclub:"Crea club",b_newevent:"Crea evento",b_buy:"Acquista",b_soldout:"Esaurito",m_allclubs:"← Tutti i club",m_fidclub:"FIDELITY DEL CLUB",ti_big:"I miei biglietti",ti_club:"Club & Eventi",al_connect:"Connetti",al_connecting:"Connessione all'API…",al_offline:"Modalità DEMO offline · dati locali (avvia l'API per i dati reali)",al_online:"Connesso · dati reali dal backend",al_err:"Errore",al_enter:"Entra →",al_explore:"Esplora →",al_noclubs:"Nessun club. Creane uno.",al_notickets:"Nessun biglietto ancora.",al_ticket:"Biglietto",al_gate_val:"Varco · validazione",al_val_desc:"Biglietti del cliente da validare (dati reali dal backend).",al_val_none:"Nessun biglietto attivo. Compra qualcosa nel profilo Cliente.",al_validate:"Valida"},
+    en:{p_org:"Organizer",p_cli:"Customer",p_val:"Validator",b_newclub:"Create club",b_newevent:"Create event",b_buy:"Buy",b_soldout:"Sold out",m_allclubs:"← All clubs",m_fidclub:"CLUB FIDELITY",ti_big:"My tickets",ti_club:"Clubs & Events",al_connect:"Connect",al_connecting:"Connecting to the API…",al_offline:"Offline DEMO mode · local data (start the API for real data)",al_online:"Connected · real data from the backend",al_err:"Error",al_enter:"Enter →",al_explore:"Explore →",al_noclubs:"No clubs yet. Create one.",al_notickets:"No tickets yet.",al_ticket:"Ticket",al_gate_val:"Gate · validation",al_val_desc:"Customer tickets to validate (real data from the backend).",al_val_none:"No active tickets. Buy something in the Customer profile.",al_validate:"Validate"}
+  };
+  try{window.tinftLang=localStorage.getItem("tinft_lang")||"it"}catch(e){window.tinftLang="it"}
+  window.t=function(k){var d=_D[window.tinftLang]||_D.it;return k in d?d[k]:(_D.it[k]||k)};
+  window.setLang=function(l){window.tinftLang=_D[l]?l:"it";try{localStorage.setItem("tinft_lang",window.tinftLang)}catch(e){}if(typeof window.onLangChange==="function")window.onLangChange()};
+  window.applyI18n=function(){document.documentElement.lang=window.tinftLang;document.querySelectorAll("[data-i18n]").forEach(function(el){el.textContent=window.t(el.getAttribute("data-i18n"))});document.querySelectorAll(".lang button[data-l]").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-l")===window.tinftLang)})};
+}
 var $=function(i){return document.getElementById(i)};
 var ctx={role:'organizzatore',orgId:null,clientId:null,clubId:null,mock:false};
 var eur=function(c){return '€ '+((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
@@ -94,15 +107,15 @@ async function api(path,method,body){
 function setDot(s,msg){$('dot').className='dot '+(s?'ok':'err');if(msg)toast(msg,!s)}
 
 async function init(){
-  $('content').innerHTML='<div class="muted">Connessione all\'API…</div>';
+  $('content').innerHTML='<div class="muted">'+window.t('al_connecting')+'</div>';
   try{ await api('/clubs'); ctx.mock=false; }catch(e){ ctx.mock=true; }
   try{
     var org=await api('/accounts','POST',{role:'ORGANIZER',nome:'Club',cognome:'Owner',email:'org'+Date.now()+'@tinft.io'});
     ctx.orgId=org.id;
     var cli=await api('/register','POST',{nome:'Marco',cognome:'Bianchi',email:'cli'+Date.now()+'@email.it',cf:'CF'+Date.now(),dateOfBirth:'1990-01-01',address:'Via Roma 1',city:'Milano',province:'MI'});
     ctx.clientId=cli.id;
-    setDot(true);toast(ctx.mock?'Modalità DEMO offline · dati locali (avvia l\'API per i dati reali)':'Connesso · dati reali dal backend');
-  }catch(e){setDot(false);$('content').innerHTML='<div class="card">Errore init: '+e.message+'</div>';return}
+    setDot(true);toast(ctx.mock?window.t('al_offline'):window.t('al_online'));
+  }catch(e){setDot(false);$('content').innerHTML='<div class="card">'+window.t('al_err')+': '+e.message+'</div>';return}
   render();
 }
 function setRole(r){ctx.role=r;ctx.clubId=null;document.querySelectorAll('.tab').forEach(function(el){el.classList.toggle('on',el.dataset.r===r)});render()}
@@ -120,14 +133,14 @@ async function renderOrg(){
   if(ctx.clubId){
     var clubs=await api('/clubs');var club=clubs.find(function(x){return x.id===ctx.clubId});
     var evs=await api('/clubs/'+ctx.clubId+'/events');
-    c.innerHTML='<div class="crumb" onclick="ctx.clubId=null;render()">← Tutti i club</div><h2>'+club.name+'</h2><div class="muted">'+club.city+(club.fidelityUses>0?' · Fidelity '+club.fidelityUses+' ingressi · '+eur(club.fidelityPriceCents):'')+'</div>'+
-      '<div class="card" style="margin:14px 0"><div class="kicker">Crea evento</div><div class="formgrid"><input id="et" placeholder="Titolo"><input id="ed" placeholder="Data (es. 21 GIU)"><input id="ep" placeholder="Prezzo € (es. 31,50)"><input id="ec" placeholder="Capienza"></div><button style="margin-top:10px" onclick="oCreateEvent()">Crea evento</button></div>'+
+    c.innerHTML='<div class="crumb" onclick="ctx.clubId=null;render()">'+window.t('m_allclubs')+'</div><h2>'+club.name+'</h2><div class="muted">'+club.city+(club.fidelityUses>0?' · Fidelity '+club.fidelityUses+' ingressi · '+eur(club.fidelityPriceCents):'')+'</div>'+
+      '<div class="card" style="margin:14px 0"><div class="kicker">'+window.t('b_newevent')+'</div><div class="formgrid"><input id="et" placeholder="Titolo"><input id="ed" placeholder="Data (es. 21 GIU)"><input id="ep" placeholder="Prezzo € (es. 31,50)"><input id="ec" placeholder="Capienza"></div><button style="margin-top:10px" onclick="oCreateEvent()">'+window.t('b_newevent')+'</button></div>'+
       '<div class="grid">'+evs.map(function(e){return '<div class="card"><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+' · '+eur(e.priceCents)+'</div><div class="muted" style="margin-top:6px">'+e.sold+' / '+e.capacity+' venduti</div></div>'}).join('')+'</div>';
     return;
   }
   var clubs=await api('/clubs');
-  c.innerHTML='<div class="card" style="margin-bottom:14px"><div class="kicker">Crea club</div><div class="formgrid"><input id="cn" placeholder="Nome club"><input id="cc" placeholder="Città"><input id="cfp" placeholder="Prezzo Fidelity € (0=nessuno)"><input id="cfu" placeholder="Ingressi Fidelity"></div><button style="margin-top:10px" onclick="oCreateClub()">Crea club</button></div>'+
-    '<div class="grid">'+(clubs.length?clubs.map(function(c2){return '<div class="card"><div class="row"><div><div style="font-weight:600">'+c2.name+'</div><div class="muted">'+c2.city+'</div></div>'+(c2.fidelityUses>0?'<span class="pill gold">FIDELITY</span>':'')+'</div><button class="sm" style="margin-top:12px" onclick="ctx.clubId=\''+c2.id+'\';render()">Entra →</button></div>'}).join(''):'<div class="muted">Nessun club. Creane uno.</div>')+'</div>';
+  c.innerHTML='<div class="card" style="margin-bottom:14px"><div class="kicker">'+window.t('b_newclub')+'</div><div class="formgrid"><input id="cn" placeholder="Nome club"><input id="cc" placeholder="Città"><input id="cfp" placeholder="Prezzo Fidelity € (0=nessuno)"><input id="cfu" placeholder="Ingressi Fidelity"></div><button style="margin-top:10px" onclick="oCreateClub()">'+window.t('b_newclub')+'</button></div>'+
+    '<div class="grid">'+(clubs.length?clubs.map(function(c2){return '<div class="card"><div class="row"><div><div style="font-weight:600">'+c2.name+'</div><div class="muted">'+c2.city+'</div></div>'+(c2.fidelityUses>0?'<span class="pill gold">FIDELITY</span>':'')+'</div><button class="sm" style="margin-top:12px" onclick="ctx.clubId=\''+c2.id+'\';render()">'+window.t('al_enter')+'</button></div>'}).join(''):'<div class="muted">'+window.t('al_noclubs')+'</div>')+'</div>';
 }
 async function oCreateClub(){var p=Math.round(parseFloat(($('cfp').value||'0').replace(',','.'))*100)||0;
   try{await api('/clubs','POST',{organizerId:ctx.orgId,name:$('cn').value.trim(),city:$('cc').value.trim(),fidelityPriceCents:p,fidelityUses:parseInt($('cfu').value||'0',10)||0});toast('Club creato (salvato nel backend)');render()}catch(e){toast(e.message,true)}}
@@ -140,15 +153,15 @@ async function renderCli(){
   if(ctx.clubId){
     var clubs=await api('/clubs');var club=clubs.find(function(x){return x.id===ctx.clubId});
     var evs=await api('/clubs/'+ctx.clubId+'/events');
-    var h='<div class="crumb" onclick="ctx.clubId=null;render()">← Club</div><h2>'+club.name+'</h2>';
-    if(club.fidelityUses>0)h+='<div class="card" style="margin:12px 0;border-color:oklch(0.5 0.12 75)"><div class="row"><div><span class="pill gold">FIDELITY DEL CLUB</span><div style="margin-top:6px">'+club.fidelityUses+' ingressi · valido sugli eventi del club</div></div><div style="text-align:right"><div class="price">'+eur(club.fidelityPriceCents)+'</div><button class="sm" style="margin-top:6px" onclick="cBuyFid(\''+club.id+'\')">Acquista</button></div></div></div>';
-    h+='<div class="grid">'+evs.map(function(e){return '<div class="card"><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.priceCents)+'</span><button class="sm" onclick="cBuy(\''+e.id+'\')" '+(e.sold>=e.capacity?'disabled':'')+'>'+(e.sold>=e.capacity?'Esaurito':'Acquista')+'</button></div></div>'}).join('')+'</div>';
+    var h='<div class="crumb" onclick="ctx.clubId=null;render()">'+window.t('m_allclubs')+'</div><h2>'+club.name+'</h2>';
+    if(club.fidelityUses>0)h+='<div class="card" style="margin:12px 0;border-color:oklch(0.5 0.12 75)"><div class="row"><div><span class="pill gold">'+window.t('m_fidclub')+'</span><div style="margin-top:6px">'+club.fidelityUses+' ingressi · valido sugli eventi del club</div></div><div style="text-align:right"><div class="price">'+eur(club.fidelityPriceCents)+'</div><button class="sm" style="margin-top:6px" onclick="cBuyFid(\''+club.id+'\')">'+window.t('b_buy')+'</button></div></div></div>';
+    h+='<div class="grid">'+evs.map(function(e){return '<div class="card"><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.priceCents)+'</span><button class="sm" onclick="cBuy(\''+e.id+'\')" '+(e.sold>=e.capacity?'disabled':'')+'>'+(e.sold>=e.capacity?window.t('b_soldout'):window.t('b_buy'))+'</button></div></div>'}).join('')+'</div>';
     c.innerHTML=h;return;
   }
   var clubs=await api('/clubs');var tks=await api('/accounts/'+ctx.clientId+'/tickets');
-  c.innerHTML='<h3 style="margin-bottom:10px">I miei biglietti ('+tks.length+')</h3>'+
-    (tks.length?'<div class="grid" style="margin-bottom:18px">'+tks.map(function(t){return '<div class="card"><div class="row"><div style="font-weight:600">'+(t.kind==='FIDELITY'?'Fidelity':t.title||'Biglietto')+'</div><span class="pill '+(t.status==='ACTIVE'?'ok':'')+'">'+t.status+'</span></div><div class="muted" style="margin-top:6px">tokenId <code>#'+t.tokenId+'</code> · '+eur(t.paidCents)+(t.kind==='FIDELITY'?' · '+(t.used||0)+'/'+t.uses:'')+'</div></div>'}).join('')+'</div>':'<div class="muted" style="margin-bottom:18px">Nessun biglietto ancora.</div>')+
-    '<h3 style="margin-bottom:10px">Club & eventi</h3><div class="grid">'+clubs.map(function(c2){return '<div class="card"><div style="font-weight:600">'+c2.name+'</div><div class="muted">'+c2.city+'</div><button class="sm" style="margin-top:10px" onclick="ctx.clubId=\''+c2.id+'\';render()">Esplora →</button></div>'}).join('')+'</div>';
+  c.innerHTML='<h3 style="margin-bottom:10px">'+window.t('ti_big')+' ('+tks.length+')</h3>'+
+    (tks.length?'<div class="grid" style="margin-bottom:18px">'+tks.map(function(t){return '<div class="card"><div class="row"><div style="font-weight:600">'+(t.kind==='FIDELITY'?'Fidelity':t.title||window.t('al_ticket'))+'</div><span class="pill '+(t.status==='ACTIVE'?'ok':'')+'">'+t.status+'</span></div><div class="muted" style="margin-top:6px">tokenId <code>#'+t.tokenId+'</code> · '+eur(t.paidCents)+(t.kind==='FIDELITY'?' · '+(t.used||0)+'/'+t.uses:'')+'</div></div>'}).join('')+'</div>':'<div class="muted" style="margin-bottom:18px">'+window.t('al_notickets')+'</div>')+
+    '<h3 style="margin-bottom:10px">'+window.t('ti_club')+'</h3><div class="grid">'+clubs.map(function(c2){return '<div class="card"><div style="font-weight:600">'+c2.name+'</div><div class="muted">'+c2.city+'</div><button class="sm" style="margin-top:10px" onclick="ctx.clubId=\''+c2.id+'\';render()">'+window.t('al_explore')+'</button></div>'}).join('')+'</div>';
 }
 async function cBuy(eventId){try{var t=await api('/events/'+eventId+'/purchase','POST',{buyerId:ctx.clientId});toast('Acquistato · tokenId #'+t.tokenId);render()}catch(e){toast(e.message,true)}}
 async function cBuyFid(clubId){try{var t=await api('/clubs/'+clubId+'/fidelity','POST',{buyerId:ctx.clientId});toast('Fidelity acquistata · tokenId #'+t.tokenId);render()}catch(e){toast(e.message,true)}}
@@ -157,12 +170,13 @@ async function cBuyFid(clubId){try{var t=await api('/clubs/'+clubId+'/fidelity',
 async function renderVal(){
   var c=$('content');var tks=await api('/accounts/'+ctx.clientId+'/tickets');
   var act=tks.filter(function(t){return t.status==='ACTIVE'});
-  c.innerHTML='<div class="card" style="max-width:520px"><div class="kicker">Varco · validazione</div><div class="muted" style="margin:8px 0">Biglietti del cliente da validare (dati reali dal backend).</div>'+
-    (act.length?act.map(function(t){return '<div class="listrow"><div><div style="font-weight:600">'+(t.kind==='FIDELITY'?'Fidelity':t.title||'Biglietto')+'</div><div class="muted">tokenId #'+t.tokenId+(t.kind==='FIDELITY'?' · '+(t.used||0)+'/'+t.uses:'')+'</div></div><button class="sm" onclick="vValidate(\''+t.id+'\')">Valida</button></div>'}).join(''):'<div class="muted">Nessun biglietto attivo. Compra qualcosa nel profilo Cliente.</div>')+'</div>';
+  c.innerHTML='<div class="card" style="max-width:520px"><div class="kicker">'+window.t('al_gate_val')+'</div><div class="muted" style="margin:8px 0">'+window.t('al_val_desc')+'</div>'+
+    (act.length?act.map(function(t){return '<div class="listrow"><div><div style="font-weight:600">'+(t.kind==='FIDELITY'?'Fidelity':t.title||window.t('al_ticket'))+'</div><div class="muted">tokenId #'+t.tokenId+(t.kind==='FIDELITY'?' · '+(t.used||0)+'/'+t.uses:'')+'</div></div><button class="sm" onclick="vValidate(\''+t.id+'\')">'+window.t('al_validate')+'</button></div>'}).join(''):'<div class="muted">'+window.t('al_val_none')+'</div>')+'</div>';
 }
 async function vValidate(id){try{var v=await api('/tickets/'+id+'/validate','POST',{});toast('Esito: '+v.outcome);render()}catch(e){toast(e.message,true)}}
 
-init();
+window.onLangChange=function(){applyI18n();if(ctx.orgId)render()};
+init();applyI18n();
 </script>
 </body>
 </html>
