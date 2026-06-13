@@ -6,6 +6,8 @@
 <title>TINFT · WebApp</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#06070c" />
+<link rel="stylesheet" href="tinft.css" />
+<script src="i18n.js"></script>
 <style>
   :root{
     --bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.13 0.013 265);
@@ -78,10 +80,11 @@
   <aside class="sidebar">
     <div class="brand"><div class="logo">◆</div><div><b>TINFT</b><div>WebApp</div></div></div>
     <div class="seg"><b class="kicker">Profilo</b>
-      <div class="role on" data-r="organizzatore"><span class="ic">⬢</span> Organizzatore</div>
-      <div class="role" data-r="cliente"><span class="ic">◆</span> Cliente</div>
-      <div class="role" data-r="validatore"><span class="ic">✓</span> Validatore</div>
+      <div class="role on" data-r="organizzatore"><span class="ic">⬢</span> <span data-i18n="p_org">Organizzatore</span></div>
+      <div class="role" data-r="cliente"><span class="ic">◆</span> <span data-i18n="p_cli">Cliente</span></div>
+      <div class="role" data-r="validatore"><span class="ic">✓</span> <span data-i18n="p_val">Validatore</span></div>
     </div>
+    <div class="lang" style="margin:6px 4px;width:max-content"><button data-l="it" onclick="setLang('it')">IT</button><button data-l="en" onclick="setLang('en')">EN</button></div>
     <div class="nav" id="nav"></div>
     <div class="side-foot">Demo autonoma · regole reali (royalty 1% 0,5/0,5 · tetto +5% · 2/evento · fee 25%). Logica = <code>rules.ts</code> + contratti M1–M5.</div>
   </aside>
@@ -309,14 +312,14 @@ function valAccessi(){
 }
 
 // nav per profilo
-var NAV={organizzatore:[['dash','Dashboard'],['club','Club & Eventi']],cliente:[['esplora','Esplora'],['biglietti','I miei biglietti']],validatore:[['scan','Scansione'],['accessi','Accessi']]};
+var NAV={organizzatore:[['dash','n_dash'],['club','n_club']],cliente:[['esplora','n_esplora'],['biglietti','n_biglietti']],validatore:[['scan','n_scan'],['accessi','n_accessi']]};
 var TITLES={dash:['Dashboard','Panoramica di tutti i club'],club:['Club & Eventi','Crea club ed eventi'],clubDetail:['Club','Gestisci eventi del club'],esplora:['Esplora','Club ed eventi disponibili'],biglietti:['I miei biglietti','Wallet e azioni'],scan:['Scansione','Controllo accessi al varco'],accessi:['Accessi','Riepilogo validazioni']};
 
 function render(){
   if(window.__qr){clearInterval(window.__qr);window.__qr=null}
   document.querySelectorAll('.role').forEach(function(el){el.classList.toggle('on',el.dataset.r===state.role)});
   var nav=NAV[state.role];
-  $('nav').innerHTML=nav.map(function(n){return '<div class="navi'+(state.page===n[0]||(n[0]==='club'&&state.page==='clubDetail')?' on':'')+'" data-pg="'+n[0]+'">'+n[1]+'</div>'}).join('');
+  $('nav').innerHTML=nav.map(function(n){return '<div class="navi'+(state.page===n[0]||(n[0]==='club'&&state.page==='clubDetail')?' on':'')+'" data-pg="'+n[0]+'">'+t(n[1])+'</div>'}).join('');
   $('nav').querySelectorAll('.navi').forEach(function(el){el.onclick=function(){state.page=el.dataset.pg;state.clubId=null;state.checkin=null;render()}});
   var tk=TITLES[state.page]||['',''];$('ttl').textContent=tk[0];$('sub').textContent=tk[1];
   var L=state.ledger,tot=L.prim+L.royT+L.royO+L.exit,tr;
@@ -338,7 +341,8 @@ function render(){
 document.querySelectorAll('.role').forEach(function(el){el.onclick=function(){state.role=el.dataset.r;state.page=NAV[el.dataset.r][0][0];state.clubId=null;state.checkin=null;state.scan=null;render()}});
 function tick(){var now=Date.now(),sale=false;state.tickets.forEach(function(t){if(t.status==='vendita'){sale=true;if(t.expiresAt&&now>=t.expiresAt){t.status='attivo';t.salePrice=null;t.expiresAt=null;toast('Escrow scaduto · tornato al venditore')}}});if(sale&&state.role==='cliente')render()}
 setInterval(tick,1000);
-render();
+window.onLangChange=function(){applyI18n();render()};
+render();applyI18n();
 </script>
 </body>
 </html>

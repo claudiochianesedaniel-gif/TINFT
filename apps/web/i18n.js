@@ -19,7 +19,10 @@
       // sito pubblico
       nav_how: "Come funziona", nav_events: "Eventi", nav_org: "Organizzatori", nav_account: "Crea account",
       hero_kicker: "Biglietteria NFT · tutto in app", hero_title: "Il biglietto è tuo. Davvero.",
-      hero_cta1: "Scopri gli eventi", hero_cta2: "Come funziona"
+      hero_cta1: "Scopri gli eventi", hero_cta2: "Come funziona",
+      // app chrome
+      p_org: "Organizzatore", p_cli: "Cliente", p_val: "Validatore",
+      n_dash: "Dashboard", n_club: "Club & Eventi", n_esplora: "Esplora", n_biglietti: "I miei biglietti", n_scan: "Scansione", n_accessi: "Accessi"
     },
     en: {
       brand: "TINFT", reg_title: "Create your account", reg_sub: "Verified identity, all in-app. Plaintext data stays off-chain; on-chain only the hash of the tax code.",
@@ -36,7 +39,9 @@
       consent_required: "You must accept data processing to continue.", optional: "optional",
       nav_how: "How it works", nav_events: "Events", nav_org: "Organizers", nav_account: "Sign up",
       hero_kicker: "NFT ticketing · all in-app", hero_title: "The ticket is truly yours.",
-      hero_cta1: "Browse events", hero_cta2: "How it works"
+      hero_cta1: "Browse events", hero_cta2: "How it works",
+      p_org: "Organizer", p_cli: "Customer", p_val: "Validator",
+      n_dash: "Dashboard", n_club: "Clubs & Events", n_esplora: "Explore", n_biglietti: "My tickets", n_scan: "Scan", n_accessi: "Entries"
     }
   };
 
