@@ -1,4 +1,5 @@
 import Fastify, {type FastifyInstance} from "fastify";
+import fastifyCors from "@fastify/cors";
 import {DomainError} from "../domain/models";
 import {MemoryStore} from "../repo/memory";
 import {TicketingService} from "../services/ticketing";
@@ -47,6 +48,7 @@ export function buildServer(
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
   const app = Fastify({logger: false});
+  app.register(fastifyCors, {origin: true}); // consumo dal frontend (webapp/sito)
 
   // cattura il raw body (per la verifica firma webhook Stripe) mantenendo il JSON parsato
   app.addContentTypeParser("application/json", {parseAs: "string"}, (req, payload, done) => {
@@ -85,6 +87,29 @@ export function buildServer(
     const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});
     return ticketing.verifyIdentity(req.body.accountId, identity.cfHash);
   });
+
+  // -------- club & eventi del club (M9)
+  app.post<{Body: {organizerId: string; name: string; city?: string; fidelityPriceCents?: number; fidelityUses?: number}}>(
+    "/clubs",
+    async (req, reply) => reply.status(201).send(ticketing.createClub(req.body))
+  );
+  app.get("/clubs", async () => ticketing.listClubs());
+  app.get<{Params: {id: string}}>("/clubs/:id", async (req) => ticketing.getClub(req.params.id));
+  app.get<{Params: {id: string}}>("/clubs/:id/events", async (req) => {
+    ticketing.getClub(req.params.id);
+    return ticketing.clubEvents(req.params.id);
+  });
+  app.post<{
+    Params: {id: string};
+    Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number};
+  }>("/clubs/:id/events", async (req, reply) => {
+    ticketing.getClub(req.params.id);
+    return reply.status(201).send(ticketing.createEvent({...req.body, clubId: req.params.id}));
+  });
+  app.post<{Params: {id: string}; Body: {buyerId: string}}>(
+    "/clubs/:id/fidelity",
+    async (req, reply) => reply.status(201).send(ticketing.purchaseFidelity(req.params.id, req.body.buyerId))
+  );
 
   // -------- eventi
   app.post<{Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number}}>(

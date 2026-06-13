@@ -1,6 +1,7 @@
 import {
   type Account,
   type AccountRole,
+  type Club,
   DomainError,
   type Event,
   type EventType,
@@ -54,6 +55,7 @@ export class TicketingService {
   // -------------------------------------------------------------- eventi
   createEvent(input: {
     organizerId: string;
+    clubId?: string;
     title: string;
     venue: string;
     date: string;
@@ -68,6 +70,7 @@ export class TicketingService {
     const event: Event = {
       id: this.store.id("evt"),
       organizerId: input.organizerId,
+      clubId: input.clubId,
       title: input.title,
       venue: input.venue,
       date: input.date,
@@ -89,6 +92,61 @@ export class TicketingService {
     const e = this.store.events.get(id);
     if (!e) throw NotFound("evento");
     return e;
+  }
+
+  // -------------------------------------------------------------- club (M9)
+  createClub(input: {organizerId: string; name: string; city?: string; fidelityPriceCents?: number; fidelityUses?: number}): Club {
+    this.getAccount(input.organizerId);
+    if (!input.name.trim()) throw new DomainError("INVALID_CLUB", "nome club obbligatorio");
+    const club: Club = {
+      id: this.store.id("club"),
+      organizerId: input.organizerId,
+      name: input.name,
+      city: input.city ?? "—",
+      fidelityPriceCents: input.fidelityPriceCents ?? 0,
+      fidelityUses: input.fidelityUses ?? 0
+    };
+    this.store.clubs.set(club.id, club);
+    return club;
+  }
+
+  listClubs(): Club[] {
+    return [...this.store.clubs.values()];
+  }
+
+  getClub(id: string): Club {
+    const c = this.store.clubs.get(id);
+    if (!c) throw NotFound("club");
+    return c;
+  }
+
+  clubEvents(clubId: string): Event[] {
+    return [...this.store.events.values()].filter((e) => e.clubId === clubId);
+  }
+
+  /** Acquisto del Fidelity del club: carnet multi-ingresso valido sugli eventi del club. */
+  purchaseFidelity(clubId: string, buyerId: string): Ticket {
+    const club = this.getClub(clubId);
+    const buyer = this.getAccount(buyerId);
+    if (club.fidelityUses <= 0) throw new DomainError("NO_FIDELITY", "questo club non ha un Fidelity", 409);
+    const ticket: Ticket = {
+      id: this.store.id("tkt"),
+      eventId: "",
+      clubId: club.id,
+      kind: "FIDELITY",
+      ownerId: buyer.id,
+      tokenId: this.store.nextTokenId(),
+      originalPriceCents: club.fidelityPriceCents,
+      paidCents: club.fidelityPriceCents,
+      status: "ACTIVE",
+      exportMode: "NONE",
+      exitFeeCents: 0,
+      holderName: `${buyer.nome} ${buyer.cognome}`,
+      uses: club.fidelityUses,
+      used: 0
+    };
+    this.store.tickets.set(ticket.id, ticket);
+    return ticket;
   }
 
   // ----------------------------------------------------- acquisto primario
@@ -225,7 +283,14 @@ export class TicketingService {
     else if (ticket.status === "USED" || ticket.status === "EXPORTED") outcome = "DUPLICATE";
     else outcome = "VALID";
 
-    if (outcome === "VALID" && ticket) ticket.status = "USED";
+    if (outcome === "VALID" && ticket) {
+      if (ticket.kind === "FIDELITY") {
+        ticket.used = (ticket.used ?? 0) + 1;
+        if ((ticket.used ?? 0) >= (ticket.uses ?? 1)) ticket.status = "USED"; // carnet esaurito
+      } else {
+        ticket.status = "USED";
+      }
+    }
 
     const validation: Validation = {
       id: this.store.id("val"),

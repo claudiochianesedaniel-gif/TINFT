@@ -1,4 +1,4 @@
-import type {Account, Event, Ticket, Transfer, Validation} from "../domain/models";
+import type {Account, Club, Event, Ticket, Transfer, Validation} from "../domain/models";
 import type {Payment} from "../payments/types";
 
 /**
@@ -8,6 +8,7 @@ import type {Payment} from "../payments/types";
  */
 export class MemoryStore {
   readonly accounts = new Map<string, Account>();
+  readonly clubs = new Map<string, Club>();
   readonly events = new Map<string, Event>();
   readonly tickets = new Map<string, Ticket>();
   readonly transfers = new Map<string, Transfer>();

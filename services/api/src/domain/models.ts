@@ -22,9 +22,19 @@ export interface Account {
   goodwill: number;
 }
 
+export interface Club {
+  id: string;
+  organizerId: string;
+  name: string;
+  city: string;
+  fidelityPriceCents: number; // 0 = nessun Fidelity
+  fidelityUses: number; // ingressi del carnet, validi su tutti gli eventi del club
+}
+
 export interface Event {
   id: string;
   organizerId: string;
+  clubId?: string; // il Fidelity è del club; gli eventi appartengono al club
   title: string;
   venue: string;
   date: string;
@@ -47,6 +57,10 @@ export interface Ticket {
   exitFeeCents: number;
   holderName: string;
   txHash?: string; // tx di mint on-chain
+  kind?: "EVENT" | "FIDELITY"; // FIDELITY = carnet del club
+  clubId?: string;
+  uses?: number; // Fidelity: ingressi totali
+  used?: number; // Fidelity: ingressi consumati
 }
 
 export interface Transfer {

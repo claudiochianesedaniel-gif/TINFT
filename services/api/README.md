@@ -14,8 +14,10 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   dei 4 profili — acquisto primario (limite 2/evento), rivendita (tetto +5%), escrow P2P
   (`createTransfer`/`acceptTransfer`/`reclaimTransfer`), validazione (5 esiti, incl. escrow→accesso negato)
   ed export (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
-- **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify): account, eventi, acquisto,
-  biglietti, trasferimenti, validazione, export. Testata via `inject` (`server.test.ts`).
+- **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify, **CORS** abilitato): account,
+  **club ed eventi del club**, **Fidelity del club**, acquisto, biglietti, trasferimenti, validazione,
+  export. Testata via `inject` (`server.test.ts`). Modello: organizzatore → più club → eventi;
+  Fidelity = carnet del club (consumato dalla validazione).
 - **Pagamenti (M7)** ([`src/payments`](./src/payments)): provider PSP-agnostico, checkout in euro e
   **webhook idempotente** che a pagamento riuscito concia il biglietto. Adapter **Stripe reale**
   (`StripeProvider`: `checkout.sessions.create` + verifica firma `constructEvent`, raw body catturato)
