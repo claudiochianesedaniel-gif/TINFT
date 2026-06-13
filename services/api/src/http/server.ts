@@ -120,6 +120,16 @@ export function buildServer(
     return reply.status(201).send(account);
   });
 
+  // GDPR — cancellazione account (right to erasure). Gating admin via token;
+  // in produzione: auth reale + allow-list (cfr. pattern Mindful Trading Club).
+  const adminToken = process.env.ADMIN_TOKEN ?? "dev-admin";
+  app.delete<{Params: {id: string}}>("/accounts/:id", async (req, reply) => {
+    if (req.headers["x-admin-token"] !== adminToken) {
+      return reply.status(403).send({error: "FORBIDDEN", message: "richiede token admin"});
+    }
+    return ticketing.deleteAccount(req.params.id);
+  });
+
   // -------- identità SPID (M8): verifica → lega hash(CF) al wallet
   app.post<{Body: {accountId: string; cf: string; salt?: string}}>("/identity/spid/verify", async (req) => {
     const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});

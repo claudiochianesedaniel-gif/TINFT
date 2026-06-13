@@ -1,0 +1,30 @@
+# TINFT — deploy del frontend statico (apps/web). L'API (Fastify) è un servizio separato.
+# Su Netlify: Base directory = apps/web, Publish directory = apps/web.
+[build]
+  publish = "."
+
+# Header di sicurezza (ispirati alle buone pratiche del progetto MTC)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Alias comodi per le pagine (multi-page statico, niente fallback SPA)
+[[redirects]]
+  from = "/"
+  to = "/sito.html"
+  status = 200
+[[redirects]]
+  from = "/registrazione"
+  to = "/registrazione.html"
+  status = 200
+[[redirects]]
+  from = "/app"
+  to = "/app-live.html"
+  status = 200
+[[redirects]]
+  from = "/demo"
+  to = "/demo.html"
+  status = 200

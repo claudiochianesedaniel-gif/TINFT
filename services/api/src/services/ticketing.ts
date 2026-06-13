@@ -70,6 +70,20 @@ export class TicketingService {
     return account;
   }
 
+  /** GDPR — diritto alla cancellazione: elimina l'account e i suoi biglietti (dati collegati). */
+  deleteAccount(id: string): {deleted: string; tickets: number} {
+    if (!this.store.accounts.get(id)) throw NotFound("account");
+    this.store.accounts.delete(id);
+    let removed = 0;
+    for (const t of [...this.store.tickets.values()]) {
+      if (t.ownerId === id) {
+        this.store.tickets.delete(t.id);
+        removed++;
+      }
+    }
+    return {deleted: id, tickets: removed};
+  }
+
   // -------------------------------------------------------------- eventi
   createEvent(input: {
     organizerId: string;

@@ -133,4 +133,14 @@ describe("API HTTP (Fastify inject)", () => {
     expect(a.address).toBe("Via Roma 1");
     expect(a.province).toBe("MI");
   });
+
+  it("GDPR: admin elimina un account col token; senza token 403; reiterato 404", async () => {
+    const a = (await post("/accounts", {nome: "Da", cognome: "Cancellare", email: "del@e.it"})).json();
+    const noTok = await app.inject({method: "DELETE", url: `/accounts/${a.id}`});
+    expect(noTok.statusCode).toBe(403);
+    const ok = await app.inject({method: "DELETE", url: `/accounts/${a.id}`, headers: {"x-admin-token": "dev-admin"}});
+    expect(ok.statusCode).toBe(200);
+    const again = await app.inject({method: "DELETE", url: `/accounts/${a.id}`, headers: {"x-admin-token": "dev-admin"}});
+    expect(again.statusCode).toBe(404);
+  });
 });

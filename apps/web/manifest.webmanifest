@@ -1,0 +1,16 @@
+{
+  "name": "TINFT — Biglietti NFT",
+  "short_name": "TINFT",
+  "description": "Biglietteria con biglietti-NFT nominativi: acquisto, validazione e trasferimento, tutto in app.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#06070c",
+  "theme_color": "#06070c",
+  "categories": ["shopping", "entertainment"],
+  "lang": "it",
+  "icons": [
+    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

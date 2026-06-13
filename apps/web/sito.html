@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>TINFT · Biglietti NFT nominativi</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#06070c" />
 <style>
   :root{
     --bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);
@@ -70,6 +72,8 @@
   .input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:11px;padding:12px;color:var(--txt);font-size:14px;margin-top:7px}
   label{font-size:12px;color:var(--mut)}
   .pill{display:inline-block;font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border);color:var(--ok)}
+  .cookie{position:fixed;left:16px;right:16px;bottom:16px;z-index:60;display:none;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5);font-size:13px}
+  .cookie.show{display:flex}
   @media(max-width:780px){.heroin{grid-template-columns:1fr;padding:48px 0}.hero h1{font-size:34px}.feat{grid-template-columns:1fr 1fr}.steps,.evgrid{grid-template-columns:1fr}.nlinks a{display:none}}
 </style>
 </head>
@@ -124,9 +128,20 @@
   </div>
 </div></section>
 
+<section id="privacy"><div class="wrap">
+  <div class="kicker">Privacy & GDPR</div><h2 style="margin-top:8px">I tuoi dati, protetti</h2>
+  <div class="feat" style="margin-top:22px">
+    <div class="fc"><div class="i">🔐</div><h3>Dati SPID minimizzati</h3><p>Raccogliamo solo i dati necessari (nome, CF, data di nascita, residenza) per identità e anti-bagarinaggio.</p></div>
+    <div class="fc"><div class="i">⛓️</div><h3>On-chain solo l'hash</h3><p>Il codice fiscale resta cifrato off-chain: on-chain finisce solo <code>keccak256(CF)</code>, non reversibile.</p></div>
+    <div class="fc"><div class="i">🗑️</div><h3>Diritto alla cancellazione</h3><p>Puoi richiedere accesso, rettifica e cancellazione dei dati in ogni momento (GDPR).</p></div>
+    <div class="fc"><div class="i">🍪</div><h3>Cookie tecnici</h3><p>Cookie tecnici essenziali; quelli analitici solo con il tuo consenso.</p></div>
+  </div>
+</div></section>
+
 <footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
   <div>© TINFT · demo</div><div>Biglietti NFT nominativi · royalty 1% · tetto +5% · SPID</div></div></footer>
 
+<div class="cookie" id="cookie"><div>Usiamo cookie tecnici essenziali e, con il tuo consenso, analitici. Vedi <a href="#privacy" style="color:var(--acc)">Privacy</a>.</div><div style="display:flex;gap:8px"><button class="sm" onclick="cookieOk()">Accetta</button><button class="sm ghost" onclick="cookieOk()">Solo tecnici</button></div></div>
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 <script>
 "use strict";
@@ -173,6 +188,8 @@ function pay(id){
     '<button style="width:100%;margin-top:16px" onclick="closeOv()">Fatto</button></div>';
 }
 $('ov').onclick=function(ev){if(ev.target===$('ov'))closeOv()};
+function cookieOk(){try{localStorage.setItem('tinft_cookie','1')}catch(e){}$('cookie').classList.remove('show')}
+try{if(!localStorage.getItem('tinft_cookie'))$('cookie').classList.add('show')}catch(e){}
 renderEvents();
 </script>
 </body>
