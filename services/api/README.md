@@ -20,8 +20,10 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   (`PaymentProvider` + `FakeProvider`), checkout in euro e **webhook idempotente** che a
   pagamento riuscito concia il biglietto. L'adapter Stripe/Nexi reale (firma webhook, SDK) è un innesto.
 - **Wiring on-chain** ([`src/chain`](./src/chain)): `ChainPort` (+ `FakeChain`); al pagamento il
-  webhook esegue il **mint** e salva `tokenId`/`txHash` sul biglietto. Adapter `viem`→`TinftTicket.mint`
-  (testabile su anvil/testnet) come innesto successivo.
+  webhook esegue il **mint** e salva `tokenId`/`txHash` sul biglietto. Adapter **reale `viem`**
+  (`ViemChain`→`TinftTicket.mint`) **verificato con un e2e contro anvil** (`scripts/chain-e2e.sh`:
+  deploy + mint + `ownerOf`). L'API usa il mint reale se sono presenti `CHAIN_RPC_URL` /
+  `CHAIN_PRIVATE_KEY` / `TICKET_ADDRESS`, altrimenti il fake.
 - **Identità SPID (M8, fondamenta)** ([`src/identity`](./src/identity)): `IdentityVerifier`
   (+ `FakeSpid`); `POST /identity/spid/verify` lega `hash(CF)` al wallet (on-chain mai il CF in
   chiaro) e abilita il limite 2/evento. Adapter OIDC reale via aggregatore come innesto.

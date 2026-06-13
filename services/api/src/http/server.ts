@@ -6,7 +6,23 @@ import {FakeProvider, type PaymentProvider} from "../payments/provider";
 import {PaymentsService} from "../payments/service";
 import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
+import {ViemChain} from "../chain/viem";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+
+/** Usa l'adapter on-chain reale (viem) se le variabili d'ambiente sono presenti, altrimenti il fake. */
+function chainFromEnv(): ChainPort | undefined {
+  const rpcUrl = process.env.CHAIN_RPC_URL;
+  const privateKey = process.env.CHAIN_PRIVATE_KEY;
+  const ticketAddress = process.env.TICKET_ADDRESS;
+  if (rpcUrl && privateKey && ticketAddress) {
+    return new ViemChain({
+      rpcUrl,
+      privateKey: privateKey as `0x${string}`,
+      ticketAddress: ticketAddress as `0x${string}`
+    });
+  }
+  return undefined;
+}
 
 /**
  * Costruisce l'app HTTP (Fastify) sopra a TicketingService + PaymentsService
@@ -17,7 +33,7 @@ export function buildServer(
 ): FastifyInstance {
   const store = opts.store ?? new MemoryStore();
   const ticketing = new TicketingService(store);
-  const chain = opts.chain ?? new FakeChain();
+  const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
   const payments = new PaymentsService(store, ticketing, opts.provider ?? new FakeProvider(), chain);
 
