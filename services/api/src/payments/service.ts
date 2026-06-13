@@ -27,11 +27,14 @@ export class PaymentsService {
     private readonly now: () => number = () => Math.floor(Date.now() / 1000)
   ) {}
 
-  createPrimaryCheckout(eventId: string, buyerId: string): {payment: Payment; session: {providerRef: string; url: string}} {
+  async createPrimaryCheckout(
+    eventId: string,
+    buyerId: string
+  ): Promise<{payment: Payment; session: {providerRef: string; url: string}}> {
     const event = this.ticketing.getEvent(eventId);
     if (!this.store.accounts.get(buyerId)) throw NotFound("account");
 
-    const session = this.provider.createCheckout({
+    const session = await this.provider.createCheckout({
       kind: "PRIMARY",
       amountCents: event.priceCents,
       currency: "EUR",
@@ -55,7 +58,9 @@ export class PaymentsService {
 
   /** Ingestione webhook: verifica/normalizza e processa in modo idempotente. */
   async ingestWebhook(rawBody: string, signature?: string): Promise<WebhookResult> {
-    return this.handleWebhook(this.provider.parseWebhook(rawBody, signature));
+    const event = this.provider.parseWebhook(rawBody, signature);
+    if (!event) return {handled: false};
+    return this.handleWebhook(event);
   }
 
   async handleWebhook(event: PspEvent): Promise<WebhookResult> {

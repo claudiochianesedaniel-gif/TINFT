@@ -3,6 +3,7 @@ import {DomainError} from "../domain/models";
 import {MemoryStore} from "../repo/memory";
 import {TicketingService} from "../services/ticketing";
 import {FakeProvider, type PaymentProvider} from "../payments/provider";
+import {StripeProvider} from "../payments/stripe";
 import {PaymentsService} from "../payments/service";
 import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
@@ -24,6 +25,14 @@ function chainFromEnv(): ChainPort | undefined {
   return undefined;
 }
 
+/** Usa l'adapter Stripe reale se le chiavi sono presenti, altrimenti il fake. */
+function providerFromEnv(): PaymentProvider | undefined {
+  const key = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (key && webhookSecret) return new StripeProvider(key, webhookSecret);
+  return undefined;
+}
+
 /**
  * Costruisce l'app HTTP (Fastify) sopra a TicketingService + PaymentsService
  * (store condiviso). Testabile via `app.inject` senza rete né DB.
@@ -35,9 +44,20 @@ export function buildServer(
   const ticketing = new TicketingService(store);
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
-  const payments = new PaymentsService(store, ticketing, opts.provider ?? new FakeProvider(), chain);
+  const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
   const app = Fastify({logger: false});
+
+  // cattura il raw body (per la verifica firma webhook Stripe) mantenendo il JSON parsato
+  app.addContentTypeParser("application/json", {parseAs: "string"}, (req, payload, done) => {
+    const raw = payload as unknown as string;
+    (req as unknown as {rawBody?: string}).rawBody = raw;
+    try {
+      done(null, raw && raw.length ? JSON.parse(raw) : {});
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
 
   app.setErrorHandler((err: Error, _req, reply) => {
     if (err instanceof DomainError) {
@@ -113,11 +133,12 @@ export function buildServer(
   // -------- pagamenti (M7)
   app.post<{Body: {eventId: string; buyerId: string}}>(
     "/payments/primary/checkout",
-    async (req, reply) => reply.status(201).send(payments.createPrimaryCheckout(req.body.eventId, req.body.buyerId))
+    async (req, reply) => reply.status(201).send(await payments.createPrimaryCheckout(req.body.eventId, req.body.buyerId))
   );
   app.post("/webhooks/psp", async (req) => {
-    const signature = req.headers["x-psp-signature"];
-    return payments.ingestWebhook(JSON.stringify(req.body), typeof signature === "string" ? signature : undefined);
+    const sig = req.headers["stripe-signature"] ?? req.headers["x-psp-signature"];
+    const raw = (req as unknown as {rawBody?: string}).rawBody ?? JSON.stringify(req.body);
+    return payments.ingestWebhook(raw, typeof sig === "string" ? sig : undefined);
   });
 
   return app;

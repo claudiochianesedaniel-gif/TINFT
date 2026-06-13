@@ -18,7 +18,7 @@ function setup() {
 describe("PaymentsService", () => {
   it("checkout → webhook pagato concia il biglietto (con txHash on-chain)", async () => {
     const s = setup();
-    const {payment, session} = s.payments.createPrimaryCheckout(s.event.id, s.buyer.id);
+    const {payment, session} = await s.payments.createPrimaryCheckout(s.event.id, s.buyer.id);
     expect(payment.status).toBe("PENDING");
     const res = await s.payments.handleWebhook({id: "evt_1", type: "payment_succeeded", providerRef: session.providerRef});
     expect(res.handled).toBe(true);
@@ -31,7 +31,7 @@ describe("PaymentsService", () => {
 
   it("webhook idempotente: lo stesso evento non concia due volte", async () => {
     const s = setup();
-    const {session} = s.payments.createPrimaryCheckout(s.event.id, s.buyer.id);
+    const {session} = await s.payments.createPrimaryCheckout(s.event.id, s.buyer.id);
     const ev = {id: "evt_1", type: "payment_succeeded" as const, providerRef: session.providerRef};
     await s.payments.handleWebhook(ev);
     const again = await s.payments.handleWebhook(ev);
@@ -41,7 +41,7 @@ describe("PaymentsService", () => {
 
   it("payment_failed segna fallito e non concia", async () => {
     const s = setup();
-    const {payment, session} = s.payments.createPrimaryCheckout(s.event.id, s.buyer.id);
+    const {payment, session} = await s.payments.createPrimaryCheckout(s.event.id, s.buyer.id);
     await s.payments.handleWebhook({id: "evt_x", type: "payment_failed", providerRef: session.providerRef});
     expect(s.store.payments.get(payment.id)!.status).toBe("FAILED");
     expect(s.ticketing.ticketsOf(s.buyer.id)).toHaveLength(0);

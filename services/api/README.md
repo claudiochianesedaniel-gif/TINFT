@@ -16,9 +16,10 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   ed export (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
 - **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify): account, eventi, acquisto,
   biglietti, trasferimenti, validazione, export. Testata via `inject` (`server.test.ts`).
-- **Pagamenti (M7, fondamenta)** ([`src/payments`](./src/payments)): provider PSP-agnostico
-  (`PaymentProvider` + `FakeProvider`), checkout in euro e **webhook idempotente** che a
-  pagamento riuscito concia il biglietto. L'adapter Stripe/Nexi reale (firma webhook, SDK) è un innesto.
+- **Pagamenti (M7)** ([`src/payments`](./src/payments)): provider PSP-agnostico, checkout in euro e
+  **webhook idempotente** che a pagamento riuscito concia il biglietto. Adapter **Stripe reale**
+  (`StripeProvider`: `checkout.sessions.create` + verifica firma `constructEvent`, raw body catturato)
+  attivabile via `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`; altrimenti `FakeProvider` (CI/dev).
 - **Wiring on-chain** ([`src/chain`](./src/chain)): `ChainPort` (+ `FakeChain`); al pagamento il
   webhook esegue il **mint** e salva `tokenId`/`txHash` sul biglietto. Adapter **reale `viem`**
   (`ViemChain`→`TinftTicket.mint`) **verificato con un e2e contro anvil** (`scripts/chain-e2e.sh`:

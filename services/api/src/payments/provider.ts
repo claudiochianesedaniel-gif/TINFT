@@ -3,24 +3,24 @@ import type {CheckoutIntent, CheckoutSession, PspEvent} from "./types";
 
 /**
  * Astrazione del Payment Service Provider (Stripe/Nexi). L'API dipende solo da
- * questa interfaccia; l'adapter reale (firma webhook, SDK) è un innesto successivo.
+ * questa interfaccia; gli adapter reali si attivano via env.
  */
 export interface PaymentProvider {
-  createCheckout(intent: CheckoutIntent): CheckoutSession;
-  /** Verifica la firma e normalizza il payload del webhook in un PspEvent. */
-  parseWebhook(rawBody: string, signature?: string): PspEvent;
+  createCheckout(intent: CheckoutIntent): Promise<CheckoutSession>;
+  /** Verifica la firma e normalizza il webhook; `null` per eventi non rilevanti. */
+  parseWebhook(rawBody: string, signature?: string): PspEvent | null;
 }
 
 /** Provider fake per sandbox/test: deterministico, nessuna rete. */
 export class FakeProvider implements PaymentProvider {
   private seq = 0;
 
-  createCheckout(_intent: CheckoutIntent): CheckoutSession {
+  async createCheckout(_intent: CheckoutIntent): Promise<CheckoutSession> {
     const providerRef = `cs_fake_${++this.seq}`;
     return {providerRef, url: `https://sandbox.tinft.local/checkout/${providerRef}`};
   }
 
-  parseWebhook(rawBody: string, _signature?: string): PspEvent {
+  parseWebhook(rawBody: string, _signature?: string): PspEvent | null {
     let obj: Partial<PspEvent>;
     try {
       obj = JSON.parse(rawBody) as Partial<PspEvent>;
