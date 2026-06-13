@@ -16,6 +16,10 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   ed export (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
 - **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify): account, eventi, acquisto,
   biglietti, trasferimenti, validazione, export. Testata via `inject` (`server.test.ts`).
+- **Pagamenti (M7, fondamenta)** ([`src/payments`](./src/payments)): provider PSP-agnostico
+  (`PaymentProvider` + `FakeProvider`), checkout in euro e **webhook idempotente** che a
+  pagamento riuscito concia il biglietto (via `TicketingService`). L'adapter Stripe/Nexi reale
+  (firma webhook, SDK) e il mint on-chain sono innesti successivi.
 
 ## Comandi
 ```bash

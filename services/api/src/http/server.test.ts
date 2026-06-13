@@ -67,4 +67,26 @@ describe("API HTTP (Fastify inject)", () => {
     expect(third.statusCode).toBe(409);
     expect(third.json().error).toBe("EVENT_LIMIT");
   });
+
+  it("pagamento via HTTP: checkout → webhook idempotente → mint", async () => {
+    const org = (await post("/accounts", {role: "ORGANIZER", nome: "O", cognome: "X", email: "o3@e.it"})).json();
+    const event = (
+      await post("/events", {organizerId: org.id, title: "E", venue: "V", date: "D", priceCents: 3150, capacity: 10})
+    ).json();
+    const buyer = (await post("/accounts", {nome: "M", cognome: "B", email: "m2@e.it", cfHash: "idM2"})).json();
+
+    const checkout = await post("/payments/primary/checkout", {eventId: event.id, buyerId: buyer.id});
+    expect(checkout.statusCode).toBe(201);
+    const providerRef = checkout.json().session.providerRef;
+
+    const wh = await post("/webhooks/psp", {id: "evt_http_1", type: "payment_succeeded", providerRef});
+    expect(wh.statusCode).toBe(200);
+    expect(wh.json().ticketId).toBeDefined();
+
+    const again = await post("/webhooks/psp", {id: "evt_http_1", type: "payment_succeeded", providerRef});
+    expect(again.json().deduped).toBe(true);
+
+    const tickets = await app.inject({method: "GET", url: `/accounts/${buyer.id}/tickets`});
+    expect(tickets.json()).toHaveLength(1); // idempotenza: un solo biglietto
+  });
 });

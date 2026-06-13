@@ -1,4 +1,5 @@
 import type {Account, Event, Ticket, Transfer, Validation} from "../domain/models";
+import type {Payment} from "../payments/types";
 
 /**
  * Store in-memory: implementa la persistenza per i test e lo sviluppo locale.
@@ -11,6 +12,8 @@ export class MemoryStore {
   readonly tickets = new Map<string, Ticket>();
   readonly transfers = new Map<string, Transfer>();
   readonly validations = new Map<string, Validation>();
+  readonly payments = new Map<string, Payment>();
+  readonly processedWebhooks = new Set<string>();
 
   private seq: Record<string, number> = {};
   private tokenSeq = 0;
@@ -42,5 +45,9 @@ export class MemoryStore {
     return [...this.transfers.values()].find(
       (x) => x.ticketId === ticketId && (x.status === "PENDING" || x.status === "ESCROW")
     );
+  }
+
+  paymentByProviderRef(ref: string): Payment | undefined {
+    return [...this.payments.values()].find((p) => p.providerRef === ref);
   }
 }
