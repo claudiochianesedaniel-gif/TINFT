@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /// @title TinftRoyaltySplit
 /// @notice Ripartisce la royalty dell'1% in due quote uguali da 0,5%:
 ///         metà a TINFT, metà all'organizzatore (due wallet DISTINTI).
@@ -9,11 +11,12 @@ pragma solidity ^0.8.28;
 ///
 /// @dev    Pattern *pull-payment*: alla ricezione dei fondi non si fanno chiamate
 ///         esterne (si accreditano solo i saldi), così l'incasso non può MAI
-///         fallire o restare bloccato. I beneficiari ritirano con `withdraw()`;
-///         se il ritiro di uno fallisce, non blocca quello dell'altro.
-///         Lavora con valuta nativa (ETH su Base). Per regolamenti in stablecoin
-///         si aggiungerà una variante ERC-20 nei moduli pagamenti (M7).
-contract TinftRoyaltySplit {
+///         fallire o restare bloccato. I beneficiari ritirano con `withdraw()`
+///         (checks-effects-interactions + `nonReentrant`); se il ritiro di uno
+///         fallisce, non blocca quello dell'altro. Lavora con valuta nativa (ETH
+///         su Base); per regolamenti in stablecoin si aggiungerà una variante
+///         ERC-20 nei moduli pagamenti (M7).
+contract TinftRoyaltySplit is ReentrancyGuard {
     /// @notice beneficiario 0,5% — piattaforma TINFT
     address public immutable TINFT;
     /// @notice beneficiario 0,5% — organizzatore dell'evento/collezione
@@ -32,8 +35,6 @@ contract TinftRoyaltySplit {
     error NothingToWithdraw();
     error WithdrawFailed();
 
-    /// @param tinft_      wallet TINFT (0,5%)
-    /// @param organizer_  wallet organizzatore (0,5%) — deve essere diverso da TINFT
     constructor(address tinft_, address organizer_) {
         if (tinft_ == address(0) || organizer_ == address(0)) revert ZeroAddress();
         if (tinft_ == organizer_) revert PayeesMustDiffer();
@@ -52,7 +53,7 @@ contract TinftRoyaltySplit {
     }
 
     /// @notice Ritira il saldo maturato dal chiamante.
-    function withdraw() external {
+    function withdraw() external nonReentrant {
         uint256 amount = pending[msg.sender];
         if (amount == 0) revert NothingToWithdraw();
         pending[msg.sender] = 0; // effetti prima dell'interazione (anti-reentrancy)

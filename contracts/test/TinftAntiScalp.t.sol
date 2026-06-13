@@ -35,7 +35,7 @@ contract TinftAntiScalpTest is Test {
         vm.startPrank(tinft);
         ticket = new TinftTicket("TINFT Ticket", "TINFT", tinft, address(split));
         validator = new TinftTransferValidator(tinft);
-        escrow = new TinftEscrow(address(ticket));
+        escrow = new TinftEscrow(address(ticket), tinft);
         ticket.setTransferValidator(address(validator));
         validator.setOperator(address(escrow), true);
         ticket.setSaleOperator(address(escrow), true);

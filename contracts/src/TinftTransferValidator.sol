@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 
 /// @title TinftTransferValidator
@@ -11,7 +12,8 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 ///         trasferimenti diretti wallet-to-wallet sono bloccati: è ciò che rende
 ///         la royalty 1% e le regole anti-bagarinaggio realmente *enforced* sul
 ///         mercato secondario (cfr. handoff §1, §4).
-contract TinftTransferValidator is ITransferValidator, Ownable {
+/// @dev    Ownership a 2 fasi (Ownable2Step): l'owner dovrebbe essere un multisig.
+contract TinftTransferValidator is ITransferValidator, Ownable2Step {
     /// @notice operatore => abilitato a muovere token vincolati alla policy
     mapping(address operator => bool allowed) public isAllowedOperator;
 

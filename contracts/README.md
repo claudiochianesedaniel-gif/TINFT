@@ -63,6 +63,12 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 - ✅ dopo `exportEnforced` il trasferimento diretto resta bloccato e una vendita applica ancora la royalty 1% (`test_ExportEnforcedKeepsRoyaltyEnforced`)
 - ✅ export solo a evento concluso (`markUsed`), solo dal proprietario, una sola volta (`test_ExportRequiresUsed`, `test_ExportOnlyOwner`, `test_CannotExportTwice`)
 
+## Sicurezza (hardening pre-audit)
+- **Ownable2Step** su ticket/validator/escrow (ownership a 2 fasi; owner = multisig consigliato).
+- **Pausable** sull'escrow: `list`/`pay` sospendibili in emergenza, `reclaim`/`cancel` **sempre attivi** (i token non restano mai intrappolati).
+- **ReentrancyGuard** + checks-effects-interactions su `escrow.*`, `ticket.exportFree`, `split.withdraw`.
+- Modello di minaccia, ruoli/poteri e checklist per l'audit esterno: **[`../docs/SECURITY.md`](../docs/SECURITY.md)**.
+
 ## Roadmap contratti
-M10 audit di sicurezza prima del mainnet. Poi backend/pagamenti/SPID/frontend
+M10 audit di sicurezza esterno prima del mainnet. Poi backend/pagamenti/SPID/frontend
 (M6–M9). Vedi `../docs/SPEC-VERIFICATA.md`.

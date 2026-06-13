@@ -21,7 +21,7 @@ contract Deploy is Script {
         TinftRoyaltySplit split = new TinftRoyaltySplit(tinftPayee, organizerPayee);
         TinftTransferValidator validator = new TinftTransferValidator(owner);
         TinftTicket ticket = new TinftTicket("TINFT Ticket", "TINFT", owner, address(split));
-        TinftEscrow escrow = new TinftEscrow(address(ticket));
+        TinftEscrow escrow = new TinftEscrow(address(ticket), owner);
 
         ticket.setTransferValidator(address(validator));
         ticket.setPlatformTreasury(tinftPayee); // incassa la fee d'uscita 25% (M5)

@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 
 /// @title TinftTicket
@@ -15,7 +17,7 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 ///         M5 validazione (`markUsed`) ed export post-evento:
 ///         `exportFree` (fee 25% + sgancio dalla policy) / `exportEnforced`
 ///         (royalty 1% per sempre).
-contract TinftTicket is ERC721, ERC2981, Ownable {
+contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     /// @notice royalty in basis point (100 = 1%)
     uint96 public constant ROYALTY_BPS = 100;
     /// @notice fee d'uscita per l'export libero (2500 = 25%)
@@ -188,7 +190,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
 
     /// @notice (A) Rilascio completo: incassa la fee 25% e sgancia il token dalla
     ///         policy → da qui è liberamente trasferibile (royalty best-effort).
-    function exportFree(uint256 tokenId) external payable {
+    function exportFree(uint256 tokenId) external payable nonReentrant {
         _requireExportable(tokenId);
         if (platformTreasury == address(0)) revert TreasuryNotSet();
         uint256 fee = exitFee(tokenId);

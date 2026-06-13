@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {TinftTicket} from "./TinftTicket.sol";
 
 /// @title TinftEscrow
 /// @notice Escrow P2P a pagamento per i biglietti TINFT (handoff §5).
-///         - `list()`  : il venditore mette in vendita; il token è bloccato qui
-///                       (non più al venditore, non ancora al compratore).
-///         - `pay()`   : in UN'UNICA transazione → token al compratore, prezzo
-///                       al venditore, royalty 1% allo split (0,5/0,5); il costo
-///                       base viaggia col token (R3). Niente fiducia tra le parti.
-///         - `reclaim()`: allo scadere del `ttl`, CHIUNQUE può restituire il
-///                       token al venditore.
-///         - `cancel()`: il venditore ritira l'offerta in qualsiasi momento.
+///         - `list()`   : il venditore mette in vendita (tetto +5%, R2); il token
+///                        è bloccato qui.
+///         - `pay()`    : in UN'UNICA transazione → token al compratore, prezzo al
+///                        venditore, royalty 1% allo split (0,5/0,5); il costo base
+///                        viaggia col token (R3) e il limite 2/evento è applicato (R4).
+///         - `reclaim()`: allo scadere del `ttl`, CHIUNQUE restituisce il token al
+///                        venditore.
+///         - `cancel()` : il venditore ritira l'offerta in qualsiasi momento.
 ///
-/// @dev    L'escrow è registrato sia come operatore in allowlist del
-///         TransferValidator (può muovere i token vincolati) sia come
-///         `saleOperator` del ticket (può aggiornare il costo base).
-///         Sicurezza: `ReentrancyGuard` + checks-effects-interactions (lo stato
-///         del listing è azzerato PRIMA di ogni trasferimento/chiamata esterna).
-///         La royalty va allo split (pull-payment) e non può mai bloccarsi; se
-///         il pagamento al venditore fallisce la tx fa revert (nessuno stato
-///         intermedio) e il venditore può comunque recuperare il token a timeout.
-contract TinftEscrow is ReentrancyGuard {
+/// @dev    Sicurezza: `ReentrancyGuard` + checks-effects-interactions (lo stato del
+///         listing è azzerato PRIMA di trasferimenti/chiamate). `Pausable`: in
+///         emergenza l'owner (multisig) può sospendere `list`/`pay`, ma `reclaim`
+///         e `cancel` restano SEMPRE disponibili → i token non possono mai restare
+///         intrappolati. La royalty va allo split (pull-payment) e non si blocca.
+contract TinftEscrow is Ownable2Step, Pausable, ReentrancyGuard {
     TinftTicket public immutable TICKET;
 
     struct Listing {
@@ -52,12 +52,21 @@ contract TinftEscrow is ReentrancyGuard {
     error TransferFailed();
     error PriceAboveCap(uint256 cap, uint256 price);
 
-    constructor(address ticket_) {
+    constructor(address ticket_, address initialOwner) Ownable(initialOwner) {
         TICKET = TinftTicket(ticket_);
     }
 
+    /// @notice Sospende `list`/`pay` in emergenza (reclaim/cancel restano attivi).
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     /// @notice Mette in vendita `tokenId` a `price`, bloccandolo nell'escrow per `ttl` secondi.
-    function list(uint256 tokenId, uint256 price, uint64 ttl) external nonReentrant {
+    function list(uint256 tokenId, uint256 price, uint64 ttl) external nonReentrant whenNotPaused {
         if (listings[tokenId].active) revert AlreadyListed();
         if (TICKET.ownerOf(tokenId) != msg.sender) revert NotOwner();
         if (ttl == 0) revert ZeroTtl();
@@ -84,7 +93,7 @@ contract TinftEscrow is ReentrancyGuard {
     }
 
     /// @notice Acquisto: paga `prezzo + royalty` e ricevi il token nella stessa tx.
-    function pay(uint256 tokenId) external payable nonReentrant {
+    function pay(uint256 tokenId) external payable nonReentrant whenNotPaused {
         Listing memory l = listings[tokenId];
         if (!l.active) revert NotListed();
         if (block.timestamp > uint256(l.createdAt) + l.ttl) revert Expired();
@@ -115,6 +124,7 @@ contract TinftEscrow is ReentrancyGuard {
     }
 
     /// @notice Allo scadere del `ttl`, chiunque può restituire il token al venditore.
+    /// @dev    Non sospendibile: il recupero del token è sempre garantito.
     function reclaim(uint256 tokenId) external nonReentrant {
         Listing memory l = listings[tokenId];
         if (!l.active) revert NotListed();
@@ -126,6 +136,7 @@ contract TinftEscrow is ReentrancyGuard {
     }
 
     /// @notice Il venditore ritira l'offerta e si riprende il token.
+    /// @dev    Non sospendibile: il recupero del token è sempre garantito.
     function cancel(uint256 tokenId) external nonReentrant {
         Listing memory l = listings[tokenId];
         if (!l.active) revert NotListed();

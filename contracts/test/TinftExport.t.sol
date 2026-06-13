@@ -35,7 +35,7 @@ contract TinftExportTest is Test {
         vm.startPrank(tinft);
         ticket = new TinftTicket("TINFT Ticket", "TINFT", tinft, address(split));
         validator = new TinftTransferValidator(tinft);
-        escrow = new TinftEscrow(address(ticket));
+        escrow = new TinftEscrow(address(ticket), tinft);
         ticket.setTransferValidator(address(validator));
         ticket.setPlatformTreasury(treasury);
         validator.setOperator(address(escrow), true);
