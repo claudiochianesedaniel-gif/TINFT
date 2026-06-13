@@ -141,13 +141,20 @@ function sell(id){
   var price=Math.round(parseFloat(String(raw).replace(',','.'))*100);
   if(!(price>0)){toast('Prezzo non valido',true);return}
   if(price>cap){toast('Prezzo oltre il tetto +5% ('+eur(cap)+')',true);return}
+  t.status='vendita'; t.salePrice=price; t.expiresAt=Date.now()+90000; // escrow ttl 90s (demo)
+  toast('In vendita in escrow a '+eur(price)+' · token bloccato, scade tra 90s'); render();
+}
+function payMarket(id){
+  var t=state.tickets.find(function(x){return x.id===id}); if(!t||t.status!=='vendita')return;
   var s=splitRoyalty(t.originalPrice);
   state.ledger.royT+=s.tinft; state.ledger.royO+=s.org;
   state.held[t.eventId]=Math.max(0,heldFor(t.eventId)-1);
   state.tickets=state.tickets.filter(function(x){return x.id!==id});
-  toast('Venduto a '+eur(price)+' · royalty 1% '+eur(s.tot)+' ('+eur(s.tinft)+' TINFT + '+eur(s.org)+' org)');
+  toast('Compratore ha pagato '+eur(t.salePrice)+' · token rilasciato · royalty 1% '+eur(s.tot)+' ('+eur(s.tinft)+' TINFT + '+eur(s.org)+' org)');
   render();
 }
+function cancelSale(id){var t=state.tickets.find(function(x){return x.id===id});if(!t||t.status!=='vendita')return;
+  t.status='attivo'; t.salePrice=null; t.expiresAt=null; toast('Vendita annullata · biglietto tornato attivo'); render();}
 function gift(id){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;
   var name=prompt('Regala il biglietto a (nome):','Giulia Verdi'); if(name===null)return;
   state.held[t.eventId]=Math.max(0,heldFor(t.eventId)-1);
@@ -183,9 +190,12 @@ function evCard(e){return '<div class="card"><div class="ev-art" style="backgrou
   '<div class="row" style="margin-top:11px"><div class="price">'+eur(e.price)+'</div>'+
   '<button class="sm" onclick="buy(\''+e.id+'\')" '+(heldFor(e.id)>=MAX_PER_EVENT?'disabled':'')+'>'+(heldFor(e.id)>=MAX_PER_EVENT?'Limite 2/evento':'Acquista')+'</button></div>'+
   (heldFor(e.id)>0?'<div class="legend">Possiedi '+heldFor(e.id)+'/2 per questo evento</div>':'')+'</div>';}
-function tkStatus(t){var m={attivo:'pill ok',usato:'pill warn',exported:'pill plat'};return '<span class="'+(m[t.status]||'pill')+'">'+t.status.toUpperCase()+(t.exportMode!=='none'?' · '+t.exportMode:'')+'</span>'}
+function tkStatus(t){var m={attivo:'pill ok',vendita:'pill warn',usato:'pill warn',exported:'pill plat'};return '<span class="'+(m[t.status]||'pill')+'">'+t.status.toUpperCase()+(t.exportMode!=='none'?' · '+t.exportMode:'')+'</span>'}
 function tkCard(t){var a='';
   if(t.status==='attivo')a='<button class="sm ghost" onclick="openCheckin(\''+t.id+'\')">Check-in (QR)</button> <button class="sm ghost" onclick="sell(\''+t.id+'\')">Vendi</button> <button class="sm ghost" onclick="gift(\''+t.id+'\')">Regala</button>';
+  else if(t.status==='vendita'){var secs=Math.max(0,Math.ceil(((t.expiresAt||0)-Date.now())/1000));
+    a='<div class="muted" style="margin-bottom:8px">In escrow a '+eur(t.salePrice||0)+' · scade tra <b>'+secs+'s</b></div>'+
+      '<button class="sm" onclick="payMarket(\''+t.id+'\')">Compratore paga</button> <button class="sm ghost" onclick="cancelSale(\''+t.id+'\')">Annulla</button>';}
   else if(t.status==='usato')a='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">Esporta (fee 25%)</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">Esporta enforced</button>';
   else a='<span class="muted">Collectible esportato</span>';
   return '<div class="card"><div class="row"><div class="ttl">'+t.title+'</div>'+tkStatus(t)+'</div><div class="muted">'+t.venue+'</div>'+
@@ -203,8 +213,8 @@ function clienteView(){
       '<button style="width:100%;margin-top:12px" onclick="buy(\''+e.id+'\')">Paga '+eur(e.price)+' e ricevi il biglietto</button></div>';}
   if(state.tab==='eventi')return '<div class="kicker">In vendita</div><h2 style="margin:6px 0 14px">Eventi</h2>'+EVENTS.map(evCard).join('');
   if(state.tab==='biglietti')return '<div class="kicker">Wallet</div><h2 style="margin:6px 0 14px">I tuoi biglietti</h2>'+(state.tickets.length?state.tickets.map(tkCard).join(''):'<div class="card muted">Nessun biglietto. Vai su Eventi.</div>');
-  var sale=activeTickets();
-  return '<div class="kicker">Mercato secondario</div><h2 style="margin:6px 0 14px">Rivendi (tetto +5%)</h2>'+(sale.length?sale.map(tkCard).join(''):'<div class="card muted">Nessun biglietto attivo da rivendere.</div>');
+  var listings=state.tickets.filter(function(t){return t.status==='vendita'});
+  return '<div class="kicker">Mercato secondario · escrow</div><h2 style="margin:6px 0 14px">In vendita</h2>'+(listings.length?listings.map(tkCard).join(''):'<div class="card muted">Nessun biglietto in vendita. In "Biglietti" usa <b>Vendi</b> per metterne uno in escrow (tetto +5%).</div>');
 }
 function validatoreView(){
   var r=state.scan, theme={valid:['var(--ok)','✓','Accesso valido'],screenshot:['var(--warn)','!','Codice non valido (screenshot)'],
@@ -259,6 +269,13 @@ function render(){
   $('cExit').textContent=eur(L.exit);$('cAcc').textContent=state.aggr.accessi;
 }
 document.querySelectorAll('.switch .s').forEach(function(el){el.onclick=function(){state.profile=el.dataset.p;state.buy=null;state.checkin=null;state.scan=null;state.tab='eventi';render()}});
+// timer escrow: aggiorna i countdown e fa il reclaim automatico allo scadere del ttl
+function tick(){var now=Date.now(),hasSale=false;
+  state.tickets.forEach(function(t){if(t.status==='vendita'){hasSale=true;
+    if(t.expiresAt&&now>=t.expiresAt){t.status='attivo';t.salePrice=null;t.expiresAt=null;toast('Escrow scaduto · biglietto tornato al venditore');}}});
+  if(hasSale)render();
+}
+setInterval(tick,1000);
 render();
 </script>
 </body>
