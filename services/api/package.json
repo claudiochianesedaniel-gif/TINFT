@@ -1,0 +1,16 @@
+{
+  "name": "@tinft/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TINFT backend API (eventi, biglietti, trasferimenti, account) — M6+",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

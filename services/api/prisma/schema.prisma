@@ -1,0 +1,191 @@
+// TINFT — modello dati (M6). Sorgente: docs/SPEC-VERIFICATA.md §3 + collegamenti on-chain.
+// Gli importi monetari sono in CENTESIMI di euro (Int) per coerenza con i contratti.
+// NB: l'integrazione runtime (PrismaClient + Postgres) viene attivata nel prossimo
+// step di M6; qui lo schema è la specifica del modello dati.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountRole {
+  CLIENTE
+  ORGANIZER
+  VALIDATOR
+  PLATFORM
+}
+
+enum EventType {
+  TICKET_NFT
+  FIDELITY
+  SPECIAL
+}
+
+enum EventStatus {
+  DRAFT
+  ON_SALE
+  CONCLUDED
+}
+
+enum TicketStatus {
+  ACTIVE // attivo
+  LISTED // in vendita (escrow)
+  USED // validato al varco (collectible)
+  EXPORTED // esportato
+}
+
+enum ExportMode {
+  NONE
+  FREE // rilascio libero (fee 25%)
+  ENFORCED // royalty 1% per sempre
+}
+
+enum TransferMode {
+  GIFT // regalo
+  PAYMENT // a pagamento (escrow)
+}
+
+enum TransferStatus {
+  PENDING // regalo in attesa di accettazione
+  ESCROW // a pagamento, in attesa di pagamento
+  DONE
+  RECLAIMED // tornato al venditore (timeout/annullo)
+}
+
+enum ValidationOutcome {
+  VALID
+  SCREENSHOT // codice non rotante/scaduto
+  DUPLICATE // già usato
+  ESCROW // in trasferimento → accesso negato
+  FAKE
+}
+
+model Account {
+  id            String      @id @default(cuid())
+  role          AccountRole @default(CLIENTE)
+  nome          String
+  cognome       String
+  email         String      @unique
+  // SPID: in chiaro off-chain (cifrato a livello applicativo), on-chain solo l'hash
+  cfHash        String?     @unique // keccak256(CF + salt)
+  verified      Boolean     @default(false)
+  walletAddress String?     @unique // smart account (account abstraction)
+  goodwill      Int         @default(0)
+  createdAt     DateTime    @default(now())
+
+  organizer       Organizer?
+  ticketsOwned    Ticket[]   @relation("TicketOwner")
+  transfersFrom   Transfer[] @relation("TransferFrom")
+  transfersTo     Transfer[] @relation("TransferTo")
+
+  @@index([role])
+}
+
+model Organizer {
+  id           String  @id @default(cuid())
+  account      Account @relation(fields: [accountId], references: [id])
+  accountId    String  @unique
+  name         String
+  piva         String  @unique
+  payoutWallet String?
+  events       Event[]
+}
+
+model Event {
+  id                 String      @id @default(cuid())
+  organizer          Organizer   @relation(fields: [organizerId], references: [id])
+  organizerId        String
+  title              String
+  venue              String
+  date               String
+  type               EventType   @default(TICKET_NFT)
+  priceCents         Int
+  capacity           Int
+  sold               Int         @default(0)
+  status             EventStatus @default(DRAFT)
+  onchainCollection  String? // indirizzo collezione ERC-721 su Base
+  onchainEventId     BigInt? // eventId on-chain
+  createdAt          DateTime    @default(now())
+
+  tickets    Ticket[]
+  validators Validator[]
+
+  @@index([organizerId])
+  @@index([status])
+}
+
+model Ticket {
+  id                 String       @id @default(cuid())
+  event              Event        @relation(fields: [eventId], references: [id])
+  eventId            String
+  owner              Account      @relation("TicketOwner", fields: [ownerId], references: [id])
+  ownerId            String
+  tokenId            BigInt // id on-chain
+  originalPriceCents Int // base immutabile della royalty 1%
+  paidCents          Int // costo base corrente (tetto +5%)
+  status             TicketStatus @default(ACTIVE)
+  exportMode         ExportMode   @default(NONE)
+  exitFeeCents       Int          @default(0)
+  holderName         String
+  createdAt          DateTime     @default(now())
+
+  transfers   Transfer[]
+  validations Validation[]
+
+  @@unique([eventId, tokenId])
+  @@index([ownerId])
+  @@index([status])
+}
+
+model Transfer {
+  id                     String         @id @default(cuid())
+  ticket                 Ticket         @relation(fields: [ticketId], references: [id])
+  ticketId               String
+  from                   Account        @relation("TransferFrom", fields: [fromId], references: [id])
+  fromId                 String
+  to                     Account?       @relation("TransferTo", fields: [toId], references: [id])
+  toId                   String?
+  mode                   TransferMode
+  priceCents             Int            @default(0)
+  royaltyCents           Int            @default(0)
+  royaltyTinftCents      Int            @default(0)
+  royaltyOrganizerCents  Int            @default(0)
+  status                 TransferStatus
+  ttlSeconds             Int            @default(600)
+  txHash                 String?
+  createdAt              DateTime       @default(now())
+
+  @@index([ticketId])
+  @@index([status])
+}
+
+model Validator {
+  id        String   @id @default(cuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  code      String   @unique // codice varco creato dall'organizzatore
+  createdAt DateTime @default(now())
+
+  validations Validation[]
+
+  @@index([eventId])
+}
+
+model Validation {
+  id          String            @id @default(cuid())
+  ticket      Ticket            @relation(fields: [ticketId], references: [id])
+  ticketId    String
+  validator   Validator         @relation(fields: [validatorId], references: [id])
+  validatorId String
+  outcome     ValidationOutcome
+  deviceId    String?
+  offline     Boolean           @default(false)
+  at          DateTime          @default(now())
+
+  @@index([ticketId])
+  @@index([validatorId])
+}

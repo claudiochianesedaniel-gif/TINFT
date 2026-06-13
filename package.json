@@ -11,6 +11,11 @@
     "contracts:build": "cd contracts && forge build",
     "contracts:test": "cd contracts && forge test -vvv",
     "contracts:fmt": "cd contracts && forge fmt",
-    "contracts:fmt:check": "cd contracts && forge fmt --check src test script"
+    "contracts:fmt:check": "cd contracts && forge fmt --check src test script",
+    "api:typecheck": "pnpm --filter @tinft/api typecheck",
+    "api:test": "pnpm --filter @tinft/api test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }
