@@ -22,8 +22,9 @@ In CI vengono ripristinate con `actions/checkout` (`submodules: recursive`).
 
 | Contratto | Ruolo |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; ogni biglietto è *bound* alla policy al mint; royalty 1%. Memorizza `eventId` e `paid` (costo base) per le regole anti-bagarinaggio (M4). |
+| `TinftTicket` | ERC-721 + EIP-2981; ogni biglietto è *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (base immutabile della royalty 1%, R1) e `paid` (costo base per il tetto +5%, R2/R3). |
 | `TinftTransferValidator` | Allowlist di operatori; `validateTransfer` fa revert se il caller non è un modulo TINFT autorizzato. |
+| `TinftRoyaltySplit` | Split royalty **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
 | `ITransferValidator` | Interfaccia del validator. |
 
 ### Modello di enforcement
@@ -39,6 +40,11 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 - ✅ trasferimento fuori allowlist **bloccato** (`test_DirectTransferIsBlocked`, `testFuzz_OnlyAllowlistedCanMove`)
 - ✅ royalty EIP-2981 all'1% (`test_RoyaltyInfoIsOnePercent`)
 
+### Definition of Done — M2 (coperta dai test)
+- ✅ una vendita accredita **0,5% a due wallet distinti** (`test_P2PSaleCreditsTwoDistinctWallets`)
+- ✅ la royalty EIP-2981 confluisce nello split e si divide 50/50 (`test_Eip2981RoyaltyFlowsToSplit`)
+- ✅ incasso a prova di blocco + ritiri isolati (`test_WithdrawFailureIsIsolated`), conservazione fondi (fuzz)
+
 ## Roadmap contratti
-M2 split royalty 0,5/0,5 · M3 escrow `list/pay/reclaim` · M4 tetto +5% e limite 2/evento ·
+M3 escrow `list/pay/reclaim` · M4 tetto +5% e limite 2/evento ·
 M5 `exportFree`/`exportEnforced` · M10 audit. Vedi `../docs/SPEC-VERIFICATA.md`.

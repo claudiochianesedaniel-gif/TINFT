@@ -17,11 +17,11 @@ contract TinftTicketTest is Test {
     address internal royaltySplit = makeAddr("royaltySplit");
 
     uint256 internal constant EVENT_ID = 42;
-    uint256 internal constant PAID = 3150; // €31,50 in centesimi
+    uint256 internal constant PRICE = 3150; // €31,50 in centesimi (prezzo originale)
 
     function setUp() public {
         vm.startPrank(tinft);
-        ticket = new TinftTicket("TINFT Ticket", "TINFT", tinft, royaltySplit, 100);
+        ticket = new TinftTicket("TINFT Ticket", "TINFT", tinft, royaltySplit);
         validator = new TinftTransferValidator(tinft);
         ticket.setTransferValidator(address(validator));
         validator.setOperator(saleModule, true);
@@ -30,7 +30,7 @@ contract TinftTicketTest is Test {
 
     function _mintToAlice() internal returns (uint256 id) {
         vm.prank(tinft);
-        id = ticket.mint(alice, EVENT_ID, PAID);
+        id = ticket.mint(alice, EVENT_ID, PRICE);
     }
 
     // --- M1 DoD: il mint di un biglietto funziona ---
@@ -41,13 +41,14 @@ contract TinftTicketTest is Test {
         assertTrue(ticket.policyBound(id));
         TinftTicket.TicketData memory d = ticket.ticketData(id);
         assertEq(d.eventId, EVENT_ID);
-        assertEq(d.paid, PAID);
+        assertEq(d.originalPrice, PRICE);
+        assertEq(d.paid, PRICE); // al mint costo base == prezzo originale
     }
 
     function test_OnlyOwnerCanMint() public {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
-        ticket.mint(alice, EVENT_ID, PAID);
+        ticket.mint(alice, EVENT_ID, PRICE);
     }
 
     // --- M1 DoD: un trasferimento via operatore in allowlist passa ---
@@ -94,9 +95,9 @@ contract TinftTicketTest is Test {
     function test_TransferAllowedWhenNoValidatorSet() public {
         // collezione senza validator: nessun blocco (utile per test/migrazioni)
         vm.prank(tinft);
-        TinftTicket free = new TinftTicket("Free", "FREE", tinft, royaltySplit, 100);
+        TinftTicket free = new TinftTicket("Free", "FREE", tinft, royaltySplit);
         vm.prank(tinft);
-        uint256 id = free.mint(alice, EVENT_ID, PAID);
+        uint256 id = free.mint(alice, EVENT_ID, PRICE);
         vm.prank(alice);
         free.transferFrom(alice, bob, id);
         assertEq(free.ownerOf(id), bob);
@@ -108,6 +109,12 @@ contract TinftTicketTest is Test {
         (address recv, uint256 amount) = ticket.royaltyInfo(id, 10_000);
         assertEq(recv, royaltySplit);
         assertEq(amount, 100); // 1% di 10_000
+    }
+
+    // --- royaltyDue: 1% del prezzo ORIGINALE (R1) ---
+    function test_RoyaltyDueIsOnePercentOfOriginalPrice() public {
+        uint256 id = _mintToAlice();
+        assertEq(ticket.royaltyDue(id), (PRICE * 100) / 10_000); // 31
     }
 
     function test_SupportsInterfaces() public view {
