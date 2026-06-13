@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# build output
+dist/
+.next/
+.turbo/
+coverage/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+*.log
