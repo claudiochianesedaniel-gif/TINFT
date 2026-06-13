@@ -24,6 +24,7 @@ contract Deploy is Script {
         TinftEscrow escrow = new TinftEscrow(address(ticket));
 
         ticket.setTransferValidator(address(validator));
+        ticket.setPlatformTreasury(tinftPayee); // incassa la fee d'uscita 25% (M5)
         validator.setOperator(address(escrow), true); // l'escrow può muovere i token vincolati
         ticket.setSaleOperator(address(escrow), true); // e aggiornare il costo base (R3)
         vm.stopBroadcast();

@@ -8,18 +8,27 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 
 /// @title TinftTicket
 /// @notice Biglietto ERC-721 con trasferimenti *enforced* (ERC-721C) + royalty
-///         EIP-2981 + regole anti-bagarinaggio. Ogni biglietto è vincolato alla
-///         transfer policy al mint; finché è vincolato può muoversi solo tramite
-///         un operatore in allowlist (vendita/escrow/regalo).
+///         EIP-2981 + anti-bagarinaggio + uscita controllata (export).
 ///
 /// @dev    M1 transfer enforced · M2 royalty 1% / `originalPrice` · M3 costo base
-///         che viaggia col token · M4 limite **2 per evento per identità**
-///         (`hash(CF)` on-chain) applicato al mint e alla vendita.
+///         che viaggia col token · M4 limite 2/evento per identità (`hash(CF)`) ·
+///         M5 validazione (`markUsed`) ed export post-evento:
+///         `exportFree` (fee 25% + sgancio dalla policy) / `exportEnforced`
+///         (royalty 1% per sempre).
 contract TinftTicket is ERC721, ERC2981, Ownable {
     /// @notice royalty in basis point (100 = 1%)
     uint96 public constant ROYALTY_BPS = 100;
+    /// @notice fee d'uscita per l'export libero (2500 = 25%)
+    uint256 public constant EXIT_FEE_BPS = 2500;
     /// @notice massimo biglietti per evento per identità (R4)
     uint256 public constant MAX_PER_EVENT = 2;
+
+    /// @notice regime d'uscita scelto dal cliente (definitivo)
+    enum ExportMode {
+        None,
+        Free, // rilascio completo: fuori dalla policy, royalty best-effort
+        Enforced // resta vincolato: royalty 1% per sempre
+    }
 
     /// @notice dati on-chain per biglietto
     struct TicketData {
@@ -30,32 +39,47 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
 
     /// @notice validator esterno consultato a ogni trasferimento reale
     address public transferValidator;
+    /// @notice destinatario della fee d'uscita 25% (tesoreria TINFT)
+    address public platformTreasury;
 
     uint256 private _nextId = 1;
 
     mapping(uint256 tokenId => TicketData data) private _ticket;
     /// @notice se true, il token è soggetto alla transfer policy (default al mint)
     mapping(uint256 tokenId => bool bound) public policyBound;
+    /// @notice biglietto validato al varco → "usato"/collectible, esportabile
+    mapping(uint256 tokenId => bool isUsed) public used;
+    /// @notice regime d'uscita registrato sul token (definitivo)
+    mapping(uint256 tokenId => ExportMode mode) public exportModeOf;
     /// @notice moduli di vendita autorizzati (escrow) a registrare le vendite
     mapping(address operator => bool allowed) public isSaleOperator;
+    /// @notice operatori-validatore autorizzati a marcare un biglietto come usato
+    mapping(address operator => bool allowed) public isValidatorOperator;
     /// @notice identità on-chain di un wallet: keccak256(codiceFiscale + salt). 0 = non registrato (esente).
     mapping(address account => bytes32 identityHash) public identityOf;
     /// @notice biglietti correntemente "controllati" da un'identità per evento (R4)
     mapping(bytes32 identityHash => mapping(uint256 eventId => uint256 count)) public heldCount;
 
     event TransferValidatorUpdated(address indexed validator);
+    event PlatformTreasuryUpdated(address indexed treasury);
     event SaleOperatorUpdated(address indexed operator, bool allowed);
+    event ValidatorOperatorUpdated(address indexed operator, bool allowed);
     event IdentitySet(address indexed account, bytes32 indexed identityHash);
     event TicketMinted(uint256 indexed tokenId, address indexed to, uint256 indexed eventId, uint256 price);
     event PaidUpdated(uint256 indexed tokenId, uint256 newPaid);
+    event TicketUsed(uint256 indexed tokenId);
+    event Exported(uint256 indexed tokenId, ExportMode mode, uint256 exitFee);
 
     error NotSaleOperator();
+    error NotValidatorOperator();
+    error NotTicketOwner();
+    error NotUsed();
+    error AlreadyExported();
+    error TreasuryNotSet();
+    error WrongExitFee(uint256 expected, uint256 sent);
+    error FeeTransferFailed();
     error EventLimitReached(bytes32 identityHash, uint256 eventId);
 
-    /// @param name_            nome collezione
-    /// @param symbol_          simbolo
-    /// @param initialOwner     owner (piattaforma TINFT)
-    /// @param royaltyReceiver  destinatario royalty EIP-2981 (lo SplitRoyalty, M2)
     constructor(string memory name_, string memory symbol_, address initialOwner, address royaltyReceiver)
         ERC721(name_, symbol_)
         Ownable(initialOwner)
@@ -63,16 +87,25 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
         _setDefaultRoyalty(royaltyReceiver, ROYALTY_BPS);
     }
 
-    /// @notice Imposta il transfer validator (allowlist operatori).
+    // --------------------------------------------------------------------- admin
     function setTransferValidator(address validator) external onlyOwner {
         transferValidator = validator;
         emit TransferValidatorUpdated(validator);
     }
 
-    /// @notice Autorizza/revoca un modulo di vendita (escrow) a `recordSale`.
+    function setPlatformTreasury(address treasury) external onlyOwner {
+        platformTreasury = treasury;
+        emit PlatformTreasuryUpdated(treasury);
+    }
+
     function setSaleOperator(address operator, bool allowed) external onlyOwner {
         isSaleOperator[operator] = allowed;
         emit SaleOperatorUpdated(operator, allowed);
+    }
+
+    function setValidatorOperator(address operator, bool allowed) external onlyOwner {
+        isValidatorOperator[operator] = allowed;
+        emit ValidatorOperatorUpdated(operator, allowed);
     }
 
     /// @notice Registra l'identità di un wallet (solo `hash(CF)` on-chain; il CF
@@ -82,9 +115,9 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
         emit IdentitySet(account, identityHash);
     }
 
+    // ---------------------------------------------------------------------- mint
     /// @notice Conia un biglietto verso `to` al prezzo `price` (face). Applica il
-    ///         limite 2/evento per identità (R4): il 3º biglietto stesso
-    ///         evento/identità fa revert.
+    ///         limite 2/evento per identità (R4).
     function mint(address to, uint256 eventId, uint256 price) external onlyOwner returns (uint256 tokenId) {
         bytes32 id = identityOf[to];
         if (id != bytes32(0)) {
@@ -98,13 +131,12 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
         emit TicketMinted(tokenId, to, eventId, price);
     }
 
-    /// @notice Dati on-chain del biglietto (revert se inesistente).
+    // ----------------------------------------------------------------- views
     function ticketData(uint256 tokenId) external view returns (TicketData memory) {
         _requireOwned(tokenId);
         return _ticket[tokenId];
     }
 
-    /// @notice Costo base corrente del token (base del tetto +5%).
     function paidOf(uint256 tokenId) external view returns (uint256) {
         _requireOwned(tokenId);
         return _ticket[tokenId].paid;
@@ -113,13 +145,19 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
     /// @notice Royalty TINFT dovuta su una vendita: 1% del PREZZO ORIGINALE (R1).
     function royaltyDue(uint256 tokenId) external view returns (uint256) {
         _requireOwned(tokenId);
-        return (_ticket[tokenId].originalPrice * ROYALTY_BPS) / 10_000; // 1%
+        return (_ticket[tokenId].originalPrice * ROYALTY_BPS) / 10_000;
     }
 
+    /// @notice Fee d'uscita per l'export libero: 25% del prezzo originale (R5).
+    function exitFee(uint256 tokenId) public view returns (uint256) {
+        _requireOwned(tokenId);
+        return (_ticket[tokenId].originalPrice * EXIT_FEE_BPS) / 10_000;
+    }
+
+    // ------------------------------------------------------------- vendita (M3/M4)
     /// @notice Registra una vendita secondaria (solo moduli di vendita autorizzati):
     ///         il costo base viaggia col token (R3) e il conteggio 2/evento si
     ///         sposta da venditore a compratore, applicando il limite al compratore.
-    /// @dev    Va chiamata DOPO che il token è stato trasferito al compratore.
     function recordSale(address from, address to, uint256 tokenId, uint256 newPaid) external {
         if (!isSaleOperator[msg.sender]) revert NotSaleOperator();
         _requireOwned(tokenId);
@@ -139,6 +177,47 @@ contract TinftTicket is ERC721, ERC2981, Ownable {
         }
     }
 
+    // ------------------------------------------------------- validazione + export (M5)
+    /// @notice Marca il biglietto come usato (validazione al varco) → collectible esportabile.
+    function markUsed(uint256 tokenId) external {
+        if (!isValidatorOperator[msg.sender]) revert NotValidatorOperator();
+        _requireOwned(tokenId);
+        used[tokenId] = true;
+        emit TicketUsed(tokenId);
+    }
+
+    /// @notice (A) Rilascio completo: incassa la fee 25% e sgancia il token dalla
+    ///         policy → da qui è liberamente trasferibile (royalty best-effort).
+    function exportFree(uint256 tokenId) external payable {
+        _requireExportable(tokenId);
+        if (platformTreasury == address(0)) revert TreasuryNotSet();
+        uint256 fee = exitFee(tokenId);
+        if (msg.value != fee) revert WrongExitFee(fee, msg.value);
+
+        // effetti prima dell'interazione
+        exportModeOf[tokenId] = ExportMode.Free;
+        policyBound[tokenId] = false; // libero da qui
+        emit Exported(tokenId, ExportMode.Free, fee);
+
+        (bool ok,) = payable(platformTreasury).call{value: fee}("");
+        if (!ok) revert FeeTransferFailed();
+    }
+
+    /// @notice (B) Export enforced: il token resta vincolato → la royalty 1%
+    ///         continua a essere applicata a ogni futura vendita.
+    function exportEnforced(uint256 tokenId) external {
+        _requireExportable(tokenId);
+        exportModeOf[tokenId] = ExportMode.Enforced; // policyBound resta true
+        emit Exported(tokenId, ExportMode.Enforced, 0);
+    }
+
+    function _requireExportable(uint256 tokenId) private view {
+        if (ownerOf(tokenId) != _msgSender()) revert NotTicketOwner();
+        if (!used[tokenId]) revert NotUsed();
+        if (exportModeOf[tokenId] != ExportMode.None) revert AlreadyExported();
+    }
+
+    // ------------------------------------------------------------------- internal
     /// @dev Applica la transfer policy su ogni trasferimento reale (esclusi mint/burn).
     function _update(address to, uint256 tokenId, address auth) internal override returns (address from) {
         from = super._update(to, tokenId, auth);

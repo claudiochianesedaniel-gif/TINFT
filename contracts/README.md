@@ -22,7 +22,7 @@ In CI vengono ripristinate con `actions/checkout` (`submodules: recursive`).
 
 | Contratto | Ruolo |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; ogni biglietto è *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (royalty 1%, R1) e `paid` (tetto +5%, R2/R3). Identità on-chain `hash(CF)` e limite **2/evento** (R4) applicato al mint e alla vendita. |
+| `TinftTicket` | ERC-721 + EIP-2981; *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (royalty 1%, R1) e `paid` (tetto +5%, R2/R3). Identità `hash(CF)` + limite **2/evento** (R4). Validazione (`markUsed`) ed export: `exportFree` (fee 25% + sgancio) / `exportEnforced` (royalty per sempre) (R5/R6). |
 | `TinftTransferValidator` | Allowlist di operatori; `validateTransfer` fa revert se il caller non è un modulo TINFT autorizzato. |
 | `TinftRoyaltySplit` | Split royalty **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
 | `TinftEscrow` | Escrow P2P a pagamento: `list` (lock + **tetto +5%**), `pay` (release atomico token+prezzo+royalty, costo base + conteggio 2/evento), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
@@ -58,6 +58,11 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 - ✅ niente bypass `list→compra→reclaim` e nessun blocco di `reclaim` (`test_ListDoesNotEnableBypass_AndReclaimNeverStuck`)
 - ✅ il conteggio si sposta da venditore a compratore alla vendita (`test_SaleMovesCountBetweenIdentities`)
 
+### Definition of Done — M5 (coperta dai test)
+- ✅ dopo `exportFree` il token è trasferibile liberamente; fee 25% incassata dalla tesoreria (`test_ExportFreeUnbindsAndChargesFee`)
+- ✅ dopo `exportEnforced` il trasferimento diretto resta bloccato e una vendita applica ancora la royalty 1% (`test_ExportEnforcedKeepsRoyaltyEnforced`)
+- ✅ export solo a evento concluso (`markUsed`), solo dal proprietario, una sola volta (`test_ExportRequiresUsed`, `test_ExportOnlyOwner`, `test_CannotExportTwice`)
+
 ## Roadmap contratti
-M5 `exportFree` (fee 25% + delist) / `exportEnforced` · M10 audit di sicurezza.
-Vedi `../docs/SPEC-VERIFICATA.md`.
+M10 audit di sicurezza prima del mainnet. Poi backend/pagamenti/SPID/frontend
+(M6–M9). Vedi `../docs/SPEC-VERIFICATA.md`.
