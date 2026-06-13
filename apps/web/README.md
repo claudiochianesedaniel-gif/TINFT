@@ -1,21 +1,24 @@
 # TINFT — Web (frontend)
 
-## `demo.html` — demo visibile (autonoma)
-Pagina **autonoma, zero dipendenze**: si apre con doppio click in qualsiasi browser.
-Ricrea la superficie **cliente** TINFT (Eventi · Biglietti · Mercato) + una **Console**
-con i ricavi che si aggiornano **live** a ogni azione.
+## `demo.html` — WebApp a dashboard (autonoma, visibile)
+Singolo file, **zero dipendenze**: si apre in qualsiasi browser. Layout a **dashboard**
+con sidebar e **profilo selezionabile** — ogni utente ha la sua dashboard dedicata:
 
-Applica la **logica economica reale** — la stessa di `services/api/src/domain/rules.ts` e dei
-contratti M1–M5:
-- royalty **1%** del prezzo originale, split **0,5% TINFT + 0,5% organizzatore**
-- tetto rivendita **+5%** sul costo base
-- limite **2 biglietti per evento / identità**
-- export: **free** (fee 25% → liberamente trasferibile) / **enforced** (royalty per sempre)
-- commissione primario **5%**
+- **Organizzatore**: panoramica (club, eventi, venduti, incasso, royalty) · **Club & Eventi**:
+  crea club, **entra nel club** ed entra in una sezione dedicata per **creare gli eventi** del club.
+- **Cliente**: **Esplora** club → eventi del club + **Fidelity del club** (carnet associato al CLUB,
+  valido su tutti i suoi eventi) · **I miei biglietti** (check-in QR rotante, vendi→escrow con timer,
+  regala, esporta).
+- **Validatore**: scansione con i 5 esiti; il Fidelity consuma un ingresso alla volta.
 
-Flusso dimostrato: acquista → (limite 2/evento) → valida al varco (→ collectible) →
-rivendi col tetto +5% (royalty 0,5/0,5) → esporta. La Console riflette gli incassi in tempo reale.
+**Modello**: l'organizzatore ha **più club**; ogni club ha i suoi **eventi**; il **Fidelity è del club**.
+
+Applica le **regole reali** (royalty 1% 0,5/0,5, tetto +5%, limite 2/evento, fee export 25%,
+commissione primario 5%) — le stesse di `services/api/src/domain/rules.ts` e dei contratti M1–M5.
+La barra in alto mostra i **ricavi piattaforma** live.
 
 Apri: `apps/web/demo.html`.
 
-> È la base di partenza per l'app **Next.js** reale (M9), che consumerà l'API di `services/api`.
+## In arrivo
+- **Sito Web pubblico** (HTML): vetrina + acquisto che deposita il biglietto nel wallet.
+- Conversione in app **Next.js** reale collegata all'API di `services/api`.
