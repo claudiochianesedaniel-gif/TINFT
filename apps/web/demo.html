@@ -18,16 +18,19 @@
   .kicker{font-family:ui-monospace,'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--mut);text-transform:uppercase}
   h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600;letter-spacing:-.01em}
   .phone{width:390px;max-width:96vw;background:var(--bg2);border:1px solid var(--border);border-radius:34px;overflow:hidden;
-    box-shadow:0 30px 80px rgba(0,0,0,.5);display:flex;flex-direction:column;height:780px;max-height:88vh}
-  .top{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,oklch(0.18 0.04 285),transparent)}
+    box-shadow:0 30px 80px rgba(0,0,0,.5);display:flex;flex-direction:column;height:790px;max-height:90vh}
+  .top{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,oklch(0.18 0.04 285),transparent)}
   .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700}
   .top .sub{font-size:11px;color:var(--mut)}
-  .body{flex:1;overflow:auto;padding:16px 16px 90px}
-  .tabs{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border);background:var(--surf2);position:sticky;bottom:0}
+  .switch{display:flex;gap:5px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surf2)}
+  .switch .s{flex:1;text-align:center;font-size:11px;padding:7px 0;border-radius:9px;color:var(--mut);cursor:pointer;border:1px solid transparent}
+  .switch .s.on{color:#fff;background:linear-gradient(135deg,oklch(0.3 0.1 264),oklch(0.2 0.06 264));border-color:oklch(0.45 0.12 264)}
+  .body{flex:1;overflow:auto;padding:16px 16px 24px}
+  .tabs{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border);background:var(--surf2)}
   .tab{flex:1;text-align:center;padding:9px 0;border-radius:11px;font-size:12px;color:var(--mut);cursor:pointer;border:1px solid transparent}
   .tab.on{color:#fff;background:linear-gradient(135deg,oklch(0.3 0.1 264),oklch(0.2 0.06 264));border-color:oklch(0.45 0.12 264)}
   .card{background:var(--surf);border:1px solid var(--border);border-radius:18px;padding:15px;margin-bottom:12px}
-  .ev-art{height:96px;border-radius:13px;margin-bottom:11px;position:relative;overflow:hidden}
+  .ev-art{height:92px;border-radius:13px;margin-bottom:11px;position:relative;overflow:hidden}
   .badge{position:absolute;top:9px;left:9px;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.12em;background:rgba(0,0,0,.45);padding:4px 8px;border-radius:99px}
   .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .muted{color:var(--mut);font-size:12px}
@@ -54,28 +57,30 @@
   .legend{font-size:11px;color:var(--mut);line-height:1.7;margin-top:6px}
   code{font-family:ui-monospace,monospace;color:oklch(0.82 0.08 264);font-size:11px}
   .hd{display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 12px}
-  .step{margin-top:11px}
-  .ttl{font-size:15px;font-weight:600}
-  a.src{color:var(--mut);font-size:11px}
+  .step{margin-top:11px}.ttl{font-size:15px;font-weight:600}
+  .qr{display:grid;grid-template-columns:repeat(17,9px);grid-template-rows:repeat(17,9px);background:#fff;padding:10px;border-radius:10px;width:max-content;margin:0 auto}
+  .qr i{width:9px;height:9px}
+  .scanres{border-radius:16px;padding:20px;text-align:center;margin-top:10px}
+  .scanic{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 10px;border:3px solid}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 </style>
 </head>
 <body>
-  <!-- APP (cliente) -->
   <div class="phone">
     <div class="top">
-      <div class="logo">◆</div>
+      <div class="logo" id="logoIc">◆</div>
       <div style="flex:1"><div style="font-weight:600;font-size:14px;font-family:'Space Grotesk'">TINFT</div><div class="sub" id="walletSub">—</div></div>
       <span class="pill ok" id="spidPill">SPID ✓</span>
     </div>
-    <div class="body" id="screen"></div>
-    <div class="tabs">
-      <div class="tab on" data-tab="eventi">Eventi</div>
-      <div class="tab" data-tab="biglietti">Biglietti</div>
-      <div class="tab" data-tab="mercato">Mercato</div>
+    <div class="switch">
+      <div class="s on" data-p="cliente">Cliente</div>
+      <div class="s" data-p="validatore">Validatore</div>
+      <div class="s" data-p="org">Organizzatore</div>
     </div>
+    <div class="body" id="screen"></div>
+    <div class="tabs" id="tabs"></div>
   </div>
 
-  <!-- CONSOLE (piattaforma/organizzatore) — ricavi live -->
   <div class="console">
     <div class="kicker">TINFT · Console — ricavi live</div>
     <h2 style="margin:6px 0 14px">Incassi in tempo reale</h2>
@@ -86,47 +91,45 @@
       <div class="split"><div><div class="muted">0,5% TINFT</div><div class="price" id="cRoyT">€ 0,00</div></div>
       <div><div class="muted">0,5% organizz.</div><div class="price" id="cRoyO">€ 0,00</div></div></div></div>
     <div class="stat"><div class="kicker">Fee d'uscita export (25%)</div><div class="v" id="cExit">€ 0,00</div></div>
-    <div class="legend" style="margin-top:14px">
-      Regole applicate (le stesse <i>enforced</i> on-chain):<br>
-      • royalty <code>1%</code> del prezzo originale, split <code>0,5/0,5</code><br>
-      • tetto rivendita <code>+5%</code> sul costo base<br>
-      • limite <code>2</code> biglietti per evento / identità<br>
-      • export libero: fee <code>25%</code> · enforced: royalty per sempre
+    <div class="stat"><div class="kicker">Accessi validati</div><div class="v" id="cAcc">0</div></div>
+    <div class="legend" style="margin-top:8px">
+      Regole <i>enforced</i> on-chain: royalty <code>1%</code> (<code>0,5/0,5</code>) · tetto <code>+5%</code> ·
+      limite <code>2</code>/evento · export <code>25%</code>. Logica = <code>rules.ts</code> + contratti M1–M5.
     </div>
-    <div class="legend" style="margin-top:10px">Demo autonoma · logica = <code>services/api/src/domain/rules.ts</code> + contratti M1–M5.</div>
   </div>
-
   <div id="toast"></div>
 <script>
 "use strict";
-// ---- regole economiche (mirror di rules.ts / contratti) — importi in centesimi
-var BPS=10000, ROYALTY_BPS=100, RESALE_CAP_BPS=10500, EXIT_FEE_BPS=2500, PRIMARY_FEE_BPS=500, MAX_PER_EVENT=2;
-var royalty=function(orig){return Math.floor(orig*ROYALTY_BPS/BPS)};
-var splitRoyalty=function(orig){var r=royalty(orig),t=Math.floor(r/2);return {tinft:t,org:r-t,tot:r}};
-var resaleCap=function(paid){return Math.floor(paid*RESALE_CAP_BPS/BPS)};
-var exitFee=function(orig){return Math.floor(orig*EXIT_FEE_BPS/BPS)};
-var primaryFee=function(price){return Math.floor(price*PRIMARY_FEE_BPS/BPS)};
+var BPS=10000,ROYALTY_BPS=100,RESALE_CAP_BPS=10500,EXIT_FEE_BPS=2500,PRIMARY_FEE_BPS=500,MAX_PER_EVENT=2;
+var royalty=function(o){return Math.floor(o*ROYALTY_BPS/BPS)};
+var splitRoyalty=function(o){var r=royalty(o),t=Math.floor(r/2);return{tinft:t,org:r-t,tot:r}};
+var resaleCap=function(p){return Math.floor(p*RESALE_CAP_BPS/BPS)};
+var exitFee=function(o){return Math.floor(o*EXIT_FEE_BPS/BPS)};
+var primaryFee=function(p){return Math.floor(p*PRIMARY_FEE_BPS/BPS)};
 var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 
-// ---- stato
 var EVENTS=[
   {id:'vol4',title:'Notte Elettronica · Vol.4',venue:'Magazzino Generali · 21 GIU',price:3150,art:'linear-gradient(135deg,oklch(0.45 0.17 264),oklch(0.28 0.1 285))'},
   {id:'jazz',title:'Blue Room · Jazz Sessions',venue:'Auditorium · 03 LUG',price:2400,art:'linear-gradient(135deg,oklch(0.45 0.13 200),oklch(0.28 0.09 235))'},
   {id:'live',title:'Stagione Live · Fidelity',venue:'Club Astra · carnet 5 serate',price:12000,art:'linear-gradient(135deg,oklch(0.46 0.12 75),oklch(0.3 0.08 50))'}
 ];
-var state={tab:'eventi', tokenSeq:0, tickets:[], held:{}, ledger:{prim:0,royT:0,royO:0,exit:0}, buy:null};
+var state={profile:'cliente',tab:'eventi',tokenSeq:0,tickets:[],held:{},ledger:{prim:0,royT:0,royO:0,exit:0},
+  aggr:{sold:0,gross:0,accessi:0},buy:null,checkin:null,scan:null};
+var TABS={cliente:[['eventi','Eventi'],['biglietti','Biglietti'],['mercato','Mercato']]};
+var qrTimer=null;
 
-var $=function(id){return document.getElementById(id)};
-function toast(msg,err){var t=$('toast');t.innerHTML='<div class="toast'+(err?' err':'')+'">'+msg+'</div>';clearTimeout(window.__tt);window.__tt=setTimeout(function(){t.innerHTML=''},2600)}
-function heldFor(ev){return state.held[ev]||0}
+var $=function(i){return document.getElementById(i)};
+function toast(m,e){var t=$('toast');t.innerHTML='<div class="toast'+(e?' err':'')+'">'+m+'</div>';clearTimeout(window.__tt);window.__tt=setTimeout(function(){t.innerHTML=''},2800)}
+function heldFor(e){return state.held[e]||0}
+function activeTickets(){return state.tickets.filter(function(t){return t.status==='attivo'})}
 
 function buy(ev){
   if(heldFor(ev)>=MAX_PER_EVENT){toast('Limite raggiunto · max 2 per evento (identità)',true);return}
   var e=EVENTS.find(function(x){return x.id===ev});
-  var id='t'+(++state.tokenSeq);
-  state.tickets.unshift({id:id,tokenId:state.tokenSeq,eventId:ev,title:e.title,venue:e.venue,originalPrice:e.price,paid:e.price,status:'attivo',exportMode:'none',holder:'Marco Bianchi'});
-  state.held[ev]=heldFor(ev)+1;
-  state.ledger.prim+=primaryFee(e.price);
+  state.tokenSeq++;
+  state.tickets.unshift({id:'t'+state.tokenSeq,tokenId:state.tokenSeq,eventId:ev,title:e.title,venue:e.venue,originalPrice:e.price,paid:e.price,status:'attivo',exportMode:'none',holder:'Marco Bianchi'});
+  state.held[ev]=heldFor(ev)+1; state.ledger.prim+=primaryFee(e.price);
+  state.aggr.sold++; state.aggr.gross+=e.price;
   state.buy=null; state.tab='biglietti';
   toast('Biglietto coniato · tokenId #'+state.tokenSeq+' · commissione 5% '+eur(primaryFee(e.price)));
   render();
@@ -134,72 +137,123 @@ function buy(ev){
 function sell(id){
   var t=state.tickets.find(function(x){return x.id===id}); if(!t)return;
   var cap=resaleCap(t.paid);
-  var raw=prompt('Prezzo di rivendita (€). Tetto +5% = '+eur(cap),(cap/100).toFixed(2));
-  if(raw===null)return;
+  var raw=prompt('Prezzo di rivendita (€). Tetto +5% = '+eur(cap),(cap/100).toFixed(2)); if(raw===null)return;
   var price=Math.round(parseFloat(String(raw).replace(',','.'))*100);
   if(!(price>0)){toast('Prezzo non valido',true);return}
   if(price>cap){toast('Prezzo oltre il tetto +5% ('+eur(cap)+')',true);return}
   var s=splitRoyalty(t.originalPrice);
-  // simula la vendita sul mercato: royalty allo split, il biglietto lascia il wallet
   state.ledger.royT+=s.tinft; state.ledger.royO+=s.org;
   state.held[t.eventId]=Math.max(0,heldFor(t.eventId)-1);
   state.tickets=state.tickets.filter(function(x){return x.id!==id});
   toast('Venduto a '+eur(price)+' · royalty 1% '+eur(s.tot)+' ('+eur(s.tinft)+' TINFT + '+eur(s.org)+' org)');
   render();
 }
-function validate(id){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;
-  if(t.status!=='attivo'){toast('Già '+t.status,true);return}
-  t.status='usato'; toast('Validato al varco · ora è collectible (esportabile)'); render();}
 function exportT(id,mode){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;
   if(t.status!=='usato'){toast('Esportabile solo a evento concluso',true);return}
   if(mode==='free'){var f=exitFee(t.originalPrice);state.ledger.exit+=f;t.exportMode='free';t.status='exported';toast('Rilasciato · fee 25% '+eur(f)+' · ora liberamente trasferibile')}
   else{t.exportMode='enforced';t.status='exported';toast('Esportato enforced · royalty 1% resta attiva per sempre')}
   render();}
+function openCheckin(id){state.checkin=id;render()}
 
-// ---- render
-function evCard(e){
-  return '<div class="card"><div class="ev-art" style="background:'+e.art+'"><span class="badge">TICKET NFT</span></div>'+
-   '<div class="row"><div><div class="ttl">'+e.title+'</div><div class="muted">'+e.venue+'</div></div></div>'+
-   '<div class="row" style="margin-top:11px"><div class="price">'+eur(e.price)+'</div>'+
-   '<button class="sm" onclick="buy(\''+e.id+'\')" '+(heldFor(e.id)>=MAX_PER_EVENT?'disabled':'')+'>'+(heldFor(e.id)>=MAX_PER_EVENT?'Limite 2/evento':'Acquista')+'</button></div>'+
-   (heldFor(e.id)>0?'<div class="legend">Possiedi '+heldFor(e.id)+'/2 per questo evento</div>':'')+'</div>';
+// validatore
+function doScan(scenario){
+  if(scenario){state.scan={outcome:scenario};render();return}
+  var t=activeTickets()[0];
+  if(!t){state.scan={outcome:'fake'};render();return}
+  t.status='usato'; state.aggr.accessi++;
+  state.scan={outcome:'valid',holder:t.holder,meta:t.title};
+  toast('Accesso valido · '+t.holder); render();
 }
+
+// QR rotante (5s)
+function qrCells(seed){var x=(seed*2654435761)%4294967296,out='';
+  function rnd(){x=(x*1103515245+12345)&0x7fffffff;return (x>>8)/0x7fffff}
+  for(var r=0;r<17;r++)for(var c=0;c<17;c++){var fin=(r<5&&c<5)||(r<5&&c>11)||(r>11&&c<5);
+    var on=fin?((r%5===0||c%5===0||(r>1&&r<4&&c>1&&c<4)||(r<5&&c<5))?true:false):rnd()>0.5;
+    out+='<i style="background:'+(on?'#0a0c12':'#fff')+'"></i>'}
+  return out;}
+
+function evCard(e){return '<div class="card"><div class="ev-art" style="background:'+e.art+'"><span class="badge">TICKET NFT</span></div>'+
+  '<div class="row"><div><div class="ttl">'+e.title+'</div><div class="muted">'+e.venue+'</div></div></div>'+
+  '<div class="row" style="margin-top:11px"><div class="price">'+eur(e.price)+'</div>'+
+  '<button class="sm" onclick="buy(\''+e.id+'\')" '+(heldFor(e.id)>=MAX_PER_EVENT?'disabled':'')+'>'+(heldFor(e.id)>=MAX_PER_EVENT?'Limite 2/evento':'Acquista')+'</button></div>'+
+  (heldFor(e.id)>0?'<div class="legend">Possiedi '+heldFor(e.id)+'/2 per questo evento</div>':'')+'</div>';}
 function tkStatus(t){var m={attivo:'pill ok',usato:'pill warn',exported:'pill plat'};return '<span class="'+(m[t.status]||'pill')+'">'+t.status.toUpperCase()+(t.exportMode!=='none'?' · '+t.exportMode:'')+'</span>'}
-function tkCard(t){
-  var actions='';
-  if(t.status==='attivo')actions='<button class="sm ghost" onclick="validate(\''+t.id+'\')">Valida</button> <button class="sm ghost" onclick="sell(\''+t.id+'\')">Vendi</button>';
-  else if(t.status==='usato')actions='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">Esporta (fee 25%)</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">Esporta enforced</button>';
-  else actions='<span class="muted">Collectible esportato</span>';
-  return '<div class="card"><div class="row"><div class="ttl">'+t.title+'</div>'+tkStatus(t)+'</div>'+
-    '<div class="muted">'+t.venue+'</div>'+
-    '<div class="legend">tokenId <code>#'+t.tokenId+'</code> · costo base '+eur(t.paid)+' · tetto rivendita '+eur(resaleCap(t.paid))+'</div>'+
-    '<div class="step">'+actions+'</div></div>';
+function tkCard(t){var a='';
+  if(t.status==='attivo')a='<button class="sm ghost" onclick="openCheckin(\''+t.id+'\')">Check-in (QR)</button> <button class="sm ghost" onclick="sell(\''+t.id+'\')">Vendi</button>';
+  else if(t.status==='usato')a='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">Esporta (fee 25%)</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">Esporta enforced</button>';
+  else a='<span class="muted">Collectible esportato</span>';
+  return '<div class="card"><div class="row"><div class="ttl">'+t.title+'</div>'+tkStatus(t)+'</div><div class="muted">'+t.venue+'</div>'+
+    '<div class="legend">tokenId <code>#'+t.tokenId+'</code> · costo base '+eur(t.paid)+' · tetto '+eur(resaleCap(t.paid))+'</div><div class="step">'+a+'</div></div>';}
+
+function clienteView(){
+  if(state.checkin){var t=state.tickets.find(function(x){return x.id===state.checkin});
+    return '<div class="hd"><div><div class="kicker">Check-in</div><div class="ttl">'+(t?t.title:'')+'</div></div><button class="sm ghost" onclick="state.checkin=null;render()">Chiudi</button></div>'+
+      '<div class="card"><div class="qr" id="qrbox"></div><div class="legend" style="text-align:center">Codice rotante · si rigenera ogni <b>5s</b> (uno screenshot non vale). <span id="qrcd"></span></div></div>';}
+  if(state.buy){var e=EVENTS.find(function(x){return x.id===state.buy});
+    return '<div class="hd"><div><div class="kicker">Acquisto</div><div class="ttl">'+e.title+'</div></div><button class="sm ghost" onclick="state.buy=null;render()">Indietro</button></div>'+
+      '<div class="card"><div class="muted">Biglietto nominativo (SPID)</div><input value="Marco Bianchi" disabled />'+
+      '<div class="row" style="margin-top:13px"><span class="muted">Prezzo</span><span class="price">'+eur(e.price)+'</span></div>'+
+      '<div class="legend">Pagamento in euro → mint sul wallet custodial (niente seed/gas). Piattaforma 5%.</div>'+
+      '<button style="width:100%;margin-top:12px" onclick="buy(\''+e.id+'\')">Paga '+eur(e.price)+' e ricevi il biglietto</button></div>';}
+  if(state.tab==='eventi')return '<div class="kicker">In vendita</div><h2 style="margin:6px 0 14px">Eventi</h2>'+EVENTS.map(evCard).join('');
+  if(state.tab==='biglietti')return '<div class="kicker">Wallet</div><h2 style="margin:6px 0 14px">I tuoi biglietti</h2>'+(state.tickets.length?state.tickets.map(tkCard).join(''):'<div class="card muted">Nessun biglietto. Vai su Eventi.</div>');
+  var sale=activeTickets();
+  return '<div class="kicker">Mercato secondario</div><h2 style="margin:6px 0 14px">Rivendi (tetto +5%)</h2>'+(sale.length?sale.map(tkCard).join(''):'<div class="card muted">Nessun biglietto attivo da rivendere.</div>');
 }
-function buyView(){
-  var e=EVENTS.find(function(x){return x.id===state.buy});
-  return '<div class="hd"><div><div class="kicker">Acquisto</div><div class="ttl">'+e.title+'</div></div><button class="sm ghost" onclick="state.buy=null;render()">Indietro</button></div>'+
-   '<div class="card"><div class="muted">Biglietto nominativo (SPID)</div><input value="Marco Bianchi" disabled />'+
-   '<div class="row" style="margin-top:13px"><span class="muted">Prezzo</span><span class="price">'+eur(e.price)+'</span></div>'+
-   '<div class="legend">Pagamento in euro → mint sul wallet custodial (niente seed/gas). La piattaforma trattiene il 5%.</div>'+
-   '<button style="width:100%;margin-top:12px" onclick="buy(\''+e.id+'\')">Paga '+eur(e.price)+' e ricevi il biglietto</button></div>';
+function validatoreView(){
+  var r=state.scan, theme={valid:['var(--ok)','✓','Accesso valido'],screenshot:['var(--warn)','!','Codice non valido (screenshot)'],
+    duplicate:['var(--err)','✕','Già validato'],escrow:['var(--warn)','⏸','In trasferimento · accesso negato'],fake:['var(--err)','✕','Biglietto non valido']};
+  var res='';
+  if(r){var th=theme[r.outcome]||theme.valid;
+    res='<div class="scanres" style="background:radial-gradient(120% 80% at 50% 30%,oklch(0.28 0.12 '+(r.outcome==='valid'?158:r.outcome==='duplicate'||r.outcome==='fake'?25:70)+'),#08080c)">'+
+      '<div class="scanic" style="border-color:'+th[0]+';color:'+th[0]+'">'+th[1]+'</div><div class="ttl">'+th[2]+'</div>'+
+      (r.holder?'<div class="muted" style="margin-top:6px">'+r.holder+' · '+r.meta+'</div>':'')+'</div>';}
+  return '<div class="kicker">Profilo validatore · varco VARCO-7788</div><h2 style="margin:6px 0 12px">Scansione</h2>'+
+    '<div class="card"><button style="width:100%" onclick="doScan()">Scansiona prossimo ospite</button>'+
+    '<div class="legend">Valida il prossimo biglietto attivo (→ usato) e registra l\'accesso.</div></div>'+
+    '<div class="card"><div class="kicker">Simula esiti</div><div class="grid2" style="margin-top:9px">'+
+    '<button class="sm ghost" onclick="doScan(\'screenshot\')">Screenshot</button>'+
+    '<button class="sm ghost" onclick="doScan(\'duplicate\')">Già usato</button>'+
+    '<button class="sm ghost" onclick="doScan(\'escrow\')">In escrow</button>'+
+    '<button class="sm ghost" onclick="doScan(\'fake\')">Falso</button></div></div>'+res;
 }
+function orgView(){
+  var L=state.ledger,a=state.aggr;
+  function st(k,v){return '<div class="stat"><div class="kicker">'+k+'</div><div class="v">'+v+'</div></div>'}
+  return '<div class="kicker">Profilo organizzatore · Club Astra</div><h2 style="margin:6px 0 12px">Dashboard</h2>'+
+    '<div class="grid2">'+st('Biglietti venduti',a.sold)+st('Accessi validati',a.accessi)+'</div>'+
+    st('Incasso lordo prevendita',eur(a.gross))+
+    st('Royalty P2P (tua quota 0,5%)',eur(L.royO))+
+    st('Netto stimato (− 5% commissione)',eur(a.gross-Math.floor(a.gross*PRIMARY_FEE_BPS/BPS)+L.royO))+
+    '<div class="legend">Numeri calcolati live dalle azioni del cliente. La quota 0,5% TINFT è trattenuta dalla piattaforma.</div>';
+}
+
 function render(){
-  $('walletSub').textContent=state.tickets.length+' biglietti · '+state.tickets.filter(function(t){return t.status!=='exported'}).length+' attivi/collectible';
-  document.querySelectorAll('.tab').forEach(function(el){el.classList.toggle('on',el.dataset.tab===state.tab)});
-  var s=$('screen'),h='';
-  if(state.buy){h=buyView()}
-  else if(state.tab==='eventi'){h='<div class="kicker">In vendita</div><h2 style="margin:6px 0 14px">Eventi</h2>'+EVENTS.map(evCard).join('')}
-  else if(state.tab==='biglietti'){h='<div class="kicker">Wallet</div><h2 style="margin:6px 0 14px">I tuoi biglietti</h2>'+(state.tickets.length?state.tickets.map(tkCard).join(''):'<div class="card muted">Nessun biglietto. Vai su Eventi e acquista.</div>')}
-  else{var sale=state.tickets.filter(function(t){return t.status==='attivo'});
-    h='<div class="kicker">Mercato secondario</div><h2 style="margin:6px 0 14px">Rivendi (tetto +5%)</h2>'+
-    (sale.length?sale.map(tkCard).join(''):'<div class="card muted">Nessun biglietto attivo da rivendere.</div>')}
-  s.innerHTML=h;
-  var L=state.ledger, tot=L.prim+L.royT+L.royO+L.exit;
-  $('cTot').textContent=eur(tot); $('cPrim').textContent=eur(L.prim);
-  $('cRoy').textContent=eur(L.royT+L.royO); $('cRoyT').textContent=eur(L.royT); $('cRoyO').textContent=eur(L.royO);
-  $('cExit').textContent=eur(L.exit);
+  if(qrTimer){clearInterval(qrTimer);qrTimer=null;}
+  $('walletSub').textContent={cliente:state.tickets.length+' biglietti',validatore:'solo scansione',org:'gestione evento'}[state.profile];
+  $('logoIc').textContent={cliente:'◆',validatore:'✓',org:'⬢'}[state.profile];
+  document.querySelectorAll('.switch .s').forEach(function(el){el.classList.toggle('on',el.dataset.p===state.profile)});
+  // tabs only for cliente
+  var tabsEl=$('tabs');
+  if(state.profile==='cliente'){tabsEl.style.display='flex';tabsEl.innerHTML=TABS.cliente.map(function(t){return '<div class="tab'+(state.tab===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</div>'}).join('');
+    tabsEl.querySelectorAll('.tab').forEach(function(el){el.onclick=function(){state.tab=el.dataset.tab;state.buy=null;state.checkin=null;render()}});}
+  else tabsEl.style.display='none';
+
+  var s=$('screen');
+  s.innerHTML=state.profile==='cliente'?clienteView():state.profile==='validatore'?validatoreView():orgView();
+
+  if(state.profile==='cliente'&&state.checkin){
+    var box=$('qrbox'),cd=$('qrcd');
+    var draw=function(){var now=Math.floor(Date.now()/1000);if(box)box.innerHTML=qrCells(Math.floor(now/5));if(cd)cd.textContent='rigenera tra '+(5-(now%5))+'s';};
+    draw(); qrTimer=setInterval(draw,1000);
+  }
+  var L=state.ledger,tot=L.prim+L.royT+L.royO+L.exit;
+  $('cTot').textContent=eur(tot);$('cPrim').textContent=eur(L.prim);
+  $('cRoy').textContent=eur(L.royT+L.royO);$('cRoyT').textContent=eur(L.royT);$('cRoyO').textContent=eur(L.royO);
+  $('cExit').textContent=eur(L.exit);$('cAcc').textContent=state.aggr.accessi;
 }
-document.querySelectorAll('.tab').forEach(function(el){el.onclick=function(){state.tab=el.dataset.tab;state.buy=null;render()}});
+document.querySelectorAll('.switch .s').forEach(function(el){el.onclick=function(){state.profile=el.dataset.p;state.buy=null;state.checkin=null;state.scan=null;state.tab='eventi';render()}});
 render();
 </script>
 </body>
