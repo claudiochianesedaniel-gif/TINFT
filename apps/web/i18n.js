@@ -23,7 +23,19 @@
       // app chrome
       p_org: "Organizzatore", p_cli: "Cliente", p_val: "Validatore",
       n_dash: "Dashboard", n_club: "Club & Eventi", n_esplora: "Esplora", n_biglietti: "I miei biglietti", n_scan: "Scansione", n_accessi: "Accessi",
-      b_buy: "Acquista", b_soldout: "Esaurito", b_limit: "Limite 2", b_checkin: "Check-in", b_sell: "Vendi", b_gift: "Regala", b_pay: "Compratore paga", b_cancel: "Annulla", b_exp_free: "Esporta (fee 25%)", b_exp_enf: "Esporta enforced", b_newclub: "Crea club", b_newevent: "Crea evento", b_enter: "Entra nel club →", b_scan: "Scansiona prossimo ospite"
+      b_buy: "Acquista", b_soldout: "Esaurito", b_limit: "Limite 2", b_checkin: "Check-in", b_sell: "Vendi", b_gift: "Regala", b_pay: "Compratore paga", b_cancel: "Annulla", b_exp_free: "Esporta (fee 25%)", b_exp_enf: "Esporta enforced", b_newclub: "Crea club", b_newevent: "Crea evento", b_enter: "Entra nel club →", b_scan: "Scansiona prossimo ospite",
+      // app demo · titoli pagina (topbar)
+      ti_dash:"Dashboard", su_dash:"Panoramica di tutti i club", ti_club:"Club & Eventi", su_club:"Crea club ed eventi", ti_cd:"Club", su_cd:"Gestisci eventi del club", ti_esp:"Esplora", su_esp:"Club ed eventi disponibili", ti_big:"I miei biglietti", su_big:"Wallet e azioni", ti_scan:"Scansione", su_scan:"Controllo accessi al varco", ti_acc:"Accessi", su_acc:"Riepilogo validazioni",
+      // topbar destra
+      tr_rev:"Ricavi piattaforma", tr_wallet:"Wallet", tr_tickets:"biglietti", tr_acc:"accessi", tr_gate:"Varco",
+      // intestazioni sezione
+      h_recent:"Eventi recenti", h_holders:"Holder & community", h_clubevents:"Eventi del club", h_upcoming:"Prossimi eventi", h_clubs:"Club",
+      // kicker card
+      k_news:"Novità", k_sales7:"Vendite · 7 giorni", k_incassi:"Incassi", k_scan:"Scansione varco", k_lastentries:"Ultimi accessi",
+      // etichette tile
+      tl_revtot:"Ricavi totali", tl_comm5:"Commissioni 5%", tl_roy:"Royalty 1% (0,5/0,5)", tl_exitfee:"Fee export 25%", tl_validated:"Accessi validati", tl_clubs:"Club", tl_events:"Eventi", tl_sold:"Biglietti venduti", tl_gross:"Incasso lordo", tl_royo:"Royalty P2P (org 0,5%)", tl_tickets:"Biglietti", tl_active:"Attivi", tl_collect:"Collectible", tl_fid:"Fidelity", tl_venduti:"Venduti", tl_incasso:"Incasso", tl_activetk:"Biglietti attivi", tl_used:"Usati/collectible",
+      // varie
+      m_allclubs:"← Tutti i club", m_buyfid:"Acquista Fidelity", m_fidclub:"FIDELITY DEL CLUB", m_vetrina:"IN VETRINA", m_backtk:"← Torna ai biglietti"
     },
     en: {
       brand: "TINFT", reg_title: "Create your account", reg_sub: "Verified identity, all in-app. Plaintext data stays off-chain; on-chain only the hash of the tax code.",
@@ -43,7 +55,13 @@
       hero_cta1: "Browse events", hero_cta2: "How it works",
       p_org: "Organizer", p_cli: "Customer", p_val: "Validator",
       n_dash: "Dashboard", n_club: "Clubs & Events", n_esplora: "Explore", n_biglietti: "My tickets", n_scan: "Scan", n_accessi: "Entries",
-      b_buy: "Buy", b_soldout: "Sold out", b_limit: "Limit 2", b_checkin: "Check-in", b_sell: "Sell", b_gift: "Gift", b_pay: "Buyer pays", b_cancel: "Cancel", b_exp_free: "Export (25% fee)", b_exp_enf: "Export enforced", b_newclub: "Create club", b_newevent: "Create event", b_enter: "Enter club →", b_scan: "Scan next guest"
+      b_buy: "Buy", b_soldout: "Sold out", b_limit: "Limit 2", b_checkin: "Check-in", b_sell: "Sell", b_gift: "Gift", b_pay: "Buyer pays", b_cancel: "Cancel", b_exp_free: "Export (25% fee)", b_exp_enf: "Export enforced", b_newclub: "Create club", b_newevent: "Create event", b_enter: "Enter club →", b_scan: "Scan next guest",
+      ti_dash:"Dashboard", su_dash:"Overview of all clubs", ti_club:"Clubs & Events", su_club:"Create clubs and events", ti_cd:"Club", su_cd:"Manage club events", ti_esp:"Explore", su_esp:"Available clubs and events", ti_big:"My tickets", su_big:"Wallet and actions", ti_scan:"Scan", su_scan:"Gate access control", ti_acc:"Entries", su_acc:"Validation summary",
+      tr_rev:"Platform revenue", tr_wallet:"Wallet", tr_tickets:"tickets", tr_acc:"entries", tr_gate:"Gate",
+      h_recent:"Recent events", h_holders:"Holders & community", h_clubevents:"Club events", h_upcoming:"Upcoming events", h_clubs:"Clubs",
+      k_news:"What's new", k_sales7:"Sales · 7 days", k_incassi:"Revenue", k_scan:"Gate scan", k_lastentries:"Last entries",
+      tl_revtot:"Total revenue", tl_comm5:"5% commissions", tl_roy:"Royalty 1% (0.5/0.5)", tl_exitfee:"Export fee 25%", tl_validated:"Validated entries", tl_clubs:"Clubs", tl_events:"Events", tl_sold:"Tickets sold", tl_gross:"Gross revenue", tl_royo:"P2P royalty (org 0.5%)", tl_tickets:"Tickets", tl_active:"Active", tl_collect:"Collectible", tl_fid:"Fidelity", tl_venduti:"Sold", tl_incasso:"Revenue", tl_activetk:"Active tickets", tl_used:"Used/collectible",
+      m_allclubs:"← All clubs", m_buyfid:"Buy Fidelity", m_fidclub:"CLUB FIDELITY", m_vetrina:"FEATURED", m_backtk:"← Back to tickets"
     }
   };
 
