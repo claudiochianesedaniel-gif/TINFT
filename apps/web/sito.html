@@ -148,6 +148,8 @@
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 <script>
 "use strict";
+// i18n opzionale: se i18n.js non è presente (file aperto da solo) non rompere nulla (resta IT).
+if(typeof window.applyI18n!=='function'){window.t=window.t||function(k){return k};window.setLang=window.setLang||function(){};window.applyI18n=function(){};window.tinftLang='it';}
 var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 var EVENTS=[
   {id:'e1',club:'Club Astra',title:'Notte Elettronica · Vol.4',date:'21 GIU',price:3150,art:'linear-gradient(135deg,oklch(0.5 0.17 264),oklch(0.3 0.1 285))'},

@@ -104,6 +104,8 @@ var primaryFee=function(p){return Math.floor(p*PRIMARY_FEE_BPS/BPS)};
 var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
 var ART=['linear-gradient(135deg,oklch(0.45 0.17 264),oklch(0.28 0.1 285))','linear-gradient(135deg,oklch(0.45 0.13 200),oklch(0.28 0.09 235))','linear-gradient(135deg,oklch(0.46 0.12 75),oklch(0.3 0.08 50))','linear-gradient(135deg,oklch(0.45 0.13 320),oklch(0.3 0.09 350))'];
 
+// i18n opzionale: se i18n.js non è presente (file aperto da solo) usa un fallback IT, così NON si rompe nulla.
+if(typeof window.t!=='function'){var _IT={p_org:'Organizzatore',p_cli:'Cliente',p_val:'Validatore',n_dash:'Dashboard',n_club:'Club & Eventi',n_esplora:'Esplora',n_biglietti:'I miei biglietti',n_scan:'Scansione',n_accessi:'Accessi'};window.tinftLang='it';window.t=function(k){return _IT[k]||k};window.setLang=function(){};window.applyI18n=function(){};}
 var idSeq=100; function uid(p){return p+(++idSeq)}
 var state={
   role:'organizzatore', page:'dash', clubId:null,
@@ -116,7 +118,12 @@ var state={
     {id:'e2',clubId:'c1',title:'Blue Room · Jazz',date:'03 LUG',price:2400,capacity:200,sold:36,art:1},
     {id:'e3',clubId:'c2',title:'Opening Night',date:'28 GIU',price:2800,capacity:300,sold:120,art:3}
   ],
-  tokenSeq:0, tickets:[], held:{}, ledger:{prim:0,royT:0,royO:0,exit:0}, aggr:{accessi:0},
+  tokenSeq:2,
+  tickets:[
+    {id:'t1',tokenId:1,kind:'event',clubId:'c1',eventId:'e1',title:'Notte Elettronica · Vol.4',sub:'Club Astra · 21 GIU',originalPrice:3150,paid:3150,status:'attivo',exportMode:'none',holder:'Marco Bianchi'},
+    {id:'t2',tokenId:2,kind:'fidelity',clubId:'c1',title:'Fidelity · Club Astra',sub:'5 ingressi sul club',originalPrice:12000,paid:12000,status:'attivo',exportMode:'none',holder:'Marco Bianchi',uses:5,used:1}
+  ],
+  held:{'idMarco|e1':1}, ledger:{prim:757,royT:0,royO:0,exit:0}, aggr:{accessi:0},
   scan:null, checkin:null, valLog:[], offline:false
 };
 var NEWS=[
