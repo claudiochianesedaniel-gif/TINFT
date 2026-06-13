@@ -50,6 +50,7 @@ contract TinftEscrow is ReentrancyGuard {
     error NotExpired();
     error WrongPayment(uint256 expected, uint256 sent);
     error TransferFailed();
+    error PriceAboveCap(uint256 cap, uint256 price);
 
     constructor(address ticket_) {
         TICKET = TinftTicket(ticket_);
@@ -60,6 +61,10 @@ contract TinftEscrow is ReentrancyGuard {
         if (listings[tokenId].active) revert AlreadyListed();
         if (TICKET.ownerOf(tokenId) != msg.sender) revert NotOwner();
         if (ttl == 0) revert ZeroTtl();
+
+        // tetto rivendita +5% sul costo base (R2); il costo base viaggia col token (R3)
+        uint256 cap = (TICKET.paidOf(tokenId) * 105) / 100;
+        if (price > cap) revert PriceAboveCap(cap, price);
 
         listings[tokenId] =
             Listing({seller: msg.sender, price: price, createdAt: uint64(block.timestamp), ttl: ttl, active: true});
@@ -93,8 +98,9 @@ contract TinftEscrow is ReentrancyGuard {
 
         // 1) token al compratore (release atomico)
         TICKET.transferFrom(address(this), msg.sender, tokenId);
-        // 2) il costo base viaggia col token (R3)
-        TICKET.setPaid(tokenId, l.price);
+        // 2) costo base che viaggia col token (R3) + conteggio anti-bagarinaggio (R4):
+        //    sposta la quota evento da venditore a compratore e applica il limite 2/evento
+        TICKET.recordSale(l.seller, msg.sender, tokenId, l.price);
         // 3) royalty 1% allo split (0,5/0,5) — receiver pull-payment, non si blocca
         if (royalty > 0) {
             (address receiver,) = TICKET.royaltyInfo(tokenId, 0);

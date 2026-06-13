@@ -22,10 +22,10 @@ In CI vengono ripristinate con `actions/checkout` (`submodules: recursive`).
 
 | Contratto | Ruolo |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; ogni biglietto è *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (base immutabile della royalty 1%, R1) e `paid` (costo base per il tetto +5%, R2/R3). |
+| `TinftTicket` | ERC-721 + EIP-2981; ogni biglietto è *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (royalty 1%, R1) e `paid` (tetto +5%, R2/R3). Identità on-chain `hash(CF)` e limite **2/evento** (R4) applicato al mint e alla vendita. |
 | `TinftTransferValidator` | Allowlist di operatori; `validateTransfer` fa revert se il caller non è un modulo TINFT autorizzato. |
 | `TinftRoyaltySplit` | Split royalty **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
-| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock), `pay` (release atomico token+prezzo+royalty, aggiorna il costo base), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
+| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock + **tetto +5%**), `pay` (release atomico token+prezzo+royalty, costo base + conteggio 2/evento), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
 | `ITransferValidator` | Interfaccia del validator. |
 
 ### Modello di enforcement
@@ -52,6 +52,12 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 - ✅ il costo base viaggia col token (R3) e la royalty 1% va allo split 0,5/0,5
 - ✅ sicurezza: reentrancy del venditore non ruba né blocca (`test_ReentrantSellerCannotExploit`)
 
+### Definition of Done — M4 (coperta dai test)
+- ✅ rifiuto prezzo di rivendita oltre `paid·1,05` (`test_ListAboveCapReverts`, `test_CapFollowsCostBasisAfterSale`)
+- ✅ rifiuto del 3º biglietto stesso evento/identità, primario e secondario (`test_MintThirdForSameEventReverts`, `test_BuyingThirdForSameEventReverts`)
+- ✅ niente bypass `list→compra→reclaim` e nessun blocco di `reclaim` (`test_ListDoesNotEnableBypass_AndReclaimNeverStuck`)
+- ✅ il conteggio si sposta da venditore a compratore alla vendita (`test_SaleMovesCountBetweenIdentities`)
+
 ## Roadmap contratti
-M4 tetto +5% e limite 2/evento (`hash(CF)`) · M5 `exportFree`/`exportEnforced` ·
-M10 audit. Vedi `../docs/SPEC-VERIFICATA.md`.
+M5 `exportFree` (fee 25% + delist) / `exportEnforced` · M10 audit di sicurezza.
+Vedi `../docs/SPEC-VERIFICATA.md`.
