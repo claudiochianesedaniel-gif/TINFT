@@ -1,6 +1,7 @@
 import {NotFound} from "../domain/models";
 import {MemoryStore} from "../repo/memory";
 import {TicketingService} from "../services/ticketing";
+import type {ChainPort} from "../chain/port";
 import type {PaymentProvider} from "./provider";
 import type {Payment, PspEvent} from "./types";
 
@@ -22,6 +23,7 @@ export class PaymentsService {
     private readonly store: MemoryStore,
     private readonly ticketing: TicketingService,
     private readonly provider: PaymentProvider,
+    private readonly chain: ChainPort,
     private readonly now: () => number = () => Math.floor(Date.now() / 1000)
   ) {}
 
@@ -52,11 +54,11 @@ export class PaymentsService {
   }
 
   /** Ingestione webhook: verifica/normalizza e processa in modo idempotente. */
-  ingestWebhook(rawBody: string, signature?: string): WebhookResult {
+  async ingestWebhook(rawBody: string, signature?: string): Promise<WebhookResult> {
     return this.handleWebhook(this.provider.parseWebhook(rawBody, signature));
   }
 
-  handleWebhook(event: PspEvent): WebhookResult {
+  async handleWebhook(event: PspEvent): Promise<WebhookResult> {
     // idempotenza: stesso evento PSP già processato → no-op
     if (this.store.processedWebhooks.has(event.id)) return {handled: false, deduped: true};
     this.store.processedWebhooks.add(event.id);
@@ -76,7 +78,17 @@ export class PaymentsService {
 
     let ticketId: string | undefined;
     if (payment.kind === "PRIMARY" && payment.eventId) {
-      const ticket = this.ticketing.purchasePrimary(payment.eventId, payment.accountId);
+      const buyer = this.store.accounts.get(payment.accountId);
+      // mint on-chain (TinftTicket.mint) → tokenId + txHash, poi registra il biglietto
+      const mint = await this.chain.mintTicket({
+        to: buyer?.walletAddress,
+        reference: payment.eventId,
+        priceCents: payment.amountCents
+      });
+      const ticket = this.ticketing.purchasePrimary(payment.eventId, payment.accountId, {
+        tokenId: mint.tokenId,
+        txHash: mint.txHash
+      });
       payment.ticketMintedId = ticket.id;
       ticketId = ticket.id;
     }

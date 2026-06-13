@@ -89,4 +89,23 @@ describe("API HTTP (Fastify inject)", () => {
     const tickets = await app.inject({method: "GET", url: `/accounts/${buyer.id}/tickets`});
     expect(tickets.json()).toHaveLength(1); // idempotenza: un solo biglietto
   });
+
+  it("SPID: verifica identità (hash CF) e abilita il limite 2/evento", async () => {
+    const org = (await post("/accounts", {role: "ORGANIZER", nome: "O", cognome: "X", email: "o4@e.it"})).json();
+    const event = (
+      await post("/events", {organizerId: org.id, title: "E", venue: "V", date: "D", priceCents: 1000, capacity: 10})
+    ).json();
+    const buyer = (await post("/accounts", {nome: "Sara", cognome: "C", email: "s@e.it"})).json(); // non verificata
+
+    const verified = await post("/identity/spid/verify", {accountId: buyer.id, cf: "CNTSRA90A01F205X", salt: "s"});
+    expect(verified.statusCode).toBe(200);
+    expect(verified.json().verified).toBe(true);
+    expect(verified.json().cfHash).toMatch(/^0x/);
+
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
+    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
+    expect(third.statusCode).toBe(409);
+    expect(third.json().error).toBe("EVENT_LIMIT");
+  });
 });

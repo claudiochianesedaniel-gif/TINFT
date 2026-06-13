@@ -92,7 +92,12 @@ export class TicketingService {
   }
 
   // ----------------------------------------------------- acquisto primario
-  purchasePrimary(eventId: string, buyerId: string, holderName?: string): Ticket {
+  /** Registra l'acquisto primario. `opts.tokenId`/`txHash` arrivano dal mint on-chain. */
+  purchasePrimary(
+    eventId: string,
+    buyerId: string,
+    opts: {holderName?: string; tokenId?: number; txHash?: string} = {}
+  ): Ticket {
     const event = this.getEvent(eventId);
     const buyer = this.getAccount(buyerId);
     if (event.status !== "ON_SALE") throw new DomainError("NOT_ON_SALE", "evento non in vendita", 409);
@@ -103,17 +108,26 @@ export class TicketingService {
       id: this.store.id("tkt"),
       eventId: event.id,
       ownerId: buyer.id,
-      tokenId: this.store.nextTokenId(),
+      tokenId: opts.tokenId ?? this.store.nextTokenId(),
       originalPriceCents: event.priceCents,
       paidCents: event.priceCents,
       status: "ACTIVE",
       exportMode: "NONE",
       exitFeeCents: 0,
-      holderName: holderName?.trim() || `${buyer.nome} ${buyer.cognome}`
+      holderName: opts.holderName?.trim() || `${buyer.nome} ${buyer.cognome}`,
+      txHash: opts.txHash
     };
     this.store.tickets.set(ticket.id, ticket);
     event.sold += 1;
     return ticket;
+  }
+
+  /** Lega un'identità SPID verificata al wallet (abilita il limite 2/evento). */
+  verifyIdentity(accountId: string, cfHash: string): Account {
+    const account = this.getAccount(accountId);
+    account.cfHash = cfHash;
+    account.verified = true;
+    return account;
   }
 
   ticketsOf(ownerId: string): Ticket[] {

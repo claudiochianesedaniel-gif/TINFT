@@ -46,6 +46,7 @@ export interface Ticket {
   exportMode: ExportMode;
   exitFeeCents: number;
   holderName: string;
+  txHash?: string; // tx di mint on-chain
 }
 
 export interface Transfer {

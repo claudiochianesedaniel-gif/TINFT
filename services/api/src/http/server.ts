@@ -4,15 +4,22 @@ import {MemoryStore} from "../repo/memory";
 import {TicketingService} from "../services/ticketing";
 import {FakeProvider, type PaymentProvider} from "../payments/provider";
 import {PaymentsService} from "../payments/service";
+import {FakeChain} from "../chain/fake";
+import type {ChainPort} from "../chain/port";
+import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 
 /**
  * Costruisce l'app HTTP (Fastify) sopra a TicketingService + PaymentsService
  * (store condiviso). Testabile via `app.inject` senza rete né DB.
  */
-export function buildServer(opts: {store?: MemoryStore; provider?: PaymentProvider} = {}): FastifyInstance {
+export function buildServer(
+  opts: {store?: MemoryStore; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier} = {}
+): FastifyInstance {
   const store = opts.store ?? new MemoryStore();
   const ticketing = new TicketingService(store);
-  const payments = new PaymentsService(store, ticketing, opts.provider ?? new FakeProvider());
+  const chain = opts.chain ?? new FakeChain();
+  const verifier = opts.verifier ?? new FakeSpid();
+  const payments = new PaymentsService(store, ticketing, opts.provider ?? new FakeProvider(), chain);
 
   const app = Fastify({logger: false});
 
@@ -37,6 +44,12 @@ export function buildServer(opts: {store?: MemoryStore; provider?: PaymentProvid
     };
   }>("/accounts", async (req, reply) => reply.status(201).send(ticketing.createAccount(req.body)));
 
+  // -------- identità SPID (M8): verifica → lega hash(CF) al wallet
+  app.post<{Body: {accountId: string; cf: string; salt?: string}}>("/identity/spid/verify", async (req) => {
+    const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});
+    return ticketing.verifyIdentity(req.body.accountId, identity.cfHash);
+  });
+
   // -------- eventi
   app.post<{Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number}}>(
     "/events",
@@ -48,7 +61,8 @@ export function buildServer(opts: {store?: MemoryStore; provider?: PaymentProvid
   // -------- acquisto primario (record diretto; il flusso reale passa dai pagamenti)
   app.post<{Params: {id: string}; Body: {buyerId: string; holderName?: string}}>(
     "/events/:id/purchase",
-    async (req, reply) => reply.status(201).send(ticketing.purchasePrimary(req.params.id, req.body.buyerId, req.body.holderName))
+    async (req, reply) =>
+      reply.status(201).send(ticketing.purchasePrimary(req.params.id, req.body.buyerId, {holderName: req.body.holderName}))
   );
 
   // -------- biglietti

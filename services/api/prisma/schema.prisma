@@ -131,6 +131,7 @@ model Ticket {
   exportMode         ExportMode   @default(NONE)
   exitFeeCents       Int          @default(0)
   holderName         String
+  txHash             String? // tx di mint on-chain
   createdAt          DateTime     @default(now())
 
   transfers   Transfer[]

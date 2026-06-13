@@ -18,8 +18,13 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   biglietti, trasferimenti, validazione, export. Testata via `inject` (`server.test.ts`).
 - **Pagamenti (M7, fondamenta)** ([`src/payments`](./src/payments)): provider PSP-agnostico
   (`PaymentProvider` + `FakeProvider`), checkout in euro e **webhook idempotente** che a
-  pagamento riuscito concia il biglietto (via `TicketingService`). L'adapter Stripe/Nexi reale
-  (firma webhook, SDK) e il mint on-chain sono innesti successivi.
+  pagamento riuscito concia il biglietto. L'adapter Stripe/Nexi reale (firma webhook, SDK) è un innesto.
+- **Wiring on-chain** ([`src/chain`](./src/chain)): `ChainPort` (+ `FakeChain`); al pagamento il
+  webhook esegue il **mint** e salva `tokenId`/`txHash` sul biglietto. Adapter `viem`→`TinftTicket.mint`
+  (testabile su anvil/testnet) come innesto successivo.
+- **Identità SPID (M8, fondamenta)** ([`src/identity`](./src/identity)): `IdentityVerifier`
+  (+ `FakeSpid`); `POST /identity/spid/verify` lega `hash(CF)` al wallet (on-chain mai il CF in
+  chiaro) e abilita il limite 2/evento. Adapter OIDC reale via aggregatore come innesto.
 
 ## Comandi
 ```bash
