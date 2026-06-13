@@ -6,6 +6,8 @@
 <title>TINFT · Biglietti NFT nominativi</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#06070c" />
+<link rel="stylesheet" href="tinft.css" />
+<script src="i18n.js"></script>
 <style>
   :root{
     --bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);
@@ -79,15 +81,16 @@
 </head>
 <body>
 <nav><div class="wrap navin"><div class="logo">◆</div><b>TINFT</b>
-  <div class="nlinks"><a href="#come">Come funziona</a><a href="#eventi">Eventi</a><a href="#org">Organizzatori</a>
-    <span class="wallet" id="wallet">Wallet · 0 biglietti</span><button class="sm" onclick="alert('Demo: registrazione SPID simulata. Vai su un evento e premi Acquista.')">Crea account</button></div></div></nav>
+  <div class="nlinks"><a href="#come" data-i18n="nav_how">Come funziona</a><a href="#eventi" data-i18n="nav_events">Eventi</a><a href="#org" data-i18n="nav_org">Organizzatori</a>
+    <span class="lang"><button data-l="it" onclick="setLang('it')">IT</button><button data-l="en" onclick="setLang('en')">EN</button></span>
+    <span class="wallet" id="wallet">Wallet · 0 biglietti</span><button class="sm" data-i18n="nav_account" onclick="alert('Demo: registrazione SPID simulata. Vai su un evento e premi Acquista.')">Crea account</button></div></div></nav>
 
 <header class="hero"><div class="wrap heroin">
   <div>
-    <div class="kicker">Biglietteria NFT · tutto in app</div>
-    <h1>Il biglietto è tuo. <br>Davvero.</h1>
+    <div class="kicker" data-i18n="hero_kicker">Biglietteria NFT · tutto in app</div>
+    <h1 data-i18n="hero_title">Il biglietto è tuo. Davvero.</h1>
     <p>Biglietti <b>NFT nominativi</b> su L2. Niente bagarini, niente screenshot: QR che ruota ogni 5s, rivendita con tetto <b>+5%</b> e royalty <b>1%</b> all'organizzatore, tutto enforced on-chain. Acquisti in euro, senza seed né gas.</p>
-    <div class="cta"><button onclick="scrollTo2('#eventi')">Scopri gli eventi</button><a href="#come"><button class="ghost">Come funziona</button></a></div>
+    <div class="cta"><button data-i18n="hero_cta1" onclick="scrollTo2('#eventi')">Scopri gli eventi</button><a href="#come"><button class="ghost" data-i18n="hero_cta2">Come funziona</button></a></div>
     <div class="chips"><span class="chip">◆ NFT nominativo</span><span class="chip">↻ QR anti-screenshot</span><span class="chip">SPID</span><span class="chip">niente seed/gas</span></div>
   </div>
   <div class="tk">
@@ -191,6 +194,7 @@ $('ov').onclick=function(ev){if(ev.target===$('ov'))closeOv()};
 function cookieOk(){try{localStorage.setItem('tinft_cookie','1')}catch(e){}$('cookie').classList.remove('show')}
 try{if(!localStorage.getItem('tinft_cookie'))$('cookie').classList.add('show')}catch(e){}
 renderEvents();
+window.onLangChange=applyI18n; applyI18n();
 </script>
 </body>
 </html>
