@@ -82,6 +82,44 @@ export function buildServer(
     };
   }>("/accounts", async (req, reply) => reply.status(201).send(ticketing.createAccount(req.body)));
 
+  // -------- registrazione completa con dati SPID → identità verificata (hash CF on-chain)
+  app.post<{
+    Body: {
+      nome: string;
+      cognome: string;
+      email: string;
+      cf: string;
+      dateOfBirth?: string;
+      placeOfBirth?: string;
+      gender?: string;
+      address?: string;
+      city?: string;
+      zip?: string;
+      province?: string;
+      phone?: string;
+    };
+  }>("/register", async (req, reply) => {
+    const b = req.body;
+    const id = verifier.verify({cf: b.cf, nome: b.nome, cognome: b.cognome});
+    const account = ticketing.createAccount({
+      role: "CLIENTE",
+      nome: b.nome,
+      cognome: b.cognome,
+      email: b.email,
+      cf: b.cf,
+      cfHash: id.cfHash,
+      dateOfBirth: b.dateOfBirth,
+      placeOfBirth: b.placeOfBirth,
+      gender: b.gender,
+      address: b.address,
+      city: b.city,
+      zip: b.zip,
+      province: b.province,
+      phone: b.phone
+    });
+    return reply.status(201).send(account);
+  });
+
   // -------- identità SPID (M8): verifica → lega hash(CF) al wallet
   app.post<{Body: {accountId: string; cf: string; salt?: string}}>("/identity/spid/verify", async (req) => {
     const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});

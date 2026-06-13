@@ -34,7 +34,16 @@ export class TicketingService {
     nome: string;
     cognome: string;
     email: string;
+    cf?: string;
     cfHash?: string;
+    dateOfBirth?: string;
+    placeOfBirth?: string;
+    gender?: string;
+    address?: string;
+    city?: string;
+    zip?: string;
+    province?: string;
+    phone?: string;
     walletAddress?: string;
   }): Account {
     const account: Account = {
@@ -43,7 +52,16 @@ export class TicketingService {
       nome: input.nome,
       cognome: input.cognome,
       email: input.email,
+      cf: input.cf,
       cfHash: input.cfHash,
+      dateOfBirth: input.dateOfBirth,
+      placeOfBirth: input.placeOfBirth,
+      gender: input.gender,
+      address: input.address,
+      city: input.city,
+      zip: input.zip,
+      province: input.province,
+      phone: input.phone,
       verified: !!input.cfHash,
       walletAddress: input.walletAddress,
       goodwill: 0

@@ -108,4 +108,29 @@ describe("API HTTP (Fastify inject)", () => {
     expect(third.statusCode).toBe(409);
     expect(third.json().error).toBe("EVENT_LIMIT");
   });
+
+  it("registrazione completa (dati SPID) crea account verificato con tutti i dati", async () => {
+    const r = await post("/register", {
+      nome: "Marco",
+      cognome: "Bianchi",
+      email: "mb@e.it",
+      cf: "BNCMRC90A01F205X",
+      dateOfBirth: "1990-01-01",
+      placeOfBirth: "Roma",
+      gender: "M",
+      address: "Via Roma 1",
+      city: "Milano",
+      zip: "20100",
+      province: "MI",
+      phone: "+39 333 000"
+    });
+    expect(r.statusCode).toBe(201);
+    const a = r.json();
+    expect(a.verified).toBe(true);
+    expect(a.cfHash).toMatch(/^0x/);
+    expect(a.cf).toBe("BNCMRC90A01F205X");
+    expect(a.dateOfBirth).toBe("1990-01-01");
+    expect(a.address).toBe("Via Roma 1");
+    expect(a.province).toBe("MI");
+  });
 });

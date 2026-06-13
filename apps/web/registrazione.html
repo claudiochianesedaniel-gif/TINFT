@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Registrazione</title>
+<style>
+  :root{--bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);
+    --border:oklch(0.26 0.02 265);--txt:oklch(0.96 0.005 262);--mut:oklch(0.62 0.02 265);
+    --acc:oklch(0.66 0.17 264);--acc2:oklch(0.52 0.15 264);--ok:oklch(0.74 0.16 158);--err:oklch(0.72 0.13 25)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(900px 500px at 80% -10%,oklch(0.22 0.08 285),var(--bg));color:var(--txt);
+    font-family:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding:28px 18px;line-height:1.5}
+  h1,h2{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600;letter-spacing:-.01em}
+  .kicker{font-family:ui-monospace,'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--acc);text-transform:uppercase}
+  code{font-family:ui-monospace,monospace;color:oklch(0.82 0.08 264);font-size:11px}
+  .wrap{max-width:760px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:18px;padding:22px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .full{grid-column:1 / -1}
+  label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+  input,select{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:11px;color:var(--txt);font-size:14px}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));transition:transform .05s}
+  button:active{transform:scale(.98)}
+  button.ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--mut);font-size:12px}
+  .apibar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .apibar input{flex:1;min-width:200px}
+  .res{margin-top:16px;border-radius:14px;padding:16px;border:1px solid var(--border)}
+  .res.ok{border-color:oklch(0.4 0.1 158);background:oklch(0.15 0.04 158)}
+  .res.err{border-color:oklch(0.5 0.12 25);background:oklch(0.16 0.04 25)}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;margin-top:10px;font-size:13px}
+  .kv div:nth-child(odd){color:var(--mut)}
+  pre{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;overflow:auto;font-size:11px;margin-top:10px}
+  .pill{display:inline-block;font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid oklch(0.4 0.1 158);color:var(--ok);background:oklch(0.16 0.04 158)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="logo">◆</div><div><h1 style="font-size:18px">TINFT · Registrazione</h1><div class="muted">Identità verificata · tutti i dati SPID</div></div></div>
+
+  <div class="card">
+    <div class="apibar">
+      <span class="kicker">API</span>
+      <input id="api" value="http://localhost:3001" />
+      <button class="ghost" onclick="prefillSpid()">Entra con SPID (demo)</button>
+    </div>
+    <div class="muted">Avvia il backend con <code>pnpm --filter @tinft/api dev</code> (porta 3001): i dati vengono inviati a <code>POST /register</code> e salvati. On-chain finisce solo l'<b>hash</b> del codice fiscale.</div>
+
+    <div class="grid">
+      <div><label>Nome *</label><input id="nome"></div>
+      <div><label>Cognome *</label><input id="cognome"></div>
+      <div class="full"><label>Email *</label><input id="email" type="email"></div>
+      <div><label>Codice fiscale *</label><input id="cf" style="text-transform:uppercase"></div>
+      <div><label>Data di nascita</label><input id="dob" type="date"></div>
+      <div><label>Luogo di nascita</label><input id="pob"></div>
+      <div><label>Sesso</label><select id="gender"><option value="">—</option><option>M</option><option>F</option><option>Altro</option></select></div>
+      <div class="full"><label>Indirizzo di residenza</label><input id="address" placeholder="Via, civico"></div>
+      <div><label>Città</label><input id="city"></div>
+      <div><label>CAP</label><input id="zip"></div>
+      <div><label>Provincia</label><input id="province" maxlength="2" style="text-transform:uppercase"></div>
+      <div><label>Telefono</label><input id="phone"></div>
+    </div>
+    <div class="row" style="margin-top:16px"><button onclick="register()">Registrati</button><span class="muted">* campi obbligatori</span></div>
+    <div id="res"></div>
+  </div>
+</div>
+<script>
+"use strict";
+var $=function(i){return document.getElementById(i)};
+function prefillSpid(){
+  $('nome').value='Marco';$('cognome').value='Bianchi';$('email').value='marco.bianchi@email.it';
+  $('cf').value='BNCMRC90A01F205X';$('dob').value='1990-01-01';$('pob').value='Roma';$('gender').value='M';
+  $('address').value='Via Roma 1';$('city').value='Milano';$('zip').value='20100';$('province').value='MI';$('phone').value='+39 333 1234567';
+}
+function payload(){
+  return {nome:$('nome').value.trim(),cognome:$('cognome').value.trim(),email:$('email').value.trim(),
+    cf:$('cf').value.trim().toUpperCase(),dateOfBirth:$('dob').value,placeOfBirth:$('pob').value.trim(),
+    gender:$('gender').value,address:$('address').value.trim(),city:$('city').value.trim(),
+    zip:$('zip').value.trim(),province:$('province').value.trim().toUpperCase(),phone:$('phone').value.trim()};
+}
+function show(html,cls){$('res').innerHTML='<div class="res '+cls+'">'+html+'</div>'}
+function register(){
+  var p=payload();
+  if(!p.nome||!p.cognome||!p.email||!p.cf){show('Compila Nome, Cognome, Email e Codice fiscale.','err');return}
+  var base=$('api').value.replace(/\/$/,'');
+  show('Invio in corso a <code>'+base+'/register</code> …','ok');
+  fetch(base+'/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})})
+    .then(function(o){
+      if(!o.ok){show('Errore: '+(o.j&&o.j.message||'registrazione fallita'),'err');return}
+      var a=o.j;
+      show('<span class="pill">✓ Account verificato</span>'+
+        '<div class="kv">'+
+        '<div>ID</div><div><code>'+a.id+'</code></div>'+
+        '<div>Nome</div><div>'+a.nome+' '+a.cognome+'</div>'+
+        '<div>Email</div><div>'+a.email+'</div>'+
+        '<div>Codice fiscale</div><div>'+(a.cf||'')+'</div>'+
+        '<div>Hash CF (on-chain)</div><div><code>'+(a.cfHash||'').slice(0,22)+'…</code></div>'+
+        '<div>Data nascita</div><div>'+(a.dateOfBirth||'—')+'</div>'+
+        '<div>Luogo</div><div>'+(a.placeOfBirth||'—')+'</div>'+
+        '<div>Residenza</div><div>'+[a.address,a.zip,a.city,a.province].filter(Boolean).join(', ')+'</div>'+
+        '<div>Telefono</div><div>'+(a.phone||'—')+'</div>'+
+        '</div><div class="muted" style="margin-top:10px">Dati salvati nel backend (in chiaro off-chain). On-chain solo l\'hash del CF.</div>','ok');
+    })
+    .catch(function(e){
+      show('Backend non raggiungibile ('+e.message+').<br>Avvia <code>pnpm --filter @tinft/api dev</code>.<br>Dati che verrebbero inviati:<pre>'+JSON.stringify(p,null,2)+'</pre>','err');
+    });
+}
+</script>
+</body>
+</html>

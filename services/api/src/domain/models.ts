@@ -16,7 +16,17 @@ export interface Account {
   nome: string;
   cognome: string;
   email: string;
-  cfHash?: string; // keccak256(CF + salt); presente = identità SPID verificata
+  // dati SPID completi (in chiaro off-chain; on-chain solo l'hash del CF)
+  cf?: string; // codice fiscale
+  cfHash?: string; // keccak256(CF + salt); presente = identità verificata
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  gender?: string;
+  address?: string; // indirizzo di residenza
+  city?: string;
+  zip?: string;
+  province?: string;
+  phone?: string;
   verified: boolean;
   walletAddress?: string;
   goodwill: number;
