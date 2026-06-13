@@ -7,7 +7,7 @@ Pagine **autonome, zero dipendenze** (si aprono nel browser). Applicano le **reg
 | File | Cosa |
 |---|---|
 | `sito.html` | **Sito Web pubblico**: vetrina/news, eventi in evidenza, acquisto → biglietto nel wallet. |
-| `registrazione.html` | **Registrazione completa**: tutti i dati SPID (CF, data/luogo nascita, indirizzo, ecc.), manuale **o** SPID. Invia a `POST /register` (API reale). |
+| `registrazione.html` | **Registrazione a wizard (3 step)**: Account → Dati SPID (CF, data/luogo nascita, indirizzo…) → Conferma. Manuale **o** SPID, **IT/EN**, design system condiviso. Invia a `POST /register`. |
 | `demo.html` | **WebApp offline** (dati in memoria, sempre testabile): dashboard Cliente / Validatore / Organizzatore, Club + Fidelity, escrow con timer, QR rotante. |
 | `app-live.html` | **WebApp connessa all'API reale**: club/eventi/acquisti/biglietti/validazioni via `fetch` → dati **persistenti e condivisi** tra i ruoli. |
 
