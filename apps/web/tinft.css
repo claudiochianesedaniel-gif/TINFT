@@ -5,7 +5,9 @@
   --acc:oklch(0.66 0.17 264); --acc2:oklch(0.52 0.15 264);
   --ok:oklch(0.74 0.16 158); --warn:oklch(0.8 0.13 70); --err:oklch(0.72 0.13 25);
   --plat:oklch(0.6 0.16 300); --gold:oklch(0.8 0.13 75);
-  --r-card:16px; --r-pill:999px; --font:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --r-card:16px; --r-pill:999px; --r-lg:20px; --r-xl:26px;
+  --glow:0 0 30px oklch(0.55 0.2 264/.4); --shadow:0 30px 80px -30px rgba(20,30,120,.6);
+  --font:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
   --mono:ui-monospace,'IBM Plex Mono',monospace; --display:'Space Grotesk',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -21,8 +23,10 @@ code{font-family:var(--mono);color:oklch(0.82 0.08 264);font-size:11px}
 .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700}
 
 /* bottoni */
-.btn,button.btn{font-family:inherit;cursor:pointer;border:none;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));transition:transform .05s}
+.btn,button.btn{font-family:inherit;cursor:pointer;border:none;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 10px 26px -12px oklch(0.55 0.2 264/.7);transition:transform .06s,filter .15s,box-shadow .15s}
+.btn:hover{filter:brightness(1.07)}
 .btn:active{transform:scale(.98)}
+.btn.ghost{box-shadow:none}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border)}
 .btn.sm{padding:8px 12px;font-size:13px}
@@ -65,3 +69,13 @@ label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
 .toast.err{border-color:oklch(0.5 0.12 25);color:oklch(0.85 0.08 25)}
 .toast.ok{border-color:oklch(0.4 0.1 158);color:oklch(0.85 0.06 158)}
 @media(max-width:560px){.grid2{grid-template-columns:1fr}.stepper .lbl{display:none}}
+
+/* helper condivisi (sito + future pagine) */
+.gradient-text{background:linear-gradient(120deg,oklch(0.82 0.14 264),oklch(0.72 0.16 300));-webkit-background-clip:text;background-clip:text;color:transparent}
+.glow{box-shadow:var(--glow)}
+.container{max-width:1180px;margin:0 auto;padding:0 24px}
+.section{padding:clamp(48px,7vw,86px) 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:oklch(0.7 0.12 264);text-transform:uppercase}
+.glass{backdrop-filter:blur(14px);background:oklch(0.07 0.01 265/.72)}
+a.link{color:oklch(0.72 0.02 265);transition:color .15s}a.link:hover{color:var(--txt)}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
