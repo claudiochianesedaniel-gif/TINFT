@@ -19,6 +19,14 @@ jobs:
           submodules: recursive
 
       - name: Install Foundry
+        id: foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        continue-on-error: true
+        with:
+          version: stable
+
+      - name: Install Foundry (retry su flake di rete, es. 504 da GitHub API)
+        if: steps.foundry.outcome == 'failure'
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
