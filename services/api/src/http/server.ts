@@ -15,6 +15,7 @@ import {ViemChain} from "../chain/viem";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import {setPassword, verifyPassword} from "../auth/password";
 import {signToken, verifyToken} from "../auth/tokens";
+import {ACCESS_TTL_SECONDS, signAccessToken} from "../access/access-token";
 import {authenticate, bearerToken as authHeaderToken, requireRole} from "../auth/middleware";
 import {readFile} from "node:fs/promises";
 import {extname, join, normalize} from "node:path";
@@ -461,6 +462,24 @@ export function buildServer(
     "/tickets/:id/validate",
     {preHandler: authenticate},
     async (req) => ticketing.validate(req.params.id, req.body?.validatorId, req.body?.scenario)
+  );
+
+  // -------- app nativa: QR a rotazione del possessore + validazione allo scan
+  // Il possessore (proprietario del biglietto) interroga periodicamente questa rotta
+  // per rendere/aggiornare il QR a vita breve mostrato all'ingresso.
+  app.get<{Params: {id: string}}>("/tickets/:id/access-token", {preHandler: authenticate}, async (req) => {
+    const ticket = await ticketing.getTicketById(req.params.id);
+    assertSelf(req, ticket.ownerId);
+    const token = signAccessToken(ticket.id);
+    return {token, exp: Math.floor(Date.now() / 1000) + ACCESS_TTL_SECONDS, rotateSeconds: ACCESS_TTL_SECONDS};
+  });
+
+  // Lo staff/organizzatore scansiona il QR: una scansione restituisce sempre un esito
+  // tra i 5 (VALID/SCREENSHOT/DUPLICATE/ESCROW/FAKE).
+  app.post<{Body: {token: string; validatorId?: string}}>(
+    "/validate/scan",
+    {preHandler: authenticate},
+    async (req) => ticketing.scanValidate(req.body?.token, req.body?.validatorId)
   );
   app.post<{Params: {id: string}; Body: {ownerId: string; mode: "FREE" | "ENFORCED"}}>(
     "/tickets/:id/export",

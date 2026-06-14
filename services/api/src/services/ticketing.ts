@@ -30,6 +30,7 @@ import {
 } from "../domain/rules";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import {hashPassword} from "../auth/password";
+import {verifyAccessToken} from "../access/access-token";
 import type {ChainPort} from "../chain/port";
 import {FakeChain} from "../chain/fake";
 
@@ -641,6 +642,11 @@ export class TicketingService {
     return this.store.ticketsByOwner(ownerId);
   }
 
+  /** Carica un biglietto per id (404 se assente). Pubblico per le guardie di ownership al bordo HTTP. */
+  async getTicketById(id: string): Promise<Ticket> {
+    return this.getTicket(id);
+  }
+
   // --------------------------------------------- trasferimento P2P (escrow)
   async createTransfer(
     ticketId: string,
@@ -756,6 +762,38 @@ export class TicketingService {
     };
     await this.store.createValidation(validation);
     return validation;
+  }
+
+  /**
+   * Validazione lato app nativa: il validatore scansiona il QR a rotazione del
+   * possessore (un token d'accesso firmato e a vita breve, {@link signAccessToken}).
+   * Una scansione restituisce SEMPRE un esito (non lancia): un token scaduto è uno
+   * screenshot (SCREENSHOT), uno manomesso/non firmato è un falso (FAKE). Se il
+   * token è valido si delega alla {@link validate} esistente sul ticketId estratto
+   * (ACTIVE→VALID+USED+Validation, USED/EXPORTED→DUPLICATE, LISTED/in-transfer→ESCROW).
+   */
+  async scanValidate(
+    token: string,
+    validatorId?: string
+  ): Promise<{outcome: ValidationOutcome; holderName?: string; meta?: Record<string, unknown>}> {
+    let ticketId: string;
+    try {
+      ({ticketId} = verifyAccessToken(token));
+    } catch (err) {
+      // una scansione non lancia: mappa l'errore del token su un esito
+      if (err instanceof DomainError && err.code === "TOKEN_EXPIRED") return {outcome: "SCREENSHOT"};
+      return {outcome: "FAKE"};
+    }
+
+    const ticket = await this.store.getTicket(ticketId);
+    if (!ticket) return {outcome: "FAKE"};
+
+    const validation = await this.validate(ticketId, validatorId);
+    return {
+      outcome: validation.outcome,
+      holderName: ticket.holderName,
+      meta: {ticketId: ticket.id, eventId: ticket.eventId, tokenId: ticket.tokenId}
+    };
   }
 
   // ----------------------------------------------------------------- export
