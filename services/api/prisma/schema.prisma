@@ -300,10 +300,71 @@ model Validation {
 }
 
 // Registrazione email in attesa di verifica OTP (non ancora un account).
-model EmailVerification {
-  email     String   @id
-  code      String // OTP a 6 cifre
+// Rispecchia il dominio PendingRegistration: oltre all'OTP conserva i dati SPID
+// completi (PII in chiaro off-chain) e l'hash password, riversati nell'Account
+// alla verifica. Sostituisce il precedente modello EmailVerification (solo OTP).
+model PendingRegistration {
+  email        String   @id
+  code         String // OTP a 6 cifre
+  nome         String
+  cognome      String
+  cf           String
+  dateOfBirth  String?
+  placeOfBirth String?
+  gender       String?
+  address      String?
+  city         String?
+  zip          String?
+  province     String?
+  phone        String?
+  username     String?
+  passwordHash String? // hash scrypt (salt:hash), portato all'account creato
+  createdAt    DateTime @default(now())
+}
+
+// Pagamento (M7): checkout in euro → mint al webhook. Rispecchia payments/types.ts.
+// providerRef = id sessione di checkout del PSP (chiave per il lookup al webhook).
+model Payment {
+  id            String        @id
+  kind          PaymentKind
+  status        PaymentStatus @default(PENDING)
+  amountCents   Int
+  currency      String // "EUR"
+  accountId     String
+  eventId       String?
+  ticketId      String?
+  providerRef   String        @unique
+  ticketMintedId String? // biglietto coniato a pagamento avvenuto
+  createdAt     DateTime      @default(now())
+
+  @@index([accountId])
+}
+
+// Idempotenza webhook PSP: id evento già processato (dedup anti doppio mint).
+model ProcessedWebhook {
+  id        String   @id // id evento PSP (chiave di idempotenza)
   createdAt DateTime @default(now())
+}
+
+// Ledger di piattaforma: riga singola (id="platform") con i ricavi cumulati.
+model PlatformLedger {
+  id                     String @id @default("platform")
+  presaleCommissionCents Int    @default(0) // commissioni di prevendita 10% (primario)
+  royaltyTinftCents      Int    @default(0) // quota TINFT della royalty 1% (0,5%)
+  royaltyOrganizerCents  Int    @default(0) // quota organizzatore della royalty 1% (0,5%)
+  exitFeeCents           Int    @default(0) // fee d'uscita 25% sull'export libero
+}
+
+enum PaymentKind {
+  PRIMARY
+  SECONDARY
+  EXIT_FEE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
 }
 
 // ---- contenuti editoriali (artisti, blog, news) per sito/app -----------------

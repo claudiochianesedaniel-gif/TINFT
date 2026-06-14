@@ -4,6 +4,9 @@ import {PrismaStore} from "./prisma-store";
 import {TicketingService} from "../services/ticketing";
 import {ConsoleService} from "../services/console";
 import {ContentService} from "../services/content";
+import {PaymentsService} from "../payments/service";
+import {FakeProvider} from "../payments/provider";
+import {FakeChain} from "../chain/fake";
 import {GOODWILL_PER_TICKET} from "../domain/rules";
 
 /**
@@ -25,7 +28,8 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE
         "Validation","Validator","Transfer","Ticket","Order","Tier","Event",
-        "Club","Organizer","Account","EmailVerification","Artist","BlogPost","News"
+        "Club","Organizer","Account","Payment","PendingRegistration",
+        "ProcessedWebhook","PlatformLedger","Artist","BlogPost","News"
       RESTART IDENTITY CASCADE;
     `);
   });
@@ -160,5 +164,84 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     expect((await store.getArtist(artists[0]!.id))?.followers).toBe(artists[0]!.followers + 1);
     const news = await content.listNews();
     expect(news.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("payment, pending registration, webhook e ledger vivono su PG (sopravvivono a una nuova istanza)", async () => {
+    const clock = {t: 2000};
+    const ticketing = new TicketingService(store, () => clock.t);
+    const payments = new PaymentsService(store, ticketing, new FakeProvider(), new FakeChain(), () => clock.t);
+
+    // -------- organizzatore + evento ON_SALE + compratore
+    const org = await ticketing.createAccount({role: "ORGANIZER", nome: "Org", cognome: "Two", email: "org2@pg.io"});
+    org.kycStatus = "VERIFIED";
+    await store.updateAccount(org);
+    const event = await ticketing.createEvent({
+      organizerId: org.id, title: "Notte Pay", venue: "Hangar", date: "22 GIU",
+      priceCents: 5_000, capacity: 50, status: "ON_SALE"
+    });
+    const buyer = await ticketing.createAccount({nome: "Gio", cognome: "P", email: "paybuyer@pg.io", cfHash: "0xpgpaybuyer"});
+
+    // -------- pagamento primario: checkout (PENDING) → persistito su PG
+    const {payment, session} = await payments.createPrimaryCheckout(event.id, buyer.id);
+    expect(payment.status).toBe("PENDING");
+    expect(await prisma.payment.count()).toBe(1);
+    // lookup per providerRef passa dal DB (indice unique)
+    expect((await store.paymentByProviderRef(session.providerRef))?.id).toBe(payment.id);
+
+    // -------- webhook pagato → mint biglietto, Payment PAID, ProcessedWebhook segnato
+    const webhookId = "evt_pg_paid_1";
+    const res = await payments.handleWebhook({id: webhookId, type: "payment_succeeded", providerRef: session.providerRef});
+    expect(res.handled).toBe(true);
+    expect(res.ticketId).toBeDefined();
+    expect(await store.hasProcessedWebhook(webhookId)).toBe(true);
+    expect(await prisma.processedWebhook.count()).toBeGreaterThanOrEqual(1);
+    // webhook idempotente: secondo passaggio è deduped (dal DB, non dalla memoria)
+    const again = await payments.handleWebhook({id: webhookId, type: "payment_succeeded", providerRef: session.providerRef});
+    expect(again.deduped).toBe(true);
+
+    // -------- registrazione email in attesa → persistita su PG con tutti i campi
+    const reg = await ticketing.startEmailRegistration({
+      nome: "Anna", cognome: "Verdi", cf: "VRDNNA90A01H501Z", email: "pending@pg.io",
+      dateOfBirth: "1990-01-01", city: "Roma", phone: "+390000000", username: "annav", password: "s3cret!"
+    });
+    expect(await prisma.pendingRegistration.count()).toBe(1);
+
+    // -------- ledger: accredito esplicito con increment atomico
+    const before = await store.getLedger();
+    const afterAdd = await store.addToLedger({royaltyTinftCents: 7, exitFeeCents: 11});
+    expect(afterAdd.royaltyTinftCents).toBe(before.royaltyTinftCents + 7);
+    expect(afterAdd.exitFeeCents).toBe(before.exitFeeCents + 11);
+    expect(await prisma.platformLedger.count()).toBe(1);
+
+    // -------- PROVA DI PERSISTENZA: nuova istanza PrismaStore (nessuno stato in memoria)
+    const fresh = new PrismaStore(prisma);
+
+    // payment ancora presente e PAID
+    const freshPayment = await fresh.getPayment(payment.id);
+    expect(freshPayment?.status).toBe("PAID");
+    expect(freshPayment?.amountCents).toBe(5_000);
+    expect(freshPayment?.ticketMintedId).toBe(res.ticketId);
+    expect((await fresh.paymentByProviderRef(session.providerRef))?.id).toBe(payment.id);
+
+    // webhook ancora marcato come processato
+    expect(await fresh.hasProcessedWebhook(webhookId)).toBe(true);
+
+    // pending registration ancora presente con i campi salvati
+    const freshPending = await fresh.getPendingRegistration("pending@pg.io");
+    expect(freshPending?.code).toBe(reg.devCode);
+    expect(freshPending?.nome).toBe("Anna");
+    expect(freshPending?.cf).toBe("VRDNNA90A01H501Z");
+    expect(freshPending?.username).toBe("annav");
+    expect(freshPending?.passwordHash).toBeDefined();
+
+    // ledger totali ancora presenti (stessi valori dell'ultimo addToLedger)
+    const freshLedger = await fresh.getLedger();
+    expect(freshLedger).toEqual(afterAdd);
+
+    // -------- conferma a livello di righe DB
+    expect(await prisma.payment.count()).toBe(1);
+    expect(await prisma.pendingRegistration.count()).toBe(1);
+    expect(await prisma.platformLedger.count()).toBe(1);
+    expect((await prisma.processedWebhook.count())).toBeGreaterThanOrEqual(1);
   });
 });

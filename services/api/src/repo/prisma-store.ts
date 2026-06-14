@@ -32,25 +32,19 @@ import type {Store} from "./store";
  *    (organizerId di dominio = account id).
  *  - `Ticket.tokenId` BigInt ↔ number; l'appartenenza all'ordine viaggia sulla
  *    relazione `Ticket.orderId` (ricostruita in `getOrder` come `ticketIds`).
- *  - Lo schema/migrazione corrente NON ha tabelle per Payment, ledger di
- *    piattaforma, registrazioni OTP complete e dedup webhook: questi stati sono
- *    mantenuti in memoria nell'istanza (coerenti entro il processo). Il flusso
- *    primario (ordine→pay→biglietti, mercato, royalty, validazione, console,
- *    contenuti) è interamente persistito su Postgres.
+ *  - Payment, registrazioni email (OTP), dedup webhook e ledger di piattaforma
+ *    sono persistiti su Postgres (tabelle Payment/PendingRegistration/
+ *    ProcessedWebhook/PlatformLedger). Il ledger è una riga singola (id="platform")
+ *    creata lazy; gli accrediti usano increment atomici (UPDATE x = x + delta).
+ *    L'intero flusso (ordine→pay→biglietti, mercato, royalty, validazione,
+ *    pagamenti, console, contenuti) è quindi interamente persistito su Postgres.
  */
 export class PrismaStore implements Store {
   private readonly prisma: PrismaClient;
 
-  // Stati senza tabella nello schema corrente: tenuti in memoria nell'istanza.
-  private readonly paymentsMem = new Map<string, Payment>();
-  private readonly pendingMem = new Map<string, PendingRegistration>();
-  private readonly webhooksMem = new Set<string>();
-  private readonly ledgerMem: Ledger = {
-    presaleCommissionCents: 0,
-    royaltyTinftCents: 0,
-    royaltyOrganizerCents: 0,
-    exitFeeCents: 0
-  };
+  /** Id della riga singola del ledger di piattaforma. */
+  private static readonly LEDGER_ID = "platform";
+
   private readonly ensuredOrganizers = new Set<string>();
 
   constructor(prisma?: PrismaClient) {
@@ -652,59 +646,159 @@ export class PrismaStore implements Store {
     return validator;
   }
 
-  // -------- pagamenti (in-memory: nessuna tabella nello schema) ----------------
+  // -------- pagamenti ---------------------------------------------------------
+  private toPayment(r: PrismaPayment): Payment {
+    return {
+      id: r.id,
+      kind: r.kind,
+      status: r.status,
+      amountCents: r.amountCents,
+      currency: r.currency,
+      accountId: r.accountId,
+      eventId: r.eventId ?? undefined,
+      ticketId: r.ticketId ?? undefined,
+      providerRef: r.providerRef,
+      ticketMintedId: r.ticketMintedId ?? undefined,
+      createdAt: Math.floor(r.createdAt.getTime() / 1000)
+    };
+  }
+
+  private paymentData(p: Payment) {
+    return {
+      kind: p.kind,
+      status: p.status,
+      amountCents: p.amountCents,
+      currency: p.currency,
+      accountId: p.accountId,
+      eventId: p.eventId ?? null,
+      ticketId: p.ticketId ?? null,
+      providerRef: p.providerRef,
+      ticketMintedId: p.ticketMintedId ?? null
+    };
+  }
+
   async getPayment(id: string): Promise<Payment | undefined> {
-    return this.paymentsMem.get(id);
+    const r = await this.prisma.payment.findUnique({where: {id}});
+    return r ? this.toPayment(r) : undefined;
   }
 
   async paymentByProviderRef(ref: string): Promise<Payment | undefined> {
-    return [...this.paymentsMem.values()].find((p) => p.providerRef === ref);
+    const r = await this.prisma.payment.findUnique({where: {providerRef: ref}});
+    return r ? this.toPayment(r) : undefined;
   }
 
   async createPayment(payment: Payment): Promise<Payment> {
-    this.paymentsMem.set(payment.id, payment);
+    await this.prisma.payment.create({data: {id: payment.id, ...this.paymentData(payment)}});
     return payment;
   }
 
   async updatePayment(payment: Payment): Promise<Payment> {
-    this.paymentsMem.set(payment.id, payment);
+    await this.prisma.payment.update({where: {id: payment.id}, data: this.paymentData(payment)});
     return payment;
   }
 
-  // -------- registrazioni email (in-memory: tabella OTP insufficiente) ---------
+  // -------- registrazioni email (OTP) -----------------------------------------
+  private toPending(r: PrismaPending): PendingRegistration {
+    return {
+      email: r.email,
+      code: r.code,
+      nome: r.nome,
+      cognome: r.cognome,
+      cf: r.cf,
+      dateOfBirth: r.dateOfBirth ?? undefined,
+      placeOfBirth: r.placeOfBirth ?? undefined,
+      gender: r.gender ?? undefined,
+      address: r.address ?? undefined,
+      city: r.city ?? undefined,
+      zip: r.zip ?? undefined,
+      province: r.province ?? undefined,
+      phone: r.phone ?? undefined,
+      username: r.username ?? undefined,
+      passwordHash: r.passwordHash ?? undefined,
+      createdAt: Math.floor(r.createdAt.getTime() / 1000)
+    };
+  }
+
+  private pendingData(p: PendingRegistration) {
+    return {
+      code: p.code,
+      nome: p.nome,
+      cognome: p.cognome,
+      cf: p.cf,
+      dateOfBirth: p.dateOfBirth ?? null,
+      placeOfBirth: p.placeOfBirth ?? null,
+      gender: p.gender ?? null,
+      address: p.address ?? null,
+      city: p.city ?? null,
+      zip: p.zip ?? null,
+      province: p.province ?? null,
+      phone: p.phone ?? null,
+      username: p.username ?? null,
+      passwordHash: p.passwordHash ?? null
+    };
+  }
+
   async getPendingRegistration(email: string): Promise<PendingRegistration | undefined> {
-    return this.pendingMem.get(email);
+    const r = await this.prisma.pendingRegistration.findUnique({where: {email}});
+    return r ? this.toPending(r) : undefined;
   }
 
   async setPendingRegistration(pending: PendingRegistration): Promise<PendingRegistration> {
-    this.pendingMem.set(pending.email, pending);
+    await this.prisma.pendingRegistration.upsert({
+      where: {email: pending.email},
+      update: this.pendingData(pending),
+      create: {email: pending.email, ...this.pendingData(pending)}
+    });
     return pending;
   }
 
   async deletePendingRegistration(email: string): Promise<void> {
-    this.pendingMem.delete(email);
+    await this.prisma.pendingRegistration.deleteMany({where: {email}});
   }
 
-  // -------- idempotenza webhook (in-memory) -----------------------------------
+  // -------- idempotenza webhook -----------------------------------------------
   async hasProcessedWebhook(id: string): Promise<boolean> {
-    return this.webhooksMem.has(id);
+    return (await this.prisma.processedWebhook.count({where: {id}})) > 0;
   }
 
   async markProcessedWebhook(id: string): Promise<void> {
-    this.webhooksMem.add(id);
+    await this.prisma.processedWebhook.upsert({where: {id}, update: {}, create: {id}});
   }
 
-  // -------- ledger di piattaforma (in-memory) ---------------------------------
+  // -------- ledger di piattaforma ---------------------------------------------
+  /** Legge la riga singola del ledger, creandola lazy se assente. */
   async getLedger(): Promise<Ledger> {
-    return {...this.ledgerMem};
+    const r = await this.prisma.platformLedger.upsert({
+      where: {id: PrismaStore.LEDGER_ID},
+      update: {},
+      create: {id: PrismaStore.LEDGER_ID}
+    });
+    return {
+      presaleCommissionCents: r.presaleCommissionCents,
+      royaltyTinftCents: r.royaltyTinftCents,
+      royaltyOrganizerCents: r.royaltyOrganizerCents,
+      exitFeeCents: r.exitFeeCents
+    };
   }
 
   async addToLedger(delta: Partial<Ledger>): Promise<Ledger> {
-    if (delta.presaleCommissionCents) this.ledgerMem.presaleCommissionCents += delta.presaleCommissionCents;
-    if (delta.royaltyTinftCents) this.ledgerMem.royaltyTinftCents += delta.royaltyTinftCents;
-    if (delta.royaltyOrganizerCents) this.ledgerMem.royaltyOrganizerCents += delta.royaltyOrganizerCents;
-    if (delta.exitFeeCents) this.ledgerMem.exitFeeCents += delta.exitFeeCents;
-    return {...this.ledgerMem};
+    await this.getLedger(); // garantisce l'esistenza della riga
+    const r = await this.prisma.platformLedger.update({
+      where: {id: PrismaStore.LEDGER_ID},
+      data: {
+        // increment atomico: UPDATE … SET x = x + delta
+        presaleCommissionCents: {increment: delta.presaleCommissionCents ?? 0},
+        royaltyTinftCents: {increment: delta.royaltyTinftCents ?? 0},
+        royaltyOrganizerCents: {increment: delta.royaltyOrganizerCents ?? 0},
+        exitFeeCents: {increment: delta.exitFeeCents ?? 0}
+      }
+    });
+    return {
+      presaleCommissionCents: r.presaleCommissionCents,
+      royaltyTinftCents: r.royaltyTinftCents,
+      royaltyOrganizerCents: r.royaltyOrganizerCents,
+      exitFeeCents: r.exitFeeCents
+    };
   }
 
   // -------- contenuti editoriali ---------------------------------------------
@@ -806,3 +900,5 @@ type PrismaTicket = NonNull<Unwrap<ReturnType<PrismaClient["ticket"]["findUnique
 type PrismaOrder = NonNull<Unwrap<ReturnType<PrismaClient["order"]["findUnique"]>>>;
 type PrismaTransfer = NonNull<Unwrap<ReturnType<PrismaClient["transfer"]["findUnique"]>>>;
 type PrismaValidation = NonNull<Unwrap<ReturnType<PrismaClient["validation"]["findUnique"]>>>;
+type PrismaPayment = NonNull<Unwrap<ReturnType<PrismaClient["payment"]["findUnique"]>>>;
+type PrismaPending = NonNull<Unwrap<ReturnType<PrismaClient["pendingRegistration"]["findUnique"]>>>;
