@@ -1,83 +1,106 @@
-# Handoff: TINFT — Ticketing NFT (App, Sito, Console)
+# Handoff: TINFT — Ticketing NFT (Sito Web · Web App · App nativa · Console)
 
 ## Overview
-TINFT è una piattaforma di biglietteria in cui ogni biglietto è un **NFT nominativo** su blockchain L2. Vincolo di prodotto fondante: **ogni processo** (acquisto, validazione, trasferimento, controllo accessi) avviene **solo via smartphone con l'app proprietaria TINFT** — nessun lettore o device esterno. Il modello di custodia scelto è **chiuso/enforced** durante la vita "viva" del biglietto, con uscita opzionale dopo l'evento.
+TINFT è una piattaforma di biglietteria basata su NFT nominativi. Vincolo di prodotto centrale: **ogni processo operativo (acquisto, validazione, trasferimento, controllo accessi) deve passare solo da smartphone tramite l'app proprietaria TINFT — nessun device esterno** (niente lettori, tornelli o scanner dedicati). Il web serve a vedere/gestire il proprio account e a comprare; la **validazione degli ingressi avviene esclusivamente nell'app**.
 
-Questo pacchetto serve a portare i prototipi di design e le regole di prodotto in un'implementazione reale (Livello 2): smart contract + backend + pagamenti.
+Il sistema ha quattro superfici che condividono lo stesso "mondo" dati:
+1. **Sito Web** — vetrina pubblica + acquisto + registrazione.
+2. **Web App** — area cliente loggata (desktop/web).
+3. **Prototipo App** — app mobile (cliente + organizzatore + validatore + admin TINFT).
+4. **Console Web** — pannello organizzatore (gestione club, eventi, incassi, accessi in sola lettura).
 
 ## About the Design Files
-I file `.dc.html` in questo bundle sono **riferimenti di design realizzati in HTML** — prototipi che mostrano look e comportamento previsti, **non codice di produzione da copiare**. Il compito è **ricreare questi design nell'ambiente del codebase target** (React/Vue/SwiftUI/native) usando i suoi pattern e librerie; se non esiste ancora un ambiente, scegliere il framework più adatto. La logica economica e i flussi modellati nei prototipi vanno tradotti 1:1 in contratto + backend.
+I file `.dc.html` in questo bundle sono **riferimenti di design realizzati in HTML** — prototipi che mostrano aspetto e comportamento previsti, **non codice di produzione da copiare**. Il compito è **ricreare questi design nell'ambiente del codebase di destinazione** (React/Vue/SwiftUI/native) usando i pattern e le librerie già in uso — oppure, se non esiste ancora un ambiente, scegliere il framework più adatto. Per la parte di validazione/NFC l'app deve essere **nativa** (una PWA non basta).
 
-Per aprire i prototipi servono `support.js`, `tinft-data.js` e la cartella `assets/` (inclusi). Mondo condiviso demo via `localStorage['tinft_world']` + `BroadcastChannel('tinft_world')` (solo per la demo; in produzione lo sostituisce il backend).
+I prototipi usano un runtime proprietario (`support.js` + tag `<x-dc>`): è solo l'impalcatura del prototipo, non va portata in produzione. Conta il design renderizzato e la logica descritta qui sotto.
 
 ## Fidelity
-**High-fidelity.** Colori, tipografia, spaziature e interazioni sono definitivi. Ricreare le UI fedelmente con le librerie del codebase.
+**High-fidelity (hifi).** Colori, tipografia, spaziature, raggi e interazioni sono definitivi. Ricreare la UI fedelmente con le librerie del codebase. La logica di business (escrow, royalty, KPI) è già modellata nei prototipi e va reimplementata lato backend (vedi `TINFT - Specifica Tecnica`).
 
-## Surfaces / Schermate
-1. **App mobile** (`TINFT - Prototipo App.dc.html`) — la superficie principale. Quattro profili:
-   - **Cliente**: home/wallet, eventi, acquisto (intestazione nominativa + pagamento), biglietti, check-in con **QR rotante (5s)**, trasferimento P2P, mercato secondario, export NFT, registrazione **SPID + codice fiscale**.
-   - **Validatore**: profilo separato (login con codice varco creato dall'organizzatore), **solo scansione**; esiti: valido / screenshot-scaduto / già usato / falso / in-escrow; modalità **offline** con coda di sync tra varchi; storico per telefono.
-   - **Organizzatore**: dashboard, crea evento, incassi (con royalty P2P), accessi live, gestione validatori, holder.
-   - **TINFT Piattaforma**: console interna ricavi aggregati multi-organizzatore.
-2. **Sito Web** (`TINFT - Sito Web.dc.html`) — vetrina pubblica + acquisto che deposita il biglietto nel wallet.
-3. **Console Web** (`TINFT - Console Web.dc.html`) — dashboard organizzatore desktop, con barra **LIVE** che riflette il mondo condiviso.
+## Design Tokens
+**Colori**
+- Sfondo base: `#0a0a0a` · superfici: `#131313`, `#1c1c1c` · bordi: `#2a2a2a`, `#222222`
+- Testo: `#e8e6e0` (primario), `#8a8682` / `#6a6764` (muted), `#5a5754` (faint)
+- Accento blu (brand): `#4472c4`; varianti `#6f9eff` (chiaro), `#aac3f5`, `#2f4f8a` (bordo)
+- Successo/verde: `#00cc88`, `#5fe0b0`, `#0a8a5c`, `#0a3f30` (bg)
+- Warning/oro: `#ffcf80`, `#9c5e00`
+- Errore/rosa: `#ff8aa0`, `#ff5577`
+- Su documento stampabile (Specifica): paper `#fff`, body bg `#efece3`, ink `#1a1d24`, accento `#2f5fb0`
 
-## Regole economiche (da implementare 1:1)
-- **Royalty trasferimento: 1% del prezzo originale**, a carico del **compratore**, spaccata **0,5% TINFT + 0,5% organizzatore**. Garantita solo dentro il sistema enforced.
-- **Escrow P2P a pagamento**: il token è trattenuto finché il compratore paga; release atomico (token↔fondi); **timeout** → ritorno al venditore.
-- **Trasferimento doppio**: Regalo (gratis) / A pagamento (con escrow).
-- **Tetto rivendita: +5%** per passaggio sul prezzo pagato dal venditore (base di costo che viaggia col token).
-- **Limite acquisto: max 2 biglietti per evento per identità** (legato a `hash(codice fiscale)`).
-- **Export post-evento (scelta del cliente, definitiva)**: (A) **rilascio completo** con **fee d'uscita 25%** una tantum → NFT libero, fuori dalla rete royalty; (B) **export enforced** → resta legato alla policy, royalty 1% per sempre.
-- **Validazione**: la scansione marca il token come `usato` (collectible). Un token in escrow/trasferimento è **bloccato al varco**.
+**Tipografia**
+- Display/heading: **Quicksand** (500/600/700)
+- Body UI: system sans (nel prototipo è il default del runtime)
+- Documento tecnico: **IBM Plex Sans** (body) + **IBM Plex Mono** (codice)
+- Scale tipiche: H1 24–34px, titoli sezione 22px, body 13–14px, label/kicker 9–11px uppercase con `letter-spacing:0.08–0.14em`
 
-## Livello 2 — piano di build
-### B · Smart contract (L2: Polygon PoS o Base)
-- `ERC-721` + **ERC-721C** (Creator Token Standard) con **Transfer Validator** + allowlist operatori → royalty enforced anche su trasferimenti P2P.
-- **Split contract** royalty 0,5% / 0,5% (EIP-2981 per i marketplace conformi + enforcement via validator).
-- **Escrow contract**: `list()` (lock), `pay()` (release atomico con split royalty), `reclaim()` (timeout).
-- Stato per-token: `paid` (base costo), `eventId`, `exportMode`. Controlli on-chain: prezzo ≤ `paid*1.05`; `count(hash(CF), eventId) ≤ 2`.
-- `exportFree()` (incassa 25%, rimuove dalla policy → self-custody) / `exportEnforced()` (resta enforced).
-- **Audit di sicurezza** prima del mainnet.
+**Forma**
+- Border-radius: **13px** su card/pulsanti/campi/contenitori; **9px** immagini; cerchi 50% per avatar
+- Shadow accento: `0 0 18–30px rgba(68,114,196,.3)` (CTA blu), glow verde `rgba(0,204,136,.16)`
+- Spaziatura: padding card 12–20px, gap 1px (liste a celle separate da bordo) / 8–16px (griglie)
 
-### C · Wallet & custodia
-- Wallet **custodial** via account abstraction (ERC-4337) o MPC; utente senza seed/gas.
-- **Paymaster** per gas sponsorizzato. Recovery account legato a identità SPID.
+## Screens / Views
 
-### D · Pagamenti
-- **PSP** (Stripe/Nexi): checkout euro (carta/Apple Pay).
-- Backend + **webhook**: pagamento riuscito → mint / release escrow on-chain.
-- **Payout venditori** sul secondario (richiede KYC venditore). Rimborsi/chargeback.
+### Sito Web (pubblico)
+- **Hero + catalogo eventi**: griglia card evento (cover, tipo uppercase, titolo, venue·città, prezzo "da €", CTA Dettagli/Acquista). Gli eventi includono sia il catalogo fisso sia quelli creati dagli organizzatori nei club (mondo condiviso).
+- **Artisti da seguire**: griglia card (avatar iniziali colorato, nome, genere, bottone Segui).
+- **Dal blog**: card (cover placeholder a righe, tag·tempo lettura, titolo, estratto). *Contenuti placeholder, da sostituire.*
+- **News & annunci**: lista righe (data + titolo).
+- **Sezione organizzatori** + **modale Auth** (vedi Interazioni → Registrazione).
 
-### E · Identità & compliance
-- Integrazione **SPID reale** (OIDC). CF cifrato off-chain, solo `hash` on-chain. GDPR, AML sui payout.
+### Web App (area cliente loggata)
+Nav laterale a **7 voci separate**: Home, Eventi, Biglietti, Mercato, Artisti, Blog, News.
+- **Home**: saluto, alert "biglietto in arrivo" (escrow), 3 stat card (Portafoglio/Goodwill/In vendita), In evidenza, Consigliati per te.
+- **Eventi**: striscia statistiche (in vendita/città/prezzo minimo) + griglia eventi.
+- **Biglietti**: striscia statistiche (attivi/validati/in vendita/spesa totale) + lista biglietti con stati (attivo/usato/vendita/exported) e azioni Entra/Rivendi/Trasferisci.
+- **Mercato**: striscia statistiche + lista rivendite acquistabili (con royalty e tetto prezzo).
+- **Artisti / Blog / News**: **sezioni separate**, ciascuna con la propria striscia statistiche in cima.
 
-### F · Legale
-- Inquadramento custodia asset; validazione legale del tetto anti-bagarinaggio; fiscale (IVA su royalty/fee).
+### Prototipo App (mobile)
+Bottom-nav cliente a **5 voci**: Home, Eventi, Biglietti, Mercato, **Scopri**.
+- **Scopri** contiene Artisti/Blog/News come **sotto-sezioni** (segmented control), ognuna con striscia statistiche. *(Scelta mobile: 7 voci in bottom-nav non sono usabili; le sezioni restano separate sotto Scopri.)*
+- Profili multipli: **Cliente**, **Organizzatore** (Home/Club/Eventi/Incassi/Accessi/Holder), **Validatore** (scansione/validazione ingressi — solo app), **Admin TINFT**.
+- **Club → Eventi**: l'organizzatore crea pagine-club (con dati societari/fatturazione) e dentro crea eventi; finiscono nel mondo condiviso e diventano acquistabili su tutte le superfici.
 
-## Data model (riferimento dal prototipo)
-- **Ticket**: `{ id, owner, eventId, type, title, venue, price (face), paid (cost basis), status: attivo|usato|vendita|exported, exportMode: free|enforced, exitFee }`
-- **Transfer**: `{ id, fromUser, toUser, mode: regalo|pagamento, prezzo, royalty (royC+royT), status: pending|escrow|done, createdAt, ttl }`
-- **Account**: `{ nome, cognome, email, cf, verified (SPID), goodwill }`
+### Console Web (organizzatore)
+Nav: Dashboard, Club, Eventi, Incassi, Accessi, Holder.
+- **Dashboard**: KPI (incasso, biglietti, eventi, validati) = baseline demo + delta reale dal mondo condiviso.
+- **Club**: lista club → dettaglio con eventi e creazione evento.
+- **Accessi**: validazioni in **sola lettura** (la validazione avviene nell'app, mai dal web).
+- **Incassi & payout**: lordo, commissioni, royalty, netto, prossimo bonifico.
 
-## Design tokens
-- **Font**: Space Grotesk (display/heading), IBM Plex Sans (UI/body), IBM Plex Mono (label/kicker).
-- **Sfondo app/scuro**: `#06070c` / `#0a0c12`; superfici `oklch(0.16 0.015 265)`; bordi `oklch(0.26 0.02 265)`.
-- **Accento primario (viola/blu)**: `oklch(0.62 0.17 264)` → `oklch(0.5 0.15 264)`.
-- **Semantica**: successo/verde `oklch(0.74 0.16 158)`; warning/ambra `oklch(0.8 0.13 70)`; errore/rosso `oklch(0.72 0.13 25)`; piattaforma/viola `oklch(0.55 0.16 300)`.
-- **Radius**: card 16–22px, pill 999px. **Mono label**: 9–11px, letter-spacing 0.1–0.24em.
+## Interactions & Behavior
+
+### Registrazione (identica su tutte le superfici)
+**Due registrazioni separate per due utenti distinti** (Cliente e Organizzatore), con **gli stessi dati personali**: nome, cognome, codice fiscale, data di nascita, email, telefono, indirizzo di residenza, indirizzo di fatturazione (toggle "uguale a residenza"), nome utente, password.
+- Due percorsi: **SPID** (dati già verificati, nessun codice) ed **Email** (stessi campi + verifica con codice OTP a 6 cifre).
+- L'organizzatore, alla creazione del **club**, fornisce inoltre i **dati societari/fatturazione**: ragione sociale, P.IVA, sede legale, PEC/email fatturazione, codice SDI, IBAN.
+- Vincolo: una sola identità per codice fiscale (limite 2 biglietti/evento legato all'identità).
+
+### Trasferimento biglietto in escrow
+Regalo o vendita P2P: il biglietto resta **trattenuto in escrow** finché il destinatario non accetta (o scade e torna al mittente). In caso di pagamento, royalty divisa tra organizzatore e TINFT. Niente rimborso diretto: la rinuncia avviene solo rivendendo prima dell'evento.
+
+### Validazione (solo app)
+Stati biglietto: `attivo → usato` alla validazione. Nessuna superficie web valida ingressi. In produzione: QR dinamico firmato (rotazione ~30s) + modalità offline (vedi Specifica §8).
+
+### Stati e transizioni chiave
+- Ticket.status: `attivo | usato | vendita | exported`
+- Transfer.status: `pending | escrow | done | expired | cancelled`
+- Event.status: `bozza | in vendita | concluso`
+- KYC organizzatore: `none → pending → verified → rejected` (gate alla pubblicazione eventi)
+
+## State Management / Dati
+I prototipi simulano un backend con un "mondo condiviso" in `localStorage` (chiave `tinft_world`: `{ tickets, transfers, accounts, clubs }`) + sessione (`tinft_session`). **In produzione va sostituito da backend + DB reale** — entità, contratti API e modello completo nel documento **`TINFT - Specifica Tecnica`** (incluso in questo bundle come riferimento).
 
 ## Assets
-- `assets/tinft-logo.png` — logo TINFT.
-- `assets/mesh.jpg` — texture (se usata).
-- Immagini evento: nei prototipi sono placeholder a gradiente; in produzione usare artwork reali.
+In `assets/`: `ev-vol4.png`, `ev-live.png`, `ev-jazz.png` (cover eventi demo), `mesh.jpg`, `tinft-logo.png`. Le cover di blog/eventi-club sono placeholder SVG a righe generati a runtime. Sostituire con immagini reali. Font: Quicksand (UI), IBM Plex Sans/Mono (documento) — Google Fonts.
 
-## Files (in questo bundle)
-- `TINFT - Prototipo App.dc.html` — app (tutti i profili e flussi).
-- `TINFT - Sito Web.dc.html` — sito pubblico.
-- `TINFT - Console Web.dc.html` — console organizzatore.
-- `TINFT - Handoff Tecnico Contratto.dc.html` — spec architetturale del contratto (dettaglio §1–§10).
-- `TINFT - Roadmap e Checklist.dc.html` — stato e checklist completa del progetto.
-- `support.js`, `tinft-data.js`, `assets/` — runtime e dati demo necessari ad aprire i prototipi.
+## Files
+- `TINFT - Sito Web.dc.html` — sito pubblico
+- `TINFT - Web App.dc.html` — area cliente web
+- `TINFT - Prototipo App.dc.html` — app mobile (tutti i profili)
+- `TINFT - Console Web.dc.html` — console organizzatore
+- `TINFT - Specifica Tecnica.dc.html` — specifica tecnica / requisiti backend (i 10 workstream di produzione)
+- `support.js` — runtime del prototipo (NON portare in produzione)
+- `assets/` — immagini demo
 
-> I prototipi sono la **specifica funzionale 1:1**. Partire da contratto (B) e pagamenti (D): sono sul percorso critico e interdipendenti.
+> Per aprire i prototipi: servire la cartella con un server statico e aprire i singoli `.dc.html`. Sono riferimenti di design, non l'app finale.
