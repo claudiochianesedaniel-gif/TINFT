@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native build output (generato da prebuild / run)
+/android
+/ios
+*.orig.*
+
+# Metro
+.metro-health-check*
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS / editor
+.DS_Store
+*.pem
+*.log

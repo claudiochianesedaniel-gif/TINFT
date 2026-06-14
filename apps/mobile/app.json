@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "TINFT",
+    "slug": "tinft-mobile",
+    "scheme": "tinft",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0a0a",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "io.tinft.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "TINFT usa la fotocamera per scansionare il QR del biglietto al varco.",
+        "NFCReaderUsageDescription": "TINFT legge i tag NFC per validare i biglietti al varco (solo lettura)."
+      }
+    },
+    "android": {
+      "package": "io.tinft.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "permissions": ["android.permission.CAMERA", "android.permission.NFC"]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "TINFT usa la fotocamera per scansionare il QR del biglietto al varco."
+        }
+      ],
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "TINFT legge i tag NFC per validare i biglietti al varco (solo lettura).",
+          "selectIdentifiers": [],
+          "includeNdefEntitlement": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}
