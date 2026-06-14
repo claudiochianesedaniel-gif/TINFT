@@ -131,7 +131,7 @@ export function buildServer(
   app.setNotFoundHandler(async (req, reply) => {
     if (req.method === "GET" || req.method === "HEAD") {
       let urlPath = req.url.split("?")[0] || "/";
-      if (urlPath === "/") urlPath = "/sito.html";
+      if (urlPath === "/") urlPath = "/index.html";
       const rel = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[\\/])+/, "").replace(/^[\\/]+/, "");
       const filePath = join(WEB_DIR, rel);
       if (filePath.startsWith(WEB_DIR)) {
