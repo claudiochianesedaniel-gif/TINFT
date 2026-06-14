@@ -12,6 +12,9 @@ import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
 import {ViemChain} from "../chain/viem";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+import {setPassword, verifyPassword} from "../auth/password";
+import {signToken, verifyToken} from "../auth/tokens";
+import {authenticate, bearerToken as authHeaderToken, requireRole} from "../auth/middleware";
 
 /** Usa l'adapter on-chain reale (viem) se le variabili d'ambiente sono presenti, altrimenti il fake. */
 function chainFromEnv(): ChainPort | undefined {
@@ -72,6 +75,20 @@ export function buildServer(
     return reply.status(500).send({error: "INTERNAL", message: err.message});
   });
 
+  /**
+   * Guardia di "ownership" al bordo: l'id (in body o path) deve coincidere con
+   * `req.user.accountId`, salvo il ruolo PLATFORM (operatore). 403 altrimenti.
+   * Il service layer verifica già la proprietà delle risorse: questo lega l'identità.
+   */
+  function assertSelf(req: {user?: {accountId: string; role: string}}, id: string | undefined): void {
+    const user = req.user;
+    if (!user) throw new DomainError("BAD_TOKEN", "token mancante", 401);
+    if (user.role === "PLATFORM") return; // l'operatore di piattaforma può agire per conto altrui
+    if (id !== undefined && id !== user.accountId) {
+      throw new DomainError("FORBIDDEN", "non puoi operare per conto di un altro account", 403);
+    }
+  }
+
   app.get("/health", async () => ({status: "ok"}));
 
   // -------- account
@@ -83,8 +100,14 @@ export function buildServer(
       email: string;
       cfHash?: string;
       walletAddress?: string;
+      password?: string;
     };
-  }>("/accounts", async (req, reply) => reply.status(201).send(ticketing.createAccount(req.body)));
+  }>("/accounts", async (req, reply) => {
+    const {password, ...rest} = req.body;
+    const account = ticketing.createAccount(rest);
+    if (password) setPassword(account, password);
+    return reply.status(201).send(account);
+  });
 
   // -------- registrazione completa con dati SPID → identità verificata (hash CF on-chain)
   app.post<{
@@ -101,6 +124,7 @@ export function buildServer(
       zip?: string;
       province?: string;
       phone?: string;
+      password?: string;
     };
   }>("/register", async (req, reply) => {
     const b = req.body;
@@ -121,6 +145,7 @@ export function buildServer(
       province: b.province,
       phone: b.phone
     });
+    if (b.password) setPassword(account, b.password);
     return reply.status(201).send(account);
   });
 
@@ -140,12 +165,23 @@ export function buildServer(
       province?: string;
       phone?: string;
       username?: string;
+      password?: string;
     };
   }>("/auth/register/email", async (req, reply) => reply.status(201).send(ticketing.startEmailRegistration(req.body)));
 
   app.post<{Body: {email: string; code: string}}>("/auth/register/email/verify", async (req, reply) =>
     reply.status(201).send(ticketing.verifyEmailRegistration(req.body.email, req.body.code))
   );
+
+  // -------- login: email + password → token + account
+  app.post<{Body: {email: string; password: string}}>("/auth/login", async (req, reply) => {
+    const account = ticketing.findAccountByEmail(req.body.email ?? "");
+    if (!account || !verifyPassword(account, req.body.password ?? "")) {
+      throw new DomainError("BAD_CREDENTIALS", "credenziali non valide", 401);
+    }
+    const token = signToken({accountId: account.id, role: account.role});
+    return reply.status(200).send({token, account});
+  });
 
   // GDPR — cancellazione account (right to erasure). Gating admin via token;
   // in produzione: auth reale + allow-list (cfr. pattern Mindful Trading Club).
@@ -180,7 +216,10 @@ export function buildServer(
       genre?: string;
       color?: string;
     };
-  }>("/clubs", async (req, reply) => reply.status(201).send(ticketing.createClub(req.body)));
+  }>("/clubs", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
+    assertSelf(req, req.body.organizerId);
+    return reply.status(201).send(ticketing.createClub(req.body));
+  });
   app.get("/clubs", async () => ticketing.listClubs());
   app.get<{Params: {id: string}}>("/clubs/:id", async (req) => ticketing.getClub(req.params.id));
   app.get<{Params: {id: string}}>("/clubs/:id/events", async (req) => {
@@ -190,13 +229,18 @@ export function buildServer(
   app.post<{
     Params: {id: string};
     Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number};
-  }>("/clubs/:id/events", async (req, reply) => {
+  }>("/clubs/:id/events", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
+    assertSelf(req, req.body.organizerId);
     ticketing.getClub(req.params.id);
     return reply.status(201).send(ticketing.createEvent({...req.body, clubId: req.params.id}));
   });
   app.post<{Params: {id: string}; Body: {buyerId: string}}>(
     "/clubs/:id/fidelity",
-    async (req, reply) => reply.status(201).send(ticketing.purchaseFidelity(req.params.id, req.body.buyerId))
+    {preHandler: authenticate},
+    async (req, reply) => {
+      assertSelf(req, req.body.buyerId);
+      return reply.status(201).send(ticketing.purchaseFidelity(req.params.id, req.body.buyerId));
+    }
   );
 
   // -------- eventi
@@ -210,7 +254,10 @@ export function buildServer(
       capacity: number;
       status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
     };
-  }>("/events", async (req, reply) => reply.status(201).send(ticketing.createEvent(req.body)));
+  }>("/events", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
+    assertSelf(req, req.body.organizerId);
+    return reply.status(201).send(ticketing.createEvent(req.body));
+  });
   app.get("/events", async () => ticketing.listEvents());
   app.get<{Params: {id: string}}>("/events/:id", async (req) => ticketing.getEvent(req.params.id));
 
@@ -225,70 +272,120 @@ export function buildServer(
   app.get<{Params: {id: string}}>("/events/:id/tiers", async (req) => ticketing.listTiers(req.params.id));
   app.post<{Params: {id: string}; Body: {organizerId: string; name: string; priceCents: number; note?: string}}>(
     "/events/:id/tiers",
-    async (req, reply) => reply.status(201).send(ticketing.createTier(req.params.id, req.body))
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req, reply) => {
+      assertSelf(req, req.body.organizerId);
+      return reply.status(201).send(ticketing.createTier(req.params.id, req.body));
+    }
   );
 
   // -------- ordini / checkout v2 (commissione 4% + quantità + limite 2)
   app.post<{Body: {buyerId: string; eventId: string; tierId?: string; quantity: number}}>(
     "/orders",
-    async (req, reply) => reply.status(201).send(ticketing.createOrder(req.body))
+    {preHandler: authenticate},
+    async (req, reply) => {
+      assertSelf(req, req.body.buyerId);
+      return reply.status(201).send(ticketing.createOrder(req.body));
+    }
   );
   app.post<{Params: {id: string}; Body: Record<string, never>}>(
     "/orders/:id/pay",
-    async (req) => ticketing.payOrder(req.params.id)
+    {preHandler: authenticate},
+    async (req) => {
+      const order = ticketing.getOrder(req.params.id);
+      assertSelf(req, order.buyerId);
+      return ticketing.payOrder(req.params.id);
+    }
   );
-  app.get<{Params: {id: string}}>("/orders/:id", async (req) => ticketing.getOrder(req.params.id));
-  app.get<{Params: {id: string}}>("/accounts/:id/orders", async (req) => ticketing.ordersOf(req.params.id));
+  app.get<{Params: {id: string}}>("/orders/:id", {preHandler: authenticate}, async (req) => {
+    const order = ticketing.getOrder(req.params.id);
+    assertSelf(req, order.buyerId);
+    return order;
+  });
+  app.get<{Params: {id: string}}>("/accounts/:id/orders", {preHandler: authenticate}, async (req) => {
+    assertSelf(req, req.params.id);
+    return ticketing.ordersOf(req.params.id);
+  });
 
   // -------- mercato secondario (rivendita) (v2)
   app.get("/market", async () => ticketing.market());
   app.post<{Params: {ticketId: string}; Body: {buyerId: string}}>(
     "/market/:ticketId/buy",
-    async (req) => ticketing.buyFromMarket(req.params.ticketId, req.body.buyerId)
+    {preHandler: authenticate},
+    async (req) => {
+      assertSelf(req, req.body.buyerId);
+      return ticketing.buyFromMarket(req.params.ticketId, req.body.buyerId);
+    }
   );
 
   // -------- biglietti
-  app.get<{Params: {id: string}}>("/accounts/:id/tickets", async (req) => ticketing.ticketsOf(req.params.id));
+  app.get<{Params: {id: string}}>("/accounts/:id/tickets", {preHandler: authenticate}, async (req) => {
+    assertSelf(req, req.params.id);
+    return ticketing.ticketsOf(req.params.id);
+  });
 
   app.post<{Params: {id: string}; Body: {ownerId: string; priceCents: number}}>(
     "/tickets/:id/list",
-    async (req, reply) => reply.status(201).send(ticketing.listTicket(req.params.id, req.body.ownerId, req.body.priceCents))
+    {preHandler: authenticate},
+    async (req, reply) => {
+      assertSelf(req, req.body.ownerId);
+      return reply.status(201).send(ticketing.listTicket(req.params.id, req.body.ownerId, req.body.priceCents));
+    }
   );
   app.post<{Params: {id: string}; Body: {ownerId: string}}>(
     "/tickets/:id/unlist",
-    async (req) => ticketing.unlistTicket(req.params.id, req.body.ownerId)
+    {preHandler: authenticate},
+    async (req) => {
+      assertSelf(req, req.body.ownerId);
+      return ticketing.unlistTicket(req.params.id, req.body.ownerId);
+    }
   );
 
   app.post<{
     Params: {id: string};
     Body: {fromId: string; mode: "GIFT" | "PAYMENT"; toId?: string; priceCents?: number; ttlSeconds?: number};
-  }>("/tickets/:id/transfers", async (req, reply) => {
+  }>("/tickets/:id/transfers", {preHandler: authenticate}, async (req, reply) => {
     const {fromId, ...rest} = req.body;
+    assertSelf(req, fromId);
     return reply.status(201).send(ticketing.createTransfer(req.params.id, fromId, rest));
   });
 
   app.post<{Params: {id: string}; Body: {toId: string; holderName?: string}}>(
     "/transfers/:id/accept",
-    async (req) => ticketing.acceptTransfer(req.params.id, req.body.toId, req.body.holderName)
+    {preHandler: authenticate},
+    async (req) => {
+      assertSelf(req, req.body.toId);
+      return ticketing.acceptTransfer(req.params.id, req.body.toId, req.body.holderName);
+    }
   );
   app.post<{Params: {id: string}; Body: {byId?: string}}>(
     "/transfers/:id/reclaim",
-    async (req) => ticketing.reclaimTransfer(req.params.id, req.body?.byId)
+    {preHandler: authenticate},
+    async (req) => {
+      assertSelf(req, req.body?.byId);
+      return ticketing.reclaimTransfer(req.params.id, req.body?.byId);
+    }
   );
 
   app.post<{Params: {id: string}; Body: {validatorId?: string; scenario?: "screenshot"}}>(
     "/tickets/:id/validate",
+    {preHandler: authenticate},
     async (req) => ticketing.validate(req.params.id, req.body?.validatorId, req.body?.scenario)
   );
   app.post<{Params: {id: string}; Body: {ownerId: string; mode: "FREE" | "ENFORCED"}}>(
     "/tickets/:id/export",
-    async (req) => ticketing.exportTicket(req.params.id, req.body.ownerId, req.body.mode)
+    {preHandler: authenticate},
+    async (req) => {
+      assertSelf(req, req.body.ownerId);
+      return ticketing.exportTicket(req.params.id, req.body.ownerId, req.body.mode);
+    }
   );
 
   // -------- contenuti editoriali (B5): artisti, blog, news
   app.get("/artists", async () => content.listArtists());
   app.post<{Params: {id: string}}>(
     "/artists/:id/follow",
+    {preHandler: authenticate},
     async (req) => content.followArtist(req.params.id)
   );
   app.get("/blog", async () => content.listBlog());
@@ -296,23 +393,79 @@ export function buildServer(
   app.get("/news", async () => content.listNews());
 
   // -------- console organizzatore (B6): dashboard, incassi, accessi, varchi
-  app.get<{Params: {id: string}}>("/organizers/:id/dashboard", async (req) => consoleSvc.dashboard(req.params.id));
-  app.get<{Params: {id: string}}>("/organizers/:id/incassi", async (req) => consoleSvc.incassi(req.params.id));
-  app.get<{Params: {id: string}}>("/events/:id/accessi", async (req) => consoleSvc.eventAccess(req.params.id));
-
-  app.get<{Params: {id: string}}>("/events/:id/validators", async (req) => ticketing.listValidators(req.params.id));
-  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
-    "/events/:id/validators",
-    async (req, reply) => reply.status(201).send(ticketing.createValidator(req.params.id, req.body.organizerId))
+  app.get<{Params: {id: string}}>(
+    "/organizers/:id/dashboard",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req) => {
+      assertSelf(req, req.params.id);
+      return consoleSvc.dashboard(req.params.id);
+    }
+  );
+  app.get<{Params: {id: string}}>(
+    "/organizers/:id/incassi",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req) => {
+      assertSelf(req, req.params.id);
+      return consoleSvc.incassi(req.params.id);
+    }
+  );
+  app.get<{Params: {id: string}}>(
+    "/events/:id/accessi",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req) => {
+      assertSelf(req, ticketing.getEvent(req.params.id).organizerId);
+      return consoleSvc.eventAccess(req.params.id);
+    }
   );
 
-  // -------- console piattaforma (B6): ricavi dal ledger + GMV + conteggio P2P
-  app.get("/platform/revenue", async () => consoleSvc.platformRevenue());
+  app.get<{Params: {id: string}}>(
+    "/events/:id/validators",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req) => {
+      assertSelf(req, ticketing.getEvent(req.params.id).organizerId);
+      return ticketing.listValidators(req.params.id);
+    }
+  );
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/validators",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req, reply) => {
+      assertSelf(req, req.body.organizerId);
+      return reply.status(201).send(ticketing.createValidator(req.params.id, req.body.organizerId));
+    }
+  );
 
-  // -------- KYC organizzatore (B7): submit (org) + decision (admin)
+  // -------- console piattaforma (B6): ricavi dal ledger + GMV + conteggio P2P.
+  // Richiede ruolo PLATFORM (via token) oppure il token admin (x-admin-token).
+  app.get(
+    "/platform/revenue",
+    {
+      preHandler: (req, _reply, done) => {
+        if (req.headers["x-admin-token"] === adminToken) {
+          req.user = {accountId: "admin", role: "PLATFORM"};
+          return done();
+        }
+        try {
+          const payload = verifyToken(authHeaderToken(req));
+          if (payload.role !== "PLATFORM") throw new DomainError("FORBIDDEN", "ruolo non autorizzato", 403);
+          req.user = {accountId: payload.accountId, role: payload.role};
+          done();
+        } catch (err) {
+          done(err as Error);
+        }
+      }
+    },
+    async () => consoleSvc.platformRevenue()
+  );
+
+  // -------- KYC organizzatore (B7): submit (org, autenticato-self) + decision (admin)
   app.post<{Params: {id: string}}>(
     "/organizers/:id/kyc/submit",
-    async (req) => ticketing.submitKyc(req.params.id)
+    {preHandler: authenticate},
+    async (req) => {
+      assertSelf(req, req.params.id);
+      return ticketing.submitKyc(req.params.id);
+    }
   );
   app.post<{Params: {id: string}; Body: {decision: "VERIFIED" | "REJECTED"}}>(
     "/organizers/:id/kyc/decision",
@@ -327,7 +480,11 @@ export function buildServer(
   // -------- pubblicazione evento con gate KYC (B7): DRAFT → ON_SALE
   app.post<{Params: {id: string}; Body: {organizerId: string}}>(
     "/events/:id/publish",
-    async (req) => ticketing.publishEvent(req.params.id, req.body.organizerId)
+    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.publishEvent(req.params.id, req.body.organizerId);
+    }
   );
 
   // -------- pagamenti (M7)

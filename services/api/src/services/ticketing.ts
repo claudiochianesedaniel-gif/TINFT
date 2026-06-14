@@ -29,6 +29,7 @@ import {
   royaltySplitCents
 } from "../domain/rules";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+import {hashPassword} from "../auth/password";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -61,6 +62,7 @@ export class TicketingService {
     province?: string;
     phone?: string;
     walletAddress?: string;
+    passwordHash?: string;
   }): Account {
     const role = input.role ?? "CLIENTE";
     const account: Account = {
@@ -83,10 +85,17 @@ export class TicketingService {
       phone: input.phone,
       verified: !!input.cfHash,
       walletAddress: input.walletAddress,
-      goodwill: 0
+      goodwill: 0,
+      passwordHash: input.passwordHash
     };
     this.store.accounts.set(account.id, account);
     return account;
+  }
+
+  /** Cerca un account per email (case-insensitive). Per il login. */
+  findAccountByEmail(email: string): Account | undefined {
+    const target = email.trim().toLowerCase();
+    return [...this.store.accounts.values()].find((a) => a.email.trim().toLowerCase() === target);
   }
 
   // --------------------------------------------- registrazione email + OTP (v2)
@@ -105,6 +114,7 @@ export class TicketingService {
     province?: string;
     phone?: string;
     username?: string;
+    password?: string;
   }): {email: string; devCode: string} {
     if (!input.email?.trim()) throw new DomainError("INVALID_EMAIL", "email obbligatoria");
     const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -123,6 +133,7 @@ export class TicketingService {
       province: input.province,
       phone: input.phone,
       username: input.username,
+      passwordHash: input.password ? hashPassword(input.password) : undefined,
       createdAt: this.now()
     });
     return {email: input.email, devCode: code};
@@ -147,7 +158,8 @@ export class TicketingService {
       city: pending.city,
       zip: pending.zip,
       province: pending.province,
-      phone: pending.phone
+      phone: pending.phone,
+      passwordHash: pending.passwordHash
     });
     this.store.pendingRegistrations.delete(email);
     return account;

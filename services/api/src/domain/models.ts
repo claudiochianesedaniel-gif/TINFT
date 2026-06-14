@@ -33,6 +33,8 @@ export interface Account {
   verified: boolean;
   walletAddress?: string;
   goodwill: number;
+  // hash della password (scrypt, formato "salt:hash" hex); assente per account SPID-only
+  passwordHash?: string;
 }
 
 export interface Club {
@@ -138,6 +140,7 @@ export interface PendingRegistration {
   province?: string;
   phone?: string;
   username?: string;
+  passwordHash?: string; // hash scrypt (se fornita in registrazione), portato all'account creato
   createdAt: number; // epoch seconds
 }
 

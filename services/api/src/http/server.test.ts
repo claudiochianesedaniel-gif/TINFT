@@ -11,8 +11,24 @@ describe("API HTTP (Fastify inject)", () => {
     await app.close();
   });
 
-  async function post(url: string, payload: unknown) {
-    return app.inject({method: "POST", url, payload: payload as object});
+  async function post(url: string, payload: unknown, headers?: Record<string, string>) {
+    return app.inject({method: "POST", url, payload: payload as object, headers});
+  }
+  async function get(url: string, headers?: Record<string, string>) {
+    return app.inject({method: "GET", url, headers});
+  }
+
+  /** Crea un account con password, fa login e restituisce account + headers Bearer. */
+  async function auth(input: {
+    role?: "CLIENTE" | "ORGANIZER" | "VALIDATOR" | "PLATFORM";
+    nome: string;
+    cognome: string;
+    email: string;
+    cfHash?: string;
+  }) {
+    const account = (await post("/accounts", {...input, password: "1234"})).json();
+    const token = (await post("/auth/login", {email: input.email, password: "1234"})).json().token as string;
+    return {account, token, headers: {authorization: `Bearer ${token}`}};
   }
 
   it("GET /health → ok", async () => {
@@ -22,31 +38,28 @@ describe("API HTTP (Fastify inject)", () => {
   });
 
   it("flusso: account → evento → acquisto → biglietti → validazione → export", async () => {
-    const org = (await post("/accounts", {role: "ORGANIZER", nome: "Org", cognome: "X", email: "o@e.it"})).json();
-    const evRes = await post("/events", {
-      organizerId: org.id,
-      title: "Vol.4",
-      venue: "Magazzino",
-      date: "21 GIU",
-      priceCents: 3150,
-      capacity: 10
-    });
+    const org = await auth({role: "ORGANIZER", nome: "Org", cognome: "X", email: "o@e.it"});
+    const evRes = await post(
+      "/events",
+      {organizerId: org.account.id, title: "Vol.4", venue: "Magazzino", date: "21 GIU", priceCents: 3150, capacity: 10},
+      org.headers
+    );
     expect(evRes.statusCode).toBe(201);
     const event = evRes.json();
 
-    const buyer = (await post("/accounts", {nome: "Marco", cognome: "B", email: "m@e.it", cfHash: "idMarco"})).json();
-    const buyRes = await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
+    const buyer = await auth({nome: "Marco", cognome: "B", email: "m@e.it", cfHash: "idMarco"});
+    const buyRes = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
     expect(buyRes.statusCode).toBe(201);
     const ticket = buyRes.json();
     expect(ticket.status).toBe("ACTIVE");
 
-    const list = await app.inject({method: "GET", url: `/accounts/${buyer.id}/tickets`});
+    const list = await get(`/accounts/${buyer.account.id}/tickets`, buyer.headers);
     expect(list.json()).toHaveLength(1);
 
-    const val = await post(`/tickets/${ticket.id}/validate`, {});
+    const val = await post(`/tickets/${ticket.id}/validate`, {}, buyer.headers);
     expect(val.json().outcome).toBe("VALID");
 
-    const exp = await post(`/tickets/${ticket.id}/export`, {ownerId: buyer.id, mode: "FREE"});
+    const exp = await post(`/tickets/${ticket.id}/export`, {ownerId: buyer.account.id, mode: "FREE"}, buyer.headers);
     expect(exp.statusCode).toBe(200);
     expect(exp.json().exportMode).toBe("FREE");
     expect(exp.json().exitFeeCents).toBe(787); // 25% di 3150 (troncato)
@@ -56,26 +69,26 @@ describe("API HTTP (Fastify inject)", () => {
     const notFound = await post("/events/evt_999/purchase", {buyerId: "acc_999"});
     expect(notFound.statusCode).toBe(404);
 
-    const org = (await post("/accounts", {role: "ORGANIZER", nome: "O", cognome: "X", email: "o2@e.it"})).json();
+    const org = await auth({role: "ORGANIZER", nome: "O", cognome: "X", email: "o2@e.it"});
     const event = (
-      await post("/events", {organizerId: org.id, title: "E", venue: "V", date: "D", priceCents: 1000, capacity: 10})
+      await post("/events", {organizerId: org.account.id, title: "E", venue: "V", date: "D", priceCents: 1000, capacity: 10}, org.headers)
     ).json();
-    const buyer = (await post("/accounts", {nome: "L", cognome: "R", email: "l@e.it", cfHash: "idLuca"})).json();
-    await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
-    await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
-    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
+    const buyer = await auth({nome: "L", cognome: "R", email: "l@e.it", cfHash: "idLuca"});
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
+    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
     expect(third.statusCode).toBe(409);
     expect(third.json().error).toBe("EVENT_LIMIT");
   });
 
   it("pagamento via HTTP: checkout → webhook idempotente → mint", async () => {
-    const org = (await post("/accounts", {role: "ORGANIZER", nome: "O", cognome: "X", email: "o3@e.it"})).json();
+    const org = await auth({role: "ORGANIZER", nome: "O", cognome: "X", email: "o3@e.it"});
     const event = (
-      await post("/events", {organizerId: org.id, title: "E", venue: "V", date: "D", priceCents: 3150, capacity: 10})
+      await post("/events", {organizerId: org.account.id, title: "E", venue: "V", date: "D", priceCents: 3150, capacity: 10}, org.headers)
     ).json();
-    const buyer = (await post("/accounts", {nome: "M", cognome: "B", email: "m2@e.it", cfHash: "idM2"})).json();
+    const buyer = await auth({nome: "M", cognome: "B", email: "m2@e.it", cfHash: "idM2"});
 
-    const checkout = await post("/payments/primary/checkout", {eventId: event.id, buyerId: buyer.id});
+    const checkout = await post("/payments/primary/checkout", {eventId: event.id, buyerId: buyer.account.id});
     expect(checkout.statusCode).toBe(201);
     const providerRef = checkout.json().session.providerRef;
 
@@ -86,25 +99,25 @@ describe("API HTTP (Fastify inject)", () => {
     const again = await post("/webhooks/psp", {id: "evt_http_1", type: "payment_succeeded", providerRef});
     expect(again.json().deduped).toBe(true);
 
-    const tickets = await app.inject({method: "GET", url: `/accounts/${buyer.id}/tickets`});
+    const tickets = await get(`/accounts/${buyer.account.id}/tickets`, buyer.headers);
     expect(tickets.json()).toHaveLength(1); // idempotenza: un solo biglietto
   });
 
   it("SPID: verifica identità (hash CF) e abilita il limite 2/evento", async () => {
-    const org = (await post("/accounts", {role: "ORGANIZER", nome: "O", cognome: "X", email: "o4@e.it"})).json();
+    const org = await auth({role: "ORGANIZER", nome: "O", cognome: "X", email: "o4@e.it"});
     const event = (
-      await post("/events", {organizerId: org.id, title: "E", venue: "V", date: "D", priceCents: 1000, capacity: 10})
+      await post("/events", {organizerId: org.account.id, title: "E", venue: "V", date: "D", priceCents: 1000, capacity: 10}, org.headers)
     ).json();
-    const buyer = (await post("/accounts", {nome: "Sara", cognome: "C", email: "s@e.it"})).json(); // non verificata
+    const buyer = await auth({nome: "Sara", cognome: "C", email: "s@e.it"}); // non verificata
 
-    const verified = await post("/identity/spid/verify", {accountId: buyer.id, cf: "CNTSRA90A01F205X", salt: "s"});
+    const verified = await post("/identity/spid/verify", {accountId: buyer.account.id, cf: "CNTSRA90A01F205X", salt: "s"});
     expect(verified.statusCode).toBe(200);
     expect(verified.json().verified).toBe(true);
     expect(verified.json().cfHash).toMatch(/^0x/);
 
-    await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
-    await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
-    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.id});
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
+    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
     expect(third.statusCode).toBe(409);
     expect(third.json().error).toBe("EVENT_LIMIT");
   });
@@ -142,5 +155,22 @@ describe("API HTTP (Fastify inject)", () => {
     expect(ok.statusCode).toBe(200);
     const again = await app.inject({method: "DELETE", url: `/accounts/${a.id}`, headers: {"x-admin-token": "dev-admin"}});
     expect(again.statusCode).toBe(404);
+  });
+
+  // -------- guardie di autenticazione / ownership
+  it("rotta protetta senza token → 401", async () => {
+    const buyer = await auth({nome: "B", cognome: "Y", email: "guard1@e.it"});
+    const noTok = await get(`/accounts/${buyer.account.id}/tickets`);
+    expect(noTok.statusCode).toBe(401);
+    expect(noTok.json().error).toBe("BAD_TOKEN");
+  });
+
+  it("agire sull'id di un altro account → 403", async () => {
+    const a = await auth({nome: "A", cognome: "A", email: "guard2a@e.it"});
+    const b = await auth({nome: "B", cognome: "B", email: "guard2b@e.it"});
+    // a usa il proprio token ma chiede i biglietti di b
+    const denied = await get(`/accounts/${b.account.id}/tickets`, a.headers);
+    expect(denied.statusCode).toBe(403);
+    expect(denied.json().error).toBe("FORBIDDEN");
   });
 });
