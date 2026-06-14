@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Console Organizzatore</title>
+<meta name="theme-color" content="#0a0a0a" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0a0a; --surf:#131313; --surf2:#1c1c1c; --deep:#0d0d0d;
+    --border:#2a2a2a; --border-soft:#222;
+    --txt:#e8e6e0; --mut:#8a8682; --mut2:#6a6764; --faint:#5a5754;
+    --blue:#4472c4; --blue-l:#6f9eff; --blue-d:#2f4f8a; --blue-bg:#1f3358; --blue-soft:#aac3f5;
+    --green:#00cc88; --green-l:#5fe0b0; --green-bg:#0a3f30; --green-bd:#0a8a5c;
+    --orange:#ff9900; --orange-l:#ffcf80; --orange-d:#9c5e00;
+    --err:#ff5577; --err-l:#ff8aa0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:'Quicksand',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:700;line-height:1.2}
+  a{color:inherit;text-decoration:none}
+  .eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut2);font-weight:600}
+  .eyebrow.acc{color:var(--blue-l)}
+  .eyebrow.green{color:var(--green-l)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--blue-l);font-size:11px}
+  .scr::-webkit-scrollbar{width:8px;height:8px}
+  .scr::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---- shell ---- */
+  .shell{display:flex;height:100vh;width:100%;overflow:hidden}
+  .sidebar{width:248px;flex-shrink:0;border-right:1px solid var(--border-soft);background:var(--bg);display:flex;flex-direction:column;padding:22px 16px}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 8px 4px}
+  .logo-img{height:30px;width:auto;border-radius:13px;display:block}
+  .logo-fallback{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--blue-l),var(--blue));transform:rotate(45deg);display:none;flex-shrink:0}
+  .brand .name{font-weight:600;font-size:16px;letter-spacing:.02em}
+  .brand .sub{font-size:9px;letter-spacing:.09em;color:var(--mut2)}
+  .sep{height:1px;background:var(--border-soft);margin:18px 6px}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .navitem{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:13px;cursor:pointer;color:var(--mut);font-weight:500;font-size:13.5px;transition:.12s;border:1px solid transparent}
+  .navitem:hover{color:var(--txt)}
+  .navitem.on{background:var(--blue-bg);color:#fff;font-weight:600}
+  .navitem .ico{width:20px;text-align:center;font-size:15px}
+  .grow1{flex:1}
+  .orgcard{background:var(--surf2);border:1px solid var(--border);border-radius:13px;padding:13px;display:flex;align-items:center;gap:11px;margin-bottom:8px}
+  .orgcard .av{width:38px;height:38px;border-radius:13px;background:var(--blue-d);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0}
+  .orgcard .nm{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .orgcard .sb{font-size:10.5px;color:var(--mut2)}
+  .exit{display:flex;align-items:center;justify-content:center;gap:8px;background:transparent;border:1px solid var(--border);border-radius:13px;padding:10px;font-size:11.5px;font-weight:600;color:var(--mut);cursor:pointer;font-family:inherit}
+  .exit:hover{color:var(--txt)}
+
+  /* ---- main ---- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+  .topbar{display:none;border-bottom:1px solid var(--border-soft);background:var(--bg)}
+  .topbar .tbrow{display:flex;align-items:center;justify-content:space-between;padding:13px 18px}
+  .topbar .tabs{display:flex;gap:6px;padding:0 14px 12px;overflow-x:auto}
+  .topbar .tab{white-space:nowrap;padding:8px 14px;border-radius:13px;cursor:pointer;color:var(--mut);font-weight:500;font-size:12.5px}
+  .topbar .tab.on{background:var(--blue-bg);color:#fff;font-weight:600}
+  .header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 28px 16px;flex-wrap:wrap}
+  .header .ttl{font-weight:600;font-size:clamp(22px,2.4vw,28px)}
+  .header .sub{font-size:12.5px;color:var(--mut2);margin-top:3px}
+  .header .actions{display:flex;align-items:center;gap:10px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--mut2);flex-shrink:0}
+  .dot.ok{background:var(--green)}.dot.err{background:var(--err)}
+  .apibox{display:flex;align-items:center;gap:8px}
+  .content{flex:1;overflow-y:auto;padding:6px 28px 48px}
+
+  input,select,textarea{background:var(--deep);border:1px solid var(--border);border-radius:13px;padding:11px 13px;color:var(--txt);font-family:inherit;font-size:13px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue-d)}
+  input::placeholder{color:var(--faint)}
+  #api{width:170px;font-size:12px}
+
+  /* ---- buttons ---- */
+  button,.btn{font-family:inherit;cursor:pointer;border:none;border-radius:13px;padding:10px 16px;font-size:12.5px;font-weight:600;color:#fff;background:var(--blue-l);transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+  button:hover,.btn:hover{box-shadow:0 0 20px rgba(68,114,196,.3)}
+  button.sm{padding:8px 13px;font-size:11.5px}
+  button.ghost{background:transparent;color:var(--mut);border:1px solid var(--border)}
+  button.ghost:hover{color:var(--txt);box-shadow:none}
+  button.outline{background:rgba(68,114,196,.08);color:var(--blue-l);border:1px solid var(--blue-d)}
+  button.outline:hover{box-shadow:none;background:rgba(68,114,196,.16)}
+  button.green{background:var(--green);color:#06210f}
+  button.green:hover{box-shadow:0 0 20px rgba(0,204,136,.3)}
+  button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  button.connect{padding:9px 13px;font-size:11px}
+
+  /* ---- cards / panels ---- */
+  .panel{background:var(--surf2);border:1px solid var(--border);border-radius:13px;padding:20px}
+  .panel.deep{background:var(--deep)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--mut);font-size:12px}
+  .faint{color:var(--mut2);font-size:11px}
+  .grid-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .kpi{background:var(--surf2);border:1px solid var(--border);border-radius:13px;padding:18px 20px;overflow:hidden}
+  .kpi.hl{background:var(--surf);border-color:var(--blue)}
+  .kpi .k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut2);font-weight:600}
+  .kpi.hl .k{color:var(--blue-l)}
+  .kpi .v{font-weight:700;font-size:clamp(22px,2vw,28px);margin-top:10px}
+  .kpi .n{font-size:11px;color:var(--mut2);margin-top:6px}
+
+  /* ---- live strip ---- */
+  .live{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:13px;padding:16px 20px;margin-bottom:14px}
+  .live .tag{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.12em;color:var(--green-l);font-weight:600}
+  .live .blip{width:8px;height:8px;border-radius:50%;background:var(--green-l);box-shadow:0 0 8px var(--green-l)}
+  .live .metrics{display:flex;gap:24px;flex-wrap:wrap;margin-left:auto}
+  .live .metrics .m .mv{font-weight:700;font-size:20px}
+  .live .metrics .m .ml{font-size:10px;color:var(--mut2)}
+
+  /* ---- chart ---- */
+  .chart{display:flex;align-items:flex-end;justify-content:space-between;height:150px;gap:12px}
+  .chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px}
+  .chart .bar .fill{width:100%;border-radius:13px 7px 3px 3px;background:var(--blue-l)}
+  .chart .bar .d{font-size:10px;color:var(--faint)}
+
+  /* ---- list rows in panels ---- */
+  .saleline{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+  .saleline:last-child{border-bottom:none}
+  .saleline .av{width:34px;height:34px;border-radius:13px;flex-shrink:0}
+  .saleline .who{font-size:13px;font-weight:600}
+  .saleline .what{font-size:10.5px;color:var(--mut2)}
+  .saleline .amt{font-weight:600;font-size:13px;color:var(--blue-soft);text-align:right}
+  .saleline .when{font-size:9.5px;color:var(--faint);text-align:right}
+
+  /* ---- tables ---- */
+  .tbl{background:var(--surf2);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .tbl-wrap{overflow-x:auto}
+  .tbl .thead,.tbl .trow{display:grid;gap:12px;padding:14px 22px;align-items:center}
+  .tbl .thead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600;border-bottom:1px solid var(--border-soft)}
+  .tbl .trow{border-bottom:1px solid var(--surf2);background:var(--surf2)}
+  .tbl .trow:nth-child(even){background:var(--surf)}
+  .tbl .ev-title{font-weight:600;font-size:13.5px}
+  .tbl .ev-type{font-size:10.5px;color:var(--faint);margin-top:1px}
+  .tbl .cell-mut{font-size:12.5px;color:var(--mut2)}
+  .tbl .rev{font-weight:600;font-size:13px;color:var(--blue-soft)}
+  .prog{height:6px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:5px}
+  .prog .pf{height:100%;background:var(--blue-l)}
+  .prog.big{height:9px;border-radius:11px;margin-top:14px}
+
+  .pill{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:13px;border:1px solid var(--border);color:var(--mut);white-space:nowrap;justify-self:start}
+  .pill.blue{color:var(--blue-soft);border-color:var(--blue-d);background:rgba(68,114,196,.1)}
+  .pill.green{color:var(--green-l);border-color:var(--green-bd);background:rgba(0,204,136,.08)}
+  .pill.orange{color:var(--orange-l);border-color:var(--orange-d);background:rgba(255,153,0,.08)}
+  .pill.err{color:var(--err-l);border-color:#7a2a3a;background:rgba(255,85,119,.08)}
+  .pill.used{color:var(--mut2);border-color:var(--border)}
+
+  /* ---- incassi hero ---- */
+  .payhero{border-radius:13px;padding:22px;background:var(--green-bg);border:1px solid var(--green-bd)}
+  .payhero .k{font-size:10px;letter-spacing:.12em;color:var(--green-l);font-weight:600}
+  .payhero .v{font-weight:700;font-size:32px;margin-top:10px}
+  .payhero .n{font-size:11.5px;color:var(--green-l);margin-top:8px}
+  .paylines{background:var(--surf2);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .payline{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-soft)}
+  .payline:last-child{border-bottom:none}
+  .payline .l{font-size:13px;font-weight:500}
+  .payline .ln{font-size:10.5px;color:var(--faint);margin-top:1px}
+  .payline .pv{font-weight:600;font-size:15px}
+
+  /* ---- accessi ---- */
+  .robanner{border:1px solid var(--orange-d);background:var(--surf2);border-radius:13px;padding:14px 18px;font-size:12px;color:var(--orange-l);margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;max-width:84ch}
+  .robanner .ic{font-size:16px;line-height:1;flex-shrink:0}
+  .accbig{font-weight:700;font-size:46px;color:var(--blue-soft)}
+  .entry{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border-soft)}
+  .entry:last-child{border-bottom:none}
+  .entry .ck{width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:#062;font-size:13px;font-weight:700;flex-shrink:0}
+  .entry .ck.bad{background:#3a2a30;color:var(--err-l)}
+  .entry .nm{flex:1;font-size:12.5px;font-weight:500}
+  .entry .tm{font-size:10.5px;color:var(--faint)}
+  .gate{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border-soft);flex-wrap:wrap}
+  .gate:last-child{border-bottom:none}
+  .gate .code{font-weight:700;font-size:14px;letter-spacing:.04em}
+
+  /* ---- club ---- */
+  .clubcard{background:var(--surf2);border:1px solid var(--border);border-radius:13px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s}
+  .clubcard:hover{transform:translateY(-2px);border-color:var(--blue-d)}
+  .clubcard .cover{height:84px;display:flex;align-items:flex-end;padding:12px 14px}
+  .clubcard .cover .cn{font-weight:700;font-size:16px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .clubcard .meta{padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .clubcard .city{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .clubcard .cnt{font-size:11px;color:var(--faint);margin-top:4px}
+  .clubcard .arr{font-size:18px;color:var(--blue-l);flex-shrink:0}
+  .addcard{border:1px dashed #3a3a38;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;cursor:pointer;color:var(--blue-l)}
+  .addcard:hover{border-color:var(--blue-d)}
+  .addcard .plus{font-size:30px;line-height:1}
+  .crumb{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);cursor:pointer;margin-bottom:14px}
+  .crumb:hover{color:var(--blue-l)}
+  .clubhead{display:flex;align-items:center;gap:14px;background:var(--surf2);border:1px solid var(--border);border-radius:13px;padding:16px 18px;margin-bottom:16px;flex-wrap:wrap}
+  .clubhead .av{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}
+  .formgrid input,.formgrid select{width:100%}
+  .full{grid-column:1/-1}
+  .formsect{margin-top:18px;border-top:1px solid var(--border);padding-top:16px}
+
+  .empty{background:var(--surf2);border:1px solid var(--border);border-radius:13px;padding:30px;text-align:center;font-size:13px;color:var(--mut)}
+  .sect-title{margin:8px 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+
+  /* ---- kyc banner ---- */
+  .kyc{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-radius:13px;padding:14px 18px;margin-bottom:16px;font-size:12.5px}
+  .kyc.none{border:1px solid var(--orange-d);background:var(--surf2);color:var(--orange-l)}
+  .kyc.pending{border:1px solid var(--blue-d);background:var(--surf2);color:var(--blue-soft)}
+  .kyc.verified{border:1px solid var(--green-bd);background:var(--surf2);color:var(--green-l)}
+  .kyc .grow1{font-weight:500}
+
+  /* ---- modal ---- */
+  .modal{position:fixed;inset:0;z-index:60;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal .box{width:480px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:24px;position:relative}
+  .modal .x{position:absolute;top:14px;right:18px;font-size:18px;color:var(--mut);cursor:pointer}
+  .swatches{display:flex;gap:10px;margin-top:8px}
+  .swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px var(--border)}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--surf2);border:1px solid var(--border);padding:13px 18px;border-radius:13px;font-size:13px;z-index:90;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.ok{border-color:var(--green-bd)}
+  .toast.err{border-color:#7a2a3a;color:var(--err-l)}
+  .banner{font-size:12px;color:var(--mut);margin-bottom:18px;padding:11px 14px;border-radius:13px;border:1px solid var(--border);background:var(--surf)}
+  .banner.live{border-color:var(--green-bd);color:var(--green-l)}
+  .banner.mock{border-color:var(--orange-d);color:var(--orange-l)}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue-l);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+
+  /* ---- responsive: collapse sidebar to top bar under 880px ---- */
+  @media (max-width:880px){
+    .shell{flex-direction:column;height:auto;min-height:100vh}
+    .sidebar{display:none}
+    .topbar{display:block}
+    .content{overflow-y:visible}
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <!-- WIDE SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/tinft-logo.png" alt="TINFT" class="logo-img" id="logoImg" onerror="this.style.display='none';document.getElementById('logoFb').style.display='inline-block'" />
+        <span class="logo-fallback" id="logoFb"></span>
+        <div><div class="name">TINFT</div><div class="sub">CONSOLE</div></div>
+      </div>
+      <div class="sep"></div>
+      <div class="nav" id="nav"></div>
+      <div class="grow1"></div>
+      <div class="orgcard">
+        <div class="av" id="orgAv">CA</div>
+        <div style="flex:1;min-width:0"><div class="nm" id="orgName">Club Owner</div><div class="sb">Organizzatore</div></div>
+      </div>
+      <button class="exit" onclick="location.href='app-live.html'">Esci</button>
+    </aside>
+
+    <!-- MAIN COLUMN -->
+    <div class="main">
+      <!-- NARROW TOP BAR -->
+      <div class="topbar">
+        <div class="tbrow">
+          <div class="brand" style="padding:0">
+            <img src="assets/tinft-logo.png" alt="TINFT" class="logo-img" style="height:26px" onerror="this.style.display='none'" />
+            <div><div class="name" style="font-size:15px">TINFT <span class="sub" style="letter-spacing:.14em">CONSOLE</span></div></div>
+          </div>
+          <div class="av" id="orgAvN" style="width:32px;height:32px;border-radius:13px;background:var(--blue-d);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff">CA</div>
+        </div>
+        <div class="tabs scr" id="tabs"></div>
+      </div>
+
+      <!-- HEADER -->
+      <div class="header">
+        <div>
+          <div class="ttl" id="pageTitle">Dashboard</div>
+          <div class="sub" id="pageSub">Panoramica della stagione in corso</div>
+        </div>
+        <div class="actions">
+          <div class="apibox">
+            <span class="eyebrow">API</span>
+            <input id="api" value="http://localhost:3001" spellcheck="false" />
+            <span class="dot" id="dot"></span>
+            <button class="connect ghost" onclick="init()">Connetti</button>
+          </div>
+          <button onclick="goCreate()">+ Crea evento</button>
+        </div>
+      </div>
+
+      <div class="content scr" id="content"><div class="muted"><span class="spin"></span>Avvio…</div></div>
+    </div>
+  </div>
+  <div id="modal"></div>
+  <div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   TINFT Console (Organizzatore) — single self-contained file, vanilla JS.
+   v2 design, wired to the organizer API (services/api). Falls back to an
+   in-file MOCK store when the backend is unreachable so EVERY screen renders
+   with demo content and the console NEVER shows a blank screen.
+   All logic lives in this one <script> so a DOM-stub harness can load it and
+   call init()/render()/render*() without a browser.
+   ========================================================================= */
+
+var $ = function(id){ return (typeof document!=='undefined'&&document.getElementById) ? document.getElementById(id) : null; };
+
+/* ---- app state ---- */
+var ctx = {
+  route: 'dash',       // dash | club | eventi | incassi | accessi | holders
+  mock: false,
+  auth: null,          // {token, accountId, account}
+  club: null,          // selected club id (Club detail)
+  clubForm: false,     // create-club modal open
+  evForm: null,        // {clubId} create-event modal open (null = closed)
+  kyc: 'NONE'          // mirrored organizer KYC status
+};
+
+var NAV = [
+  {key:'dash',    label:'Dashboard', icon:'◫', title:'Dashboard',          sub:'Panoramica della stagione in corso'},
+  {key:'club',    label:'Club',      icon:'❖', title:'Club & eventi',       sub:'Le tue pagine club e gli eventi che contengono'},
+  {key:'eventi',  label:'Eventi',    icon:'◆', title:'Eventi',              sub:'Gestisci titoli, capienze e stato vendite'},
+  {key:'incassi', label:'Incassi',   icon:'€', title:'Incassi & payout',    sub:'Bonifici, commissioni e royalty'},
+  {key:'accessi', label:'Accessi',   icon:'⛨', title:'Accessi live',        sub:'Validazioni in tempo reale dallo staff'},
+  {key:'holders', label:'Holder',    icon:'◉', title:'Holder & community',  sub:'Chi possiede i tuoi titoli NFT'}
+];
+
+function base(){ return ($('api') ? $('api').value : 'http://localhost:3001').replace(/\/$/, ''); }
+function eur(c){ return '€ ' + ((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function eur0(c){ return '€ ' + Math.round((c||0)/100).toLocaleString('it-IT'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];}); }
+function uid(p){ return p + Date.now() + Math.floor(Math.random()*1000); }
+function initials(s){ s=String(s||'').trim(); if(!s) return '?'; var p=s.split(/\s+/); return ((p[0][0]||'')+(p[1]?p[1][0]:(p[0][1]||''))).toUpperCase(); }
+function pct(n,d){ d=d||0; return (d>0?Math.min(100,Math.round(n/d*100)):0)+'%'; }
+
+function toast(msg, kind){
+  var t = $('toast'); if(!t) return;
+  t.innerHTML = '<div class="toast ' + (kind||'') + '">' + esc(msg) + '</div>';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.innerHTML=''; }, 3200);
+}
+function setDot(ok){ if($('dot')) $('dot').className = 'dot ' + (ok?'ok':'err'); }
+
+/* a deterministic gradient/colour from a seed so club covers + avatars look
+   like the prototype without real images. */
+function seedColor(seed){
+  var s=String(seed||''), h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  return 'hsl(' + (h%360) + ',42%,30%)';
+}
+function cover(seed){
+  var s=String(seed||''), h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  var a=h%360, b=(a+40)%360;
+  return 'linear-gradient(135deg,hsl('+a+',45%,28%),hsl('+b+',55%,16%))';
+}
+
+/* =========================================================================
+   MOCK STORE — used when the API is unreachable. Mirrors the v2 console shapes
+   so the whole console works offline. Seeded with an org, clubs, events,
+   validators, validations and holders.
+   ========================================================================= */
+var MOCK = (function(){
+  var seq = 100;
+  function id(p){ return p + '_' + (++seq); }
+  function find(arr,pred){ for(var i=0;i<arr.length;i++) if(pred(arr[i])) return arr[i]; return null; }
+
+  var store = {
+    accounts:{}, clubs:[], events:[], validators:{}, validations:{}, tickets:[],
+    ledger:{ royaltyOrganizerCents:0 },
+    holders:[
+      {nome:'Marco',cognome:'Bianchi',email:'marco@email.it',city:'Milano',tickets:2,spentCents:6300,present:true,tag:'Top fan'},
+      {nome:'Sara',cognome:'Conti',email:'sara@email.it',city:'Milano',tickets:1,spentCents:3150,present:true,tag:''},
+      {nome:'Davide',cognome:'Neri',email:'davide@email.it',city:'Torino',tickets:1,spentCents:2400,present:false,tag:''},
+      {nome:'Giulia',cognome:'Verdi',email:'giulia@email.it',city:'Milano',tickets:3,spentCents:9450,present:true,tag:'Top fan'},
+      {nome:'Elisa',cognome:'Fabbri',email:'elisa@email.it',city:'Bologna',tickets:1,spentCents:2800,present:false,tag:''},
+      {nome:'Luca',cognome:'Rossi',email:'luca@email.it',city:'Milano',tickets:1,spentCents:6500,present:false,tag:''}
+    ]
+  };
+  var org = {id:'org_seed',role:'ORGANIZER',nome:'Club',cognome:'Owner',email:'org@tinft.io',kycStatus:'NONE'};
+  store.accounts[org.id] = org;
+
+  function mkClub(o){ var c={id:id('club'),organizerId:org.id,name:o.name,city:o.city,genre:o.genre||'Live · Club',color:o.color||'#4472c4',ragioneSociale:o.ragioneSociale,piva:o.piva,iban:o.iban}; store.clubs.push(c); return c; }
+  var c1=mkClub({name:'Club Astra',city:'Milano',genre:'Techno · House',color:'#4472c4',ragioneSociale:'Astra S.r.l.',piva:'IT01234567890',iban:'IT60X0542811101000000123456'});
+  var c2=mkClub({name:'Magazzino Generali',city:'Milano',genre:'Elettronica',color:'#0a8a5c'});
+
+  function mkEvent(o){ var e={id:id('evt'),organizerId:org.id,clubId:o.clubId,title:o.title,venue:o.venue,date:o.date,type:'TICKET_NFT',priceCents:o.priceCents,capacity:o.capacity,sold:o.sold||0,status:o.status||'ON_SALE'}; store.events.push(e); return e; }
+  var e1=mkEvent({clubId:c1.id,title:'Notte Elettronica · Vol.4',venue:'Club Astra · Milano',date:'21 GIU',priceCents:3150,capacity:500,sold:312});
+  mkEvent({clubId:c1.id,title:'Blue Room · Jazz',venue:'Club Astra · Milano',date:'03 LUG',priceCents:2400,capacity:200,sold:36});
+  mkEvent({clubId:c2.id,title:'Opening Night',venue:'Magazzino Generali · Milano',date:'28 GIU',priceCents:2800,capacity:300,sold:120});
+  mkEvent({clubId:c1.id,title:'Closing Marathon',venue:'Club Astra · Milano',date:'12 LUG',priceCents:3500,capacity:450,sold:0,status:'DRAFT'});
+
+  // seed validators + validated entries on the headliner event
+  store.validators[e1.id] = [{id:id('gate'),eventId:e1.id,code:'VARCO-3471'},{id:id('gate'),eventId:e1.id,code:'VARCO-8825'}];
+  var now=Math.floor(Date.now()/1000);
+  store.validations[e1.id] = [
+    {holderName:'Marco Bianchi',outcome:'VALID',at:now-120},
+    {holderName:'Sara Conti',outcome:'VALID',at:now-300},
+    {holderName:'Davide Neri',outcome:'VALID',at:now-420},
+    {holderName:'Elisa Fabbri',outcome:'DUPLICATE',at:now-540},
+    {holderName:'Giulia Verdi',outcome:'VALID',at:now-700}
+  ];
+  store._validatedByEvent = {}; store._validatedByEvent[e1.id]=4;
+
+  return {
+    handle: function(path, method, body){
+      body = body || {}; method = method || 'GET';
+      var R = function(d){ return Promise.resolve(JSON.parse(JSON.stringify(d))); };
+      var m;
+
+      if(path==='/health') return R({status:'ok'});
+
+      if(path==='/accounts' && method==='POST'){ var a={id:id('acc'),role:body.role||'CLIENTE',nome:body.nome,cognome:body.cognome,email:body.email,kycStatus:body.role==='ORGANIZER'?'NONE':undefined,goodwill:0}; store.accounts[a.id]=a; return R(a); }
+      if(path==='/auth/login' && method==='POST'){
+        var acc=find(Object.keys(store.accounts).map(function(k){return store.accounts[k];}),function(x){return x.email&&x.email.toLowerCase()===String(body.email||'').toLowerCase();});
+        if(!acc) return Promise.reject(new Error('credenziali non valide'));
+        // a demo organizer maps onto the seeded org so the console shows rich data
+        if(acc.role==='ORGANIZER') return R({token:'mock.'+org.id, account:org});
+        return R({token:'mock.'+acc.id, account:acc});
+      }
+
+      if(path==='/clubs' && method==='GET') return R(store.clubs.slice());
+      if(path==='/clubs' && method==='POST'){ var nc={id:id('club'),organizerId:body.organizerId,name:body.name,city:body.city||'—',genre:body.genre||'Live · Club',color:body.color||'#4472c4',ragioneSociale:body.ragioneSociale,piva:body.piva,sedeLegale:body.sedeLegale,pec:body.pec,sdi:body.sdi,iban:body.iban}; store.clubs.push(nc); return R(nc); }
+      m=path.match(/^\/clubs\/([^/]+)$/);
+      if(m && method==='GET'){ var gc=find(store.clubs,function(x){return x.id===m[1];}); return gc?R(gc):Promise.reject(new Error('club non trovato')); }
+      m=path.match(/^\/clubs\/([^/]+)\/events$/);
+      if(m && method==='GET') return R(store.events.filter(function(e){return e.clubId===m[1];}));
+      if(m && method==='POST'){ var cev={id:id('evt'),organizerId:body.organizerId,clubId:m[1],title:body.title,venue:body.venue||'—',date:body.date,type:'TICKET_NFT',priceCents:body.priceCents,capacity:body.capacity,sold:0,status:'DRAFT'}; store.events.push(cev); return R(cev); }
+
+      if(path==='/events' && method==='GET') return R(store.events.slice());
+      if(path==='/events' && method==='POST'){ var nev={id:id('evt'),organizerId:body.organizerId,clubId:body.clubId,title:body.title,venue:body.venue||'—',date:body.date,type:'TICKET_NFT',priceCents:body.priceCents,capacity:body.capacity,sold:0,status:'DRAFT'}; store.events.push(nev); return R(nev); }
+      m=path.match(/^\/events\/([^/]+)\/publish$/);
+      if(m && method==='POST'){
+        var pe=find(store.events,function(x){return x.id===m[1];}); if(!pe) return Promise.reject(new Error('evento non trovato'));
+        if((store.accounts[org.id].kycStatus||'NONE')!=='VERIFIED'){ var er=new Error('KYC non verificato'); er.status=403; er.code='KYC_REQUIRED'; return Promise.reject(er); }
+        pe.status='ON_SALE'; return R(pe);
+      }
+      m=path.match(/^\/events\/([^/]+)$/);
+      if(m && method==='GET'){ var ev=find(store.events,function(x){return x.id===m[1];}); return ev?R(ev):Promise.reject(new Error('evento non trovato')); }
+
+      m=path.match(/^\/organizers\/([^/]+)\/dashboard$/);
+      if(m && method==='GET'){
+        var evs=store.events.filter(function(e){return e.organizerId===org.id;});
+        var gross=0,sold=0,onsale=0,val=0; evs.forEach(function(e){gross+=e.sold*e.priceCents;sold+=e.sold;if(e.status==='ON_SALE')onsale++;val+=store._validatedByEvent[e.id]||0;});
+        return R({grossCents:gross,ticketsSold:sold,eventsOnSale:onsale,validated:val,royaltyOrganizerCents:store.ledger.royaltyOrganizerCents});
+      }
+      m=path.match(/^\/organizers\/([^/]+)\/incassi$/);
+      if(m && method==='GET'){
+        var evi=store.events.filter(function(e){return e.organizerId===org.id;});
+        var g=0; evi.forEach(function(e){g+=e.sold*e.priceCents;});
+        var net=g+store.ledger.royaltyOrganizerCents;
+        return R({grossCents:g,royaltyOrganizerCents:store.ledger.royaltyOrganizerCents,netCents:net,nextPayoutCents:net,payoutEta:'entro 72h dalla fine evento'});
+      }
+
+      m=path.match(/^\/events\/([^/]+)\/accessi$/);
+      if(m && method==='GET'){ var ae=find(store.events,function(x){return x.id===m[1];}); if(!ae) return Promise.reject(new Error('evento non trovato')); return R({capacity:ae.capacity,validated:store._validatedByEvent[m[1]]||0,recentEntries:(store.validations[m[1]]||[]).slice(0,10)}); }
+      m=path.match(/^\/events\/([^/]+)\/validators$/);
+      if(m && method==='GET') return R((store.validators[m[1]]||[]).slice());
+      if(m && method==='POST'){ var g2={id:id('gate'),eventId:m[1],code:'VARCO-'+(1000+Math.floor(Math.random()*9000))}; (store.validators[m[1]]=store.validators[m[1]]||[]).push(g2); return R(g2); }
+
+      m=path.match(/^\/organizers\/([^/]+)\/kyc\/submit$/);
+      if(m && method==='POST'){ store.accounts[org.id].kycStatus='PENDING'; return R(store.accounts[org.id]); }
+      m=path.match(/^\/organizers\/([^/]+)\/kyc\/decision$/);
+      if(m && method==='POST'){ store.accounts[org.id].kycStatus=body.decision||'VERIFIED'; return R(store.accounts[org.id]); }
+
+      if(path==='/__holders') return R(store.holders.slice());
+
+      return Promise.reject(new Error('MOCK: ' + method + ' ' + path + ' non gestito'));
+    }
+  };
+})();
+
+/* =========================================================================
+   API helper — adds Bearer token, parses JSON, falls back to MOCK on any
+   network error so the UI never throws because the backend is down. Real HTTP
+   errors (4xx/5xx, e.g. KYC_REQUIRED 403) re-throw with .status/.code set.
+   ========================================================================= */
+function api(path, method, body, token){
+  method = method || 'GET';
+  if(ctx.mock) return MOCK.handle(path, method, body);
+  var headers = { 'Content-Type':'application/json' };
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(base() + path, {
+    method: method, headers: headers,
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(j){
+      if(!r.ok){ var e=new Error(j.message || j.error || ('HTTP ' + r.status)); e.status=r.status; e.code=j.error; throw e; }
+      return j;
+    });
+  }).catch(function(err){
+    // network-level failure (server down / CORS / DNS) → switch to MOCK so the
+    // console keeps working. A real HTTP error (has .status) re-throws above.
+    if(err instanceof TypeError){ ctx.mock = true; setDot(false); return MOCK.handle(path, method, body); }
+    throw err;
+  });
+}
+// authenticated call as the logged-in organizer
+function aapi(path, method, body){ return api(path, method, body, ctx.auth ? ctx.auth.token : undefined); }
+function meId(){ return ctx.auth ? ctx.auth.accountId : null; }
+
+/* =========================================================================
+   BOOTSTRAP — probe /health, auto-provision a demo ORGANIZER and log in to get
+   a Bearer token. On any failure, fall back to MOCK and still render.
+   ========================================================================= */
+function init(){
+  if($('content')) $('content').innerHTML = '<div class="muted"><span class="spin"></span>Connessione all\'API…</div>';
+  ctx.mock = false;
+  return api('/health').then(function(){ ctx.mock = false; })
+    .catch(function(){ ctx.mock = true; })
+    .then(function(){ return provision(); })
+    .then(function(){
+      setDot(!ctx.mock);
+      toast(ctx.mock ? 'Modalità DEMO offline · dati locali' : 'Connesso · dati reali dal backend', ctx.mock ? '' : 'ok');
+      return render();
+    })
+    .catch(function(){
+      // last-resort: never leave a blank screen — force MOCK and render
+      ctx.mock = true; setDot(false);
+      return provision().then(function(){ toast('API non raggiungibile · DEMO offline','err'); return render(); })
+        .catch(function(err){ if($('content')) $('content').innerHTML = '<div class="empty">Errore: ' + esc(err && err.message ? err.message : String(err)) + '</div>'; });
+    });
+}
+
+// Provision a demo organizer with a unique email + password "1234", then login.
+function provision(){
+  var pw = '1234';
+  var orgEmail = 'org' + uid('') + '@tinft.io';
+  return api('/accounts','POST',{ role:'ORGANIZER', nome:'Club', cognome:'Owner', email:orgEmail, password:pw })
+    .then(function(){ return api('/auth/login','POST',{ email:orgEmail, password:pw }); })
+    .then(function(r){
+      ctx.auth = { token:r.token, accountId:r.account.id, account:r.account };
+      ctx.kyc = (r.account && r.account.kycStatus) || 'NONE';
+      var nm = ((r.account.nome||'Club') + ' ' + (r.account.cognome||'Owner')).trim();
+      if($('orgName')) $('orgName').textContent = nm;
+      var ini = initials(nm);
+      if($('orgAv')) $('orgAv').textContent = ini;
+      if($('orgAvN')) $('orgAvN').textContent = ini;
+    });
+}
+
+/* =========================================================================
+   ROUTING + chrome
+   ========================================================================= */
+function go(route){ ctx.route = route; ctx.club = null; ctx.clubForm=false; ctx.evForm=null; render(); }
+function goCreate(){ ctx.route='club'; ctx.club=null; ctx.clubForm=true; render(); }
+
+function buildNav(){
+  var n = $('nav');
+  if(n){
+    n.innerHTML = NAV.map(function(it){
+      return '<div class="navitem ' + (ctx.route===it.key?'on':'') + '" onclick="go(\'' + it.key + '\')"><span class="ico">' + it.icon + '</span>' + esc(it.label) + '</div>';
+    }).join('');
+  }
+  var t = $('tabs');
+  if(t){
+    t.innerHTML = NAV.map(function(it){
+      return '<div class="tab ' + (ctx.route===it.key?'on':'') + '" onclick="go(\'' + it.key + '\')">' + esc(it.label) + '</div>';
+    }).join('');
+  }
+  var meta = NAV.filter(function(x){return x.key===ctx.route;})[0] || NAV[0];
+  if($('pageTitle')) $('pageTitle').textContent = meta.title;
+  if($('pageSub')) $('pageSub').textContent = meta.sub;
+}
+
+function render(){
+  var c = $('content'); if(!c) return Promise.resolve();
+  buildNav();
+  renderModal();
+  if(!ctx.auth){ c.innerHTML = '<div class="muted"><span class="spin"></span>Inizializzazione…</div>'; return Promise.resolve(); }
+  var p;
+  try{
+    if(ctx.route==='dash') p = viewDashboard();
+    else if(ctx.route==='club') p = viewClub();
+    else if(ctx.route==='eventi') p = viewEventi();
+    else if(ctx.route==='incassi') p = viewIncassi();
+    else if(ctx.route==='accessi') p = viewAccessi();
+    else if(ctx.route==='holders') p = viewHolders();
+    else p = viewDashboard();
+  }catch(e){ c.innerHTML = '<div class="empty">Errore: ' + esc(e.message||String(e)) + '</div>'; return Promise.resolve(); }
+  return Promise.resolve(p).catch(function(e){
+    c.innerHTML = '<div class="empty">Errore: ' + esc(e && e.message ? e.message : String(e)) + '</div>';
+  });
+}
+
+/* ---- small UI helpers -------------------------------------------------- */
+function banner(){
+  return '<div class="banner ' + (ctx.mock?'mock':'live') + '">' +
+    (ctx.mock ? 'Modalità DEMO offline · dati locali (avvia l\'API per i dati reali)' : 'Connesso · dati reali dal backend') + '</div>';
+}
+function kycBanner(){
+  var s = ctx.kyc || 'NONE';
+  if(s==='VERIFIED') return '<div class="kyc verified"><span class="grow1">✓ KYC verificato · puoi pubblicare gli eventi.</span></div>';
+  if(s==='PENDING') return '<div class="kyc pending"><span class="grow1">KYC in revisione · la decisione spetta a TINFT (admin). Gli eventi restano in bozza fino all\'approvazione.</span></div>';
+  return '<div class="kyc none"><span class="grow1">KYC non inviato · serve la verifica per pubblicare gli eventi (passaggio bozza → in vendita).</span><button class="sm outline" onclick="submitKyc()">Invia KYC</button></div>';
+}
+function statusPill(st){
+  var map = { ON_SALE:['green','In vendita'], DRAFT:['used','Bozza'], CONCLUDED:['blue','Concluso'] };
+  var m = map[st] || ['', st];
+  return '<span class="pill ' + m[0] + '">' + esc(m[1]) + '</span>';
+}
+function timeOf(at){
+  if(!at) return 'live';
+  var d = new Date(at*1000);
+  if(isNaN(d.getTime())) return 'live';
+  return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* =========================================================================
+   DASHBOARD
+   ========================================================================= */
+function viewDashboard(){
+  var me = meId();
+  return aapi('/organizers/'+me+'/dashboard').then(function(d){
+    var live = '<div class="live">' +
+      '<div class="tag"><span class="blip"></span>LIVE · DAL MONDO TINFT</div>' +
+      '<div class="metrics">' +
+        '<div class="m"><div class="mv">' + esc(d.validated) + '</div><div class="ml">validati (app)</div></div>' +
+        '<div class="m"><div class="mv" style="color:var(--blue-soft)">' + esc(d.ticketsSold) + '</div><div class="ml">biglietti venduti</div></div>' +
+        '<div class="m"><div class="mv" style="color:var(--orange-l)">' + eur0(d.royaltyOrganizerCents) + '</div><div class="ml">royalty P2P</div></div>' +
+        '<div class="m"><div class="mv" style="color:var(--blue-soft)">' + esc(d.eventsOnSale) + '</div><div class="ml">eventi in vendita</div></div>' +
+      '</div></div>';
+
+    var kpis = [
+      {k:'INCASSO · STAGIONE', v:eur(d.grossCents), n:'somma prezzi prevendita', hl:true, vc:'var(--blue-l)'},
+      {k:'BIGLIETTI VENDUTI', v:String(d.ticketsSold), n:'sugli eventi attivi', vc:'#fff'},
+      {k:'EVENTI IN VENDITA', v:String(d.eventsOnSale), n:'pubblicati e acquistabili', vc:'#fff'},
+      {k:'VALIDATI · LIVE', v:String(d.validated), n:'ingressi dall\'app', vc:'var(--blue-l)'},
+      {k:'ROYALTY ORG', v:eur(d.royaltyOrganizerCents), n:'quota rivendite secondario', vc:'var(--orange-l)'}
+    ];
+    var kpiHtml = '<div class="grid-kpi">' + kpis.map(function(x){
+      return '<div class="kpi ' + (x.hl?'hl':'') + '"><div class="k">' + esc(x.k) + '</div><div class="v" style="color:' + x.vc + '">' + esc(x.v) + '</div><div class="n">' + esc(x.n) + '</div></div>';
+    }).join('') + '</div>';
+
+    // static demo 7-day bars (the API has no per-day series) — clearly framed as demo
+    var bars = [46,62,38,72,55,84,68], days=['L','M','M','G','V','S','D'];
+    var chart = '<div class="chart">' + bars.map(function(h,i){
+      return '<div class="bar"><div class="fill" style="height:' + h + '%"></div><div class="d">' + days[i] + '</div></div>';
+    }).join('') + '</div>';
+
+    // recent sales: derive from accessi recent entries if available, else demo
+    return aapi('/events').then(function(events){
+      var mine = events.filter(function(e){return e.organizerId===me;});
+      var sales = [
+        {who:'Marco B.', what:'Biglietto NFT · Vol.4', amount:'€ 31,50', when:'2 min fa', c:'#2f4f8a'},
+        {who:'Giulia V.', what:'Biglietto NFT · Jazz', amount:'€ 24,00', when:'18 min fa', c:'#9c5e00'},
+        {who:'Luca R.', what:'Biglietto NFT · Opening', amount:'€ 28,00', when:'41 min fa', c:'#0a8a5c'},
+        {who:'Sara C.', what:'Biglietto NFT · Vol.4', amount:'€ 31,50', when:'1 h fa', c:'#7a3550'}
+      ];
+      var salesHtml = sales.map(function(r){
+        return '<div class="saleline"><div class="av" style="background:' + r.c + '"></div>' +
+          '<div style="flex:1;min-width:0"><div class="who">' + esc(r.who) + '</div><div class="what">' + esc(r.what) + '</div></div>' +
+          '<div><div class="amt">' + esc(r.amount) + '</div><div class="when">' + esc(r.when) + '</div></div></div>';
+      }).join('');
+
+      $('content').innerHTML = banner() + kycBanner() + live + kpiHtml +
+        '<div class="grid-2" style="margin-top:18px">' +
+          '<div class="panel"><div class="row" style="margin-bottom:18px"><span style="font-weight:600;font-size:15px">Vendite · ultimi 7 giorni</span><span class="faint">demo</span></div>' + chart + '</div>' +
+          '<div class="panel"><div style="font-weight:600;font-size:15px;margin-bottom:14px">Vendite recenti</div>' + salesHtml + '</div>' +
+        '</div>';
+    });
+  });
+}
+
+/* =========================================================================
+   CLUB  (list of clubs + create-club form/modal; detail = club events)
+   ========================================================================= */
+function viewClub(){
+  return api('/clubs').then(function(clubs){
+    var me = meId();
+    var mine = clubs.filter(function(c){ return c.organizerId===me; });
+    if(ctx.club){ return clubDetail(mine); }
+
+    var cards = mine.map(function(c){
+      return '<div class="clubcard" onclick="openClub(\'' + c.id + '\')">' +
+        '<div class="cover" style="background:' + (c.color||cover(c.id)) + '"><span class="cn">' + esc(c.name) + '</span></div>' +
+        '<div class="meta"><div style="min-width:0;flex:1"><div class="city">' + esc(c.city||'—') + (c.genre?(' · ' + esc(c.genre)):'') + '</div><div class="cnt" id="cnt_' + c.id + '">eventi…</div></div><span class="arr">›</span></div>' +
+      '</div>';
+    }).join('');
+    var add = '<div class="addcard" onclick="openClubForm()"><span class="plus">+</span><span style="font-size:12.5px;font-weight:600">Crea pagina club</span></div>';
+
+    $('content').innerHTML = banner() + kycBanner() +
+      (mine.length ? '' : '<p class="muted" style="margin:-8px 0 16px">Nessun club ancora. Crea la tua prima pagina club: gli eventi che contiene diventano acquistabili su tutte le superfici TINFT.</p>') +
+      '<div class="grid-cards">' + cards + add + '</div>';
+
+    // fill event counts (best-effort, non-blocking)
+    mine.forEach(function(c){
+      api('/clubs/'+c.id+'/events').then(function(evs){ var el=$('cnt_'+c.id); if(el) el.textContent=(evs.length||0)+' eventi'; }).catch(function(){ var el=$('cnt_'+c.id); if(el) el.textContent='—'; });
+    });
+  });
+}
+
+function clubDetail(mine){
+  var c = mine.filter(function(x){return x.id===ctx.club;})[0];
+  if(!c){ ctx.club=null; return viewClub(); }
+  return api('/clubs/'+c.id+'/events').catch(function(){return [];}).then(function(evs){
+    var head = '<div class="crumb" onclick="closeClub()">‹ Tutti i club</div>' +
+      '<div class="clubhead"><div class="av" style="background:' + (c.color||seedColor(c.id)) + '">' + esc(initials(c.name)) + '</div>' +
+        '<div style="flex:1;min-width:140px"><div style="font-weight:700;font-size:18px">' + esc(c.name) + '</div><div class="muted" style="margin-top:2px">' + esc(c.city||'—') + (c.genre?(' · '+esc(c.genre)):'') + (c.piva?(' · P.IVA '+esc(c.piva)):'') + '</div></div>' +
+        '<button onclick="openEventForm(\'' + c.id + '\')">+ Crea evento</button></div>';
+
+    var body;
+    if(evs.length){
+      var rows = evs.map(function(e){
+        var soldL = e.sold + ' / ' + e.capacity;
+        return '<div class="trow" style="grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;min-width:620px">' +
+          '<div><div class="ev-title">' + esc(e.title) + '</div><div class="ev-type">' + esc(typeLabel(e)) + ' · ' + eur(e.priceCents) + '</div></div>' +
+          '<span class="cell-mut">' + esc(e.date||'—') + '</span>' +
+          '<div><div class="cell-mut">' + esc(soldL) + '</div><div class="prog"><div class="pf" style="width:' + pct(e.sold,e.capacity) + '"></div></div></div>' +
+          '<span class="rev">' + eur(e.sold*e.priceCents) + '</span>' +
+          (e.status==='DRAFT'
+            ? '<button class="sm outline" onclick="publishEvent(\'' + e.id + '\')">Pubblica</button>'
+            : statusPill(e.status)) +
+        '</div>';
+      }).join('');
+      body = '<div class="tbl"><div class="tbl-wrap">' +
+        '<div class="thead" style="grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;min-width:620px"><span>EVENTO</span><span>DATA</span><span>VENDUTI</span><span>INCASSO</span><span>STATO</span></div>' +
+        rows + '</div></div>';
+    } else {
+      body = '<div class="empty">Nessun evento in questo club. Tocca <b style="color:var(--blue-l)">+ Crea evento</b> per aggiungerne uno.</div>';
+    }
+    $('content').innerHTML = banner() + head + body;
+  });
+}
+function typeLabel(e){ return e.type==='FIDELITY'?'Fidelity':(e.type==='SPECIAL'?'Evento speciale':'Biglietto NFT'); }
+
+function openClub(id){ ctx.club=id; render(); }
+function closeClub(){ ctx.club=null; render(); }
+function openClubForm(){ ctx.clubForm=true; render(); }
+function openEventForm(clubId){ ctx.evForm={clubId:clubId}; render(); }
+function closeModal(){ ctx.clubForm=false; ctx.evForm=null; render(); }
+
+/* =========================================================================
+   EVENTI  (all org events as a table: EVENTO/DATA/VENDUTI/INCASSO/STATO)
+   ========================================================================= */
+function viewEventi(){
+  var me = meId();
+  return api('/events').then(function(events){
+    var mine = events.filter(function(e){ return e.organizerId===me; });
+    if(!mine.length){
+      $('content').innerHTML = banner() + '<div class="empty">Nessun evento. Crea prima un club ed un evento da <b style="color:var(--blue-l)">Club</b>.</div>';
+      return;
+    }
+    var rows = mine.map(function(e){
+      return '<div class="trow" style="grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;min-width:640px">' +
+        '<div><div class="ev-title">' + esc(e.title) + '</div><div class="ev-type">' + esc(typeLabel(e)) + '</div></div>' +
+        '<span class="cell-mut">' + esc(e.date||'—') + '</span>' +
+        '<div><div class="cell-mut">' + esc(e.sold + ' / ' + e.capacity) + '</div><div class="prog"><div class="pf" style="width:' + pct(e.sold,e.capacity) + '"></div></div></div>' +
+        '<span class="rev">' + eur(e.sold*e.priceCents) + '</span>' +
+        (e.status==='DRAFT'
+          ? '<button class="sm outline" onclick="publishEvent(\'' + e.id + '\')">Pubblica</button>'
+          : statusPill(e.status)) +
+      '</div>';
+    }).join('');
+    $('content').innerHTML = banner() + kycBanner() +
+      '<div class="tbl"><div class="tbl-wrap">' +
+        '<div class="thead" style="grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;min-width:640px"><span>EVENTO</span><span>DATA</span><span>VENDUTI</span><span>INCASSO</span><span>STATO</span></div>' +
+        rows + '</div></div>';
+  });
+}
+
+function publishEvent(eventId){
+  return aapi('/events/'+eventId+'/publish','POST',{ organizerId:meId() }).then(function(){
+    toast('Evento pubblicato · ora in vendita','ok'); return render();
+  }).catch(function(e){
+    if(e && (e.status===403 || e.code==='KYC_REQUIRED')){
+      toast('Pubblicazione bloccata: serve il KYC verificato. Invia il KYC dalla Dashboard.','err');
+      ctx.route='dash'; return render();
+    }
+    toast(e && e.message ? e.message : String(e),'err');
+  });
+}
+
+/* =========================================================================
+   INCASSI  (green PROSSIMO BONIFICO hero + payout lines)
+   ========================================================================= */
+function viewIncassi(){
+  var me = meId();
+  return aapi('/organizers/'+me+'/incassi').then(function(d){
+    var lines = [
+      {l:'Incasso lordo eventi', n:'somma prezzi prevendita', v:eur(d.grossCents), c:'#fff'},
+      {l:'Royalty mercato secondario', n:'quota organizzatore P2P', v:'+ ' + eur(d.royaltyOrganizerCents), c:'var(--blue-soft)'},
+      {l:'Netto maturato', n:'pronto al payout', v:eur(d.netCents), c:'var(--green-l)'}
+    ];
+    var linesHtml = lines.map(function(p){
+      return '<div class="payline"><div><div class="l">' + esc(p.l) + '</div><div class="ln">' + esc(p.n) + '</div></div><div class="pv" style="color:' + p.c + '">' + esc(p.v) + '</div></div>';
+    }).join('');
+    $('content').innerHTML = banner() +
+      '<div class="grid-2">' +
+        '<div class="payhero"><div class="k">PROSSIMO BONIFICO</div><div class="v">' + eur(d.nextPayoutCents) + '</div><div class="n">' + esc(d.payoutEta||'') + ' · IBAN ••• 8841</div></div>' +
+        '<div class="paylines">' + linesHtml + '</div>' +
+      '</div>' +
+      '<div style="margin-top:14px;font-size:11px;color:var(--faint);line-height:1.7;max-width:74ch">Nessuna trattenuta TINFT sul primario: il compratore ha già pagato la commissione di prevendita (10%). Il netto somma l\'incasso lordo e la tua quota di royalty sul mercato secondario.</div>';
+  });
+}
+
+/* =========================================================================
+   ACCESSI  (READ-ONLY banner + per-event validated/capacity + recent entries
+   + validators with "+ Varco")
+   ========================================================================= */
+function viewAccessi(){
+  var me = meId();
+  return api('/events').then(function(events){
+    var mine = events.filter(function(e){ return e.organizerId===me; });
+    var ro = '<div class="robanner"><span class="ic">⛨</span><span style="line-height:1.55"><b>Sola lettura.</b> La validazione avviene solo dall\'app TINFT sullo smartphone dello staff. Questa console rispecchia i dati in tempo reale ma non può validare ingressi.</span></div>';
+    if(!mine.length){
+      $('content').innerHTML = banner() + ro + '<div class="empty">Nessun evento. Crea prima un evento da <b style="color:var(--blue-l)">Club</b>.</div>';
+      return;
+    }
+    return Promise.all(mine.map(function(e){
+      return Promise.all([
+        aapi('/events/'+e.id+'/accessi').catch(function(){ return {capacity:e.capacity,validated:0,recentEntries:[]}; }),
+        aapi('/events/'+e.id+'/validators').catch(function(){ return []; })
+      ]);
+    })).then(function(all){
+      var blocks = mine.map(function(e, i){
+        var acc = all[i][0] || {}, gates = all[i][1] || [];
+        var entries = (acc.recentEntries||[]);
+        var entriesHtml = entries.length ? entries.map(function(r){
+          var ok = r.outcome==='VALID';
+          return '<div class="entry"><div class="ck ' + (ok?'':'bad') + '">' + (ok?'✓':'!') + '</div><span class="nm">' + esc(r.holderName||'—') + '</span><span class="tm">' + esc(ok?'':(r.outcome+' · ')) + timeOf(r.at) + '</span></div>';
+        }).join('') : '<div class="faint" style="padding:8px 0">Nessun ingresso ancora.</div>';
+        var gatesHtml = gates.length ? gates.map(function(g){
+          return '<div class="gate"><div style="flex:1;min-width:0"><div class="code">' + esc(g.code) + '</div><div class="faint" style="margin-top:2px">varco di validazione · password demo <code>1234</code></div></div><span class="pill blue">Attivo</span></div>';
+        }).join('') : '<div class="faint" style="padding:8px 0">Nessun varco. Creane uno per abilitare la validazione in app.</div>';
+
+        return '<div class="grid-2" style="margin-bottom:16px">' +
+            '<div class="panel" style="border-color:var(--blue)"><div class="row"><span style="font-weight:600;font-size:15px">' + esc(e.title) + '</span>' +
+              (e.status==='ON_SALE' ? '<span style="display:flex;align-items:center;gap:6px"><span class="blip" style="animation:pulse 1.6s infinite"></span><span style="font-size:11px;color:var(--green-l)">LIVE</span></span>' : statusPill(e.status)) + '</div>' +
+              '<div style="display:flex;align-items:flex-end;gap:10px;margin-top:18px"><span class="accbig">' + esc(acc.validated||0) + '</span><span class="muted" style="padding-bottom:10px">/ ' + esc(acc.capacity||e.capacity) + ' ingressi</span></div>' +
+              '<div class="prog big"><div class="pf" style="width:' + pct(acc.validated||0, acc.capacity||e.capacity) + '"></div></div></div>' +
+            '<div class="panel"><div class="row" style="margin-bottom:12px"><span style="font-weight:600;font-size:15px">Ultimi ingressi</span></div>' + entriesHtml + '</div>' +
+          '</div>' +
+          '<div class="panel" style="margin-bottom:24px"><div class="row" style="margin-bottom:6px"><span style="font-weight:600;font-size:15px">Varchi · ' + esc(e.title) + '</span><button class="sm outline" onclick="createVarco(\'' + e.id + '\')">+ Varco</button></div>' + gatesHtml + '</div>';
+      }).join('');
+      $('content').innerHTML = banner() + ro + blocks;
+    });
+  });
+}
+
+function createVarco(eventId){
+  return aapi('/events/'+eventId+'/validators','POST',{ organizerId:meId() }).then(function(g){
+    toast('Varco creato · ' + (g&&g.code?g.code:'') + ' · password demo 1234','ok'); return render();
+  }).catch(function(e){ toast(e && e.message ? e.message : String(e),'err'); });
+}
+
+/* =========================================================================
+   HOLDER  (the API has no holders endpoint: derive a lightweight view from a
+   MOCK demo list — clearly framed as demo content)
+   ========================================================================= */
+function viewHolders(){
+  // always use the in-file demo list (no real holders endpoint exists)
+  return MOCK.handle('/__holders','GET').then(function(holders){
+    var totSpent = holders.reduce(function(a,h){return a+(h.spentCents||0);},0);
+    var inHall = holders.filter(function(h){return h.present;}).length;
+    var topfan = holders.filter(function(h){return h.tag==='Top fan';}).length;
+    var stats = [
+      {v:holders.length, l:'Holder totali', c:'#fff'},
+      {v:inHall, l:'In sala ora', c:'var(--green-l)'},
+      {v:topfan, l:'Top fan', c:'var(--orange-l)'},
+      {v:eur(totSpent), l:'Speso aggregato', c:'var(--blue-l)'}
+    ];
+    var statsHtml = '<div class="grid-kpi" style="margin-bottom:18px">' + stats.map(function(s){
+      return '<div class="kpi"><div class="v" style="color:' + s.c + ';font-size:24px">' + esc(s.v) + '</div><div class="n">' + esc(s.l) + '</div></div>';
+    }).join('') + '</div>';
+
+    var rows = holders.map(function(h, i){
+      var name = h.nome + ' ' + h.cognome;
+      var av = ['#2f4f8a','#0a8a5c','#9c5e00','#7a3550','#6f4fb0'][i%5];
+      var tag = h.tag ? '<span class="pill orange" style="font-size:8px;padding:2px 6px">' + esc(h.tag) + '</span>' : '';
+      return '<div class="trow" style="grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;min-width:660px">' +
+        '<div style="display:flex;align-items:center;gap:11px;min-width:0"><div class="av" style="width:34px;height:34px;border-radius:13px;background:' + av + ';display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;color:#fff;flex-shrink:0">' + esc(initials(name)) + '</div>' +
+          '<div style="min-width:0"><div style="display:flex;align-items:center;gap:7px"><span style="font-weight:600;font-size:13px">' + esc(name) + '</span>' + tag + '</div><div class="faint">' + esc(h.city||'—') + '</div></div></div>' +
+        '<span class="cell-mut" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(h.email) + '</span>' +
+        '<span style="font-size:12.5px">' + esc(h.tickets) + '</span>' +
+        '<span class="rev">' + eur(h.spentCents) + '</span>' +
+        '<div style="display:flex;align-items:center;gap:7px"><span class="dot ' + (h.present?'ok':'') + '"></span><span style="font-size:11.5px;color:' + (h.present?'var(--green-l)':'var(--faint)') + '">' + (h.present?'In sala':'Non in sala') + '</span></div>' +
+      '</div>';
+    }).join('');
+
+    $('content').innerHTML = banner() +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:70ch">Elenco dimostrativo dei possessori dei tuoi titoli NFT. In produzione i dati holder derivano dai biglietti coniati sul mondo condiviso.</p>' +
+      statsHtml +
+      '<div class="tbl"><div class="tbl-wrap">' +
+        '<div class="thead" style="grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;min-width:660px"><span>HOLDER</span><span>EMAIL</span><span>BIGLIETTI</span><span>SPESO</span><span>STATO</span></div>' +
+        rows + '</div></div>';
+  });
+}
+
+/* =========================================================================
+   KYC
+   ========================================================================= */
+function submitKyc(){
+  var me = meId();
+  return aapi('/organizers/'+me+'/kyc/submit','POST',{}).then(function(r){
+    ctx.kyc = (r && r.kycStatus) || 'PENDING';
+    toast('KYC inviato · in revisione (la decisione spetta a TINFT)','ok');
+    return render();
+  }).catch(function(e){ toast(e && e.message ? e.message : String(e),'err'); });
+}
+
+/* =========================================================================
+   MODALS  (create club with DATI SOCIETARI section; create event)
+   ========================================================================= */
+function renderModal(){
+  var m = $('modal'); if(!m) return;
+  if(ctx.clubForm){ m.innerHTML = clubModalHtml(); return; }
+  if(ctx.evForm){ m.innerHTML = eventModalHtml(); return; }
+  m.innerHTML = '';
+}
+
+function clubModalHtml(){
+  var swatches = ['#4472c4','#0a8a5c','#9c5e00','#7a3550','#6f4fb0'];
+  return '<div class="modal"><div class="box scr">' +
+    '<span class="x" onclick="closeModal()">✕</span>' +
+    '<div class="eyebrow acc">Nuova pagina club</div>' +
+    '<div style="font-weight:700;font-size:19px;margin-top:8px">Crea il tuo club</div>' +
+    '<div class="formgrid">' +
+      '<input id="f_name" placeholder="Nome club" class="full" />' +
+      '<input id="f_city" placeholder="Città" />' +
+      '<input id="f_genre" placeholder="Genere (es. Techno · House)" />' +
+    '</div>' +
+    '<div class="formsect"><div class="eyebrow">Dati societari</div>' +
+      '<div class="formgrid">' +
+        '<input id="f_ragione" placeholder="Ragione sociale" class="full" />' +
+        '<input id="f_piva" placeholder="Partita IVA" />' +
+        '<input id="f_sdi" placeholder="Codice SDI" />' +
+        '<input id="f_sede" placeholder="Sede legale" class="full" />' +
+        '<input id="f_pec" placeholder="PEC / email fatturazione" />' +
+        '<input id="f_iban" placeholder="IBAN" />' +
+      '</div></div>' +
+    '<div class="formsect"><div class="eyebrow">Colore copertina</div>' +
+      '<div class="swatches" id="f_swatches">' + swatches.map(function(c,i){
+        return '<div class="swatch" data-c="' + c + '" style="background:' + c + ';border-color:' + (i===0?'#fff':'transparent') + '" onclick="pickColor(\'' + c + '\')"></div>';
+      }).join('') + '</div></div>' +
+    '<button style="width:100%;margin-top:20px" onclick="submitClub()">Crea club</button>' +
+  '</div></div>';
+}
+function pickColor(c){
+  ctx._clubColor = c;
+  var sw = $('f_swatches'); if(!sw) return;
+  var els = sw.querySelectorAll ? sw.querySelectorAll('.swatch') : [];
+  for(var i=0;i<els.length;i++){ els[i].style.borderColor = (els[i].getAttribute('data-c')===c)?'#fff':'transparent'; }
+}
+function submitClub(){
+  var name = ($('f_name')&&$('f_name').value||'').trim();
+  if(!name){ toast('Inserisci il nome del club','err'); return; }
+  var body = {
+    organizerId: meId(),
+    name: name,
+    city: ($('f_city')&&$('f_city').value||'').trim() || '—',
+    genre: ($('f_genre')&&$('f_genre').value||'').trim(),
+    ragioneSociale: ($('f_ragione')&&$('f_ragione').value||'').trim(),
+    piva: ($('f_piva')&&$('f_piva').value||'').trim(),
+    sedeLegale: ($('f_sede')&&$('f_sede').value||'').trim(),
+    pec: ($('f_pec')&&$('f_pec').value||'').trim(),
+    sdi: ($('f_sdi')&&$('f_sdi').value||'').trim(),
+    iban: ($('f_iban')&&$('f_iban').value||'').trim(),
+    color: ctx._clubColor || '#4472c4'
+  };
+  return aapi('/clubs','POST',body).then(function(){ ctx.clubForm=false; ctx._clubColor=null; toast('Club creato','ok'); return render(); }).catch(function(e){ toast(e && e.message ? e.message : String(e),'err'); });
+}
+
+function eventModalHtml(){
+  return '<div class="modal"><div class="box scr">' +
+    '<span class="x" onclick="closeModal()">✕</span>' +
+    '<div class="eyebrow acc">Nuovo evento</div>' +
+    '<div style="font-weight:700;font-size:19px;margin-top:8px">Crea evento</div>' +
+    '<div class="formgrid">' +
+      '<input id="e_title" placeholder="Titolo evento" class="full" />' +
+      '<input id="e_venue" placeholder="Venue" />' +
+      '<input id="e_date" placeholder="Data (es. 21 GIU)" />' +
+      '<input id="e_price" placeholder="Prezzo € (es. 31,50)" />' +
+      '<input id="e_cap" placeholder="Capienza" />' +
+    '</div>' +
+    '<div class="faint" style="margin-top:12px;line-height:1.6">L\'evento nasce in bozza. Pubblicalo dalla tabella Eventi (richiede KYC verificato).</div>' +
+    '<button style="width:100%;margin-top:18px" onclick="submitEvent()">Crea evento</button>' +
+  '</div></div>';
+}
+function submitEvent(){
+  var clubId = ctx.evForm ? ctx.evForm.clubId : null;
+  var title = ($('e_title')&&$('e_title').value||'').trim();
+  if(!title){ toast('Inserisci il titolo dell\'evento','err'); return; }
+  var price = Math.round(parseFloat((($('e_price')&&$('e_price').value)||'0').replace(',','.'))*100) || 0;
+  var cap = parseInt(($('e_cap')&&$('e_cap').value)||'0',10) || 0;
+  if(cap<=0){ toast('Capienza non valida','err'); return; }
+  var body = {
+    organizerId: meId(),
+    clubId: clubId,
+    title: title,
+    venue: ($('e_venue')&&$('e_venue').value||'').trim() || '—',
+    date: ($('e_date')&&$('e_date').value||'').trim(),
+    priceCents: price,
+    capacity: cap
+  };
+  // backend supports both /events and /clubs/:id/events; use the club route when in a club
+  var path = clubId ? ('/clubs/'+clubId+'/events') : '/events';
+  return aapi(path,'POST',body).then(function(){ ctx.evForm=null; toast('Evento creato (bozza)','ok'); return render(); }).catch(function(e){ toast(e && e.message ? e.message : String(e),'err'); });
+}
+
+/* =========================================================================
+   START
+   ========================================================================= */
+if(typeof document!=='undefined' && document.getElementById){ init(); }
+
+/* expose for the DOM-stub verification harness (and inline handlers) */
+if(typeof window!=='undefined'){
+  window.init=init; window.render=render; window.go=go; window.goCreate=goCreate;
+  window.openClub=openClub; window.closeClub=closeClub; window.openClubForm=openClubForm;
+  window.openEventForm=openEventForm; window.closeModal=closeModal; window.submitClub=submitClub;
+  window.submitEvent=submitEvent; window.pickColor=pickColor; window.publishEvent=publishEvent;
+  window.createVarco=createVarco; window.submitKyc=submitKyc; window.MOCK=MOCK; window.ctx=ctx;
+  window.viewDashboard=viewDashboard; window.viewClub=viewClub; window.viewEventi=viewEventi;
+  window.viewIncassi=viewIncassi; window.viewAccessi=viewAccessi; window.viewHolders=viewHolders;
+}
+</script>
+</body>
+</html>
