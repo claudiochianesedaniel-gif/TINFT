@@ -15,6 +15,25 @@ import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import {setPassword, verifyPassword} from "../auth/password";
 import {signToken, verifyToken} from "../auth/tokens";
 import {authenticate, bearerToken as authHeaderToken, requireRole} from "../auth/middleware";
+import {readFile} from "node:fs/promises";
+import {extname, join, normalize} from "node:path";
+import {fileURLToPath} from "node:url";
+
+// Frontend statici (sito, web app, console, registrazione, demo + assets). Override con WEB_DIR.
+const WEB_DIR = process.env.WEB_DIR ?? fileURLToPath(new URL("../../../../apps/web", import.meta.url));
+const STATIC_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon"
+};
 
 /** Usa l'adapter on-chain reale (viem) se le variabili d'ambiente sono presenti, altrimenti il fake. */
 function chainFromEnv(): ChainPort | undefined {
@@ -73,6 +92,26 @@ export function buildServer(
       return reply.status(err.status).send({error: err.code, message: err.message});
     }
     return reply.status(500).send({error: "INTERNAL", message: err.message});
+  });
+
+  // Fallback statico: le richieste GET non gestite dall'API servono i frontend da WEB_DIR
+  // (così un solo server espone API + Sito/Web App/Console). Path-traversal bloccato.
+  app.setNotFoundHandler(async (req, reply) => {
+    if (req.method === "GET" || req.method === "HEAD") {
+      let urlPath = req.url.split("?")[0] || "/";
+      if (urlPath === "/") urlPath = "/sito.html";
+      const rel = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[\\/])+/, "").replace(/^[\\/]+/, "");
+      const filePath = join(WEB_DIR, rel);
+      if (filePath.startsWith(WEB_DIR)) {
+        try {
+          const data = await readFile(filePath);
+          return reply.header("content-type", STATIC_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream").send(data);
+        } catch {
+          /* non è un file statico → 404 JSON sotto */
+        }
+      }
+    }
+    return reply.status(404).send({error: "NOT_FOUND", message: `risorsa non trovata: ${req.method} ${req.url}`});
   });
 
   /**
