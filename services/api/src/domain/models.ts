@@ -71,6 +71,62 @@ export interface Ticket {
   clubId?: string;
   uses?: number; // Fidelity: ingressi totali
   used?: number; // Fidelity: ingressi consumati
+  askPriceCents?: number; // prezzo richiesto sul mercato secondario (status LISTED)
+  market?: string; // etichetta mercato, es. "Re-Selling"
+}
+
+export interface Tier {
+  id: string;
+  eventId: string;
+  name: string;
+  priceCents: number;
+  note?: string;
+  soldOut: boolean;
+}
+
+export type OrderStatus = "PENDING" | "PAID" | "CANCELLED";
+
+export interface Order {
+  id: string;
+  buyerId: string;
+  eventId: string;
+  tierId?: string;
+  quantity: number;
+  unitPriceCents: number;
+  presaleCommissionCents: number; // commissione di prevendita 10% per biglietto (solo TINFT)
+  feeTotalCents: number; // commissione di prevendita × quantità
+  subtotalCents: number; // prezzo × quantità
+  totalCents: number; // (prezzo + commissione) × quantità
+  status: OrderStatus;
+  ticketIds: string[];
+  createdAt: number; // epoch seconds
+}
+
+/** Ledger di piattaforma (in-memory): ricavi prevendita, royalty e fee d'uscita. */
+export interface Ledger {
+  presaleCommissionCents: number; // commissioni di prevendita 10% (primario, solo TINFT)
+  royaltyTinftCents: number; // quota TINFT della royalty 1% sul secondario (0,5%)
+  royaltyOrganizerCents: number; // quota organizzatore della royalty 1% (0,5%)
+  exitFeeCents: number; // fee d'uscita 25% sull'export libero
+}
+
+/** Registrazione email in attesa di verifica OTP (non ancora un account). */
+export interface PendingRegistration {
+  email: string;
+  code: string;
+  nome: string;
+  cognome: string;
+  cf: string;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  gender?: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  province?: string;
+  phone?: string;
+  username?: string;
+  createdAt: number; // epoch seconds
 }
 
 export interface Transfer {

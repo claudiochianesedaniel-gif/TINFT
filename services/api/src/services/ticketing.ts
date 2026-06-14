@@ -6,14 +6,27 @@ import {
   type Event,
   type EventType,
   NotFound,
+  type Order,
   type Ticket,
+  type Tier,
   type Transfer,
   type TransferMode,
   type Validation,
   type ValidationOutcome
 } from "../domain/models";
 import {MemoryStore} from "../repo/memory";
-import {canAcquireForEvent, exitFeeCents, isResalePriceAllowed, royaltyCents, royaltySplitCents} from "../domain/rules";
+import {
+  canAcquireForEvent,
+  exitFeeCents,
+  GOODWILL_PER_TICKET,
+  isResalePriceAllowed,
+  MAX_PER_EVENT,
+  orderTotalCents,
+  resaleCapCents,
+  royaltyCents,
+  royaltySplitCents
+} from "../domain/rules";
+import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -25,7 +38,8 @@ const nowSeconds = () => Math.floor(Date.now() / 1000);
 export class TicketingService {
   constructor(
     private readonly store: MemoryStore,
-    private readonly now: () => number = nowSeconds
+    private readonly now: () => number = nowSeconds,
+    private readonly verifier: IdentityVerifier = new FakeSpid()
   ) {}
 
   // -------------------------------------------------------------- account
@@ -67,6 +81,70 @@ export class TicketingService {
       goodwill: 0
     };
     this.store.accounts.set(account.id, account);
+    return account;
+  }
+
+  // --------------------------------------------- registrazione email + OTP (v2)
+  /** Avvia la registrazione via email: genera un codice OTP a 6 cifre e tiene il dato in attesa. */
+  startEmailRegistration(input: {
+    nome: string;
+    cognome: string;
+    cf: string;
+    email: string;
+    dateOfBirth?: string;
+    placeOfBirth?: string;
+    gender?: string;
+    address?: string;
+    city?: string;
+    zip?: string;
+    province?: string;
+    phone?: string;
+    username?: string;
+  }): {email: string; devCode: string} {
+    if (!input.email?.trim()) throw new DomainError("INVALID_EMAIL", "email obbligatoria");
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    this.store.pendingRegistrations.set(input.email, {
+      email: input.email,
+      code,
+      nome: input.nome,
+      cognome: input.cognome,
+      cf: input.cf,
+      dateOfBirth: input.dateOfBirth,
+      placeOfBirth: input.placeOfBirth,
+      gender: input.gender,
+      address: input.address,
+      city: input.city,
+      zip: input.zip,
+      province: input.province,
+      phone: input.phone,
+      username: input.username,
+      createdAt: this.now()
+    });
+    return {email: input.email, devCode: code};
+  }
+
+  /** Verifica l'OTP: se corretto crea un account CLIENTE verificato (hash CF) e ripulisce il pending. */
+  verifyEmailRegistration(email: string, code: string): Account {
+    const pending = this.store.pendingRegistrations.get(email);
+    if (!pending || pending.code !== code) throw new DomainError("BAD_CODE", "codice errato o scaduto", 400);
+    const identity = this.verifier.verify({cf: pending.cf, nome: pending.nome, cognome: pending.cognome});
+    const account = this.createAccount({
+      role: "CLIENTE",
+      nome: pending.nome,
+      cognome: pending.cognome,
+      email: pending.email,
+      cf: pending.cf,
+      cfHash: identity.cfHash,
+      dateOfBirth: pending.dateOfBirth,
+      placeOfBirth: pending.placeOfBirth,
+      gender: pending.gender,
+      address: pending.address,
+      city: pending.city,
+      zip: pending.zip,
+      province: pending.province,
+      phone: pending.phone
+    });
+    this.store.pendingRegistrations.delete(email);
     return account;
   }
 
@@ -212,6 +290,207 @@ export class TicketingService {
     return ticket;
   }
 
+  // -------------------------------------------------------------- tier (v2)
+  /** Crea una fascia di prezzo per un evento; solo l'organizzatore proprietario. */
+  createTier(eventId: string, input: {organizerId: string; name: string; priceCents: number; note?: string}): Tier {
+    const event = this.getEvent(eventId);
+    if (event.organizerId !== input.organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    if (!input.name.trim()) throw new DomainError("INVALID_TIER", "nome fascia obbligatorio");
+    if (input.priceCents < 0) throw new DomainError("INVALID_TIER", "prezzo non valido");
+    const tier: Tier = {
+      id: this.store.id("tier"),
+      eventId: event.id,
+      name: input.name,
+      priceCents: input.priceCents,
+      note: input.note,
+      soldOut: false
+    };
+    this.store.tiers.set(tier.id, tier);
+    return tier;
+  }
+
+  listTiers(eventId: string): Tier[] {
+    this.getEvent(eventId);
+    return this.store.tiersByEvent(eventId);
+  }
+
+  // ----------------------------------------------------- ordini / checkout (v2)
+  /** Crea un ordine PENDING con il dettaglio completo (commissione 4% + quantità + limite 2). */
+  createOrder(input: {buyerId: string; eventId: string; tierId?: string; quantity: number}): Order {
+    const event = this.getEvent(input.eventId);
+    this.getAccount(input.buyerId);
+    if (event.status !== "ON_SALE") throw new DomainError("NOT_ON_SALE", "evento non in vendita", 409);
+
+    let unitPriceCents = event.priceCents;
+    if (input.tierId) {
+      const tier = this.getTier(input.tierId);
+      if (tier.eventId !== event.id) throw new DomainError("WRONG_TIER", "fascia non appartiene all'evento", 409);
+      unitPriceCents = tier.priceCents;
+    }
+
+    const totals = orderTotalCents(unitPriceCents, input.quantity);
+    this.assertOrderWithinEventLimit(event.id, input.buyerId, totals.quantity);
+
+    const order: Order = {
+      id: this.store.id("ord"),
+      buyerId: input.buyerId,
+      eventId: event.id,
+      tierId: input.tierId,
+      quantity: totals.quantity,
+      unitPriceCents: totals.unitPriceCents,
+      presaleCommissionCents: totals.presaleCommissionCents,
+      feeTotalCents: totals.feeTotalCents,
+      subtotalCents: totals.subtotalCents,
+      totalCents: totals.totalCents,
+      status: "PENDING",
+      ticketIds: [],
+      createdAt: this.now()
+    };
+    this.store.orders.set(order.id, order);
+    return order;
+  }
+
+  /**
+   * Simula il successo PSP: conia `quantity` biglietti, segna l'ordine PAID,
+   * accredita la commissione al ledger e il goodwill al compratore. Idempotente.
+   */
+  payOrder(orderId: string): Order {
+    const order = this.getOrder(orderId);
+    if (order.status === "PAID") return order; // idempotente: nessun doppio mint
+    if (order.status === "CANCELLED") throw new DomainError("ORDER_CANCELLED", "ordine annullato", 409);
+
+    const ticketIds: string[] = [];
+    for (let i = 0; i < order.quantity; i++) {
+      const ticket = this.purchasePrimary(order.eventId, order.buyerId);
+      // l'ordine fissa il prezzo unitario di fascia: il costo base segue il prezzo pagato
+      ticket.originalPriceCents = order.unitPriceCents;
+      ticket.paidCents = order.unitPriceCents;
+      ticketIds.push(ticket.id);
+    }
+
+    this.store.ledger.presaleCommissionCents += order.feeTotalCents;
+    const buyer = this.getAccount(order.buyerId);
+    buyer.goodwill += GOODWILL_PER_TICKET * order.quantity;
+
+    order.ticketIds = ticketIds;
+    order.status = "PAID";
+    return order;
+  }
+
+  getOrder(id: string): Order {
+    const o = this.store.orders.get(id);
+    if (!o) throw NotFound("ordine");
+    return o;
+  }
+
+  ordersOf(buyerId: string): Order[] {
+    return this.store.ordersByBuyer(buyerId);
+  }
+
+  // -------------------------------------------------- mercato secondario (v2)
+  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +5%; solo il proprietario. */
+  listTicket(ticketId: string, ownerId: string, priceCents: number): Ticket {
+    const ticket = this.getTicket(ticketId);
+    if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
+    if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non quotabile", 409);
+    if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
+    if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
+      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 400);
+    }
+    ticket.status = "LISTED";
+    ticket.askPriceCents = priceCents;
+    ticket.market = "Re-Selling";
+    return ticket;
+  }
+
+  /** Ritira dal mercato un biglietto LISTED; solo il proprietario. */
+  unlistTicket(ticketId: string, ownerId: string): Ticket {
+    const ticket = this.getTicket(ticketId);
+    if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
+    if (ticket.status !== "LISTED") throw new DomainError("NOT_LISTED", "biglietto non in vendita", 409);
+    ticket.status = "ACTIVE";
+    ticket.askPriceCents = undefined;
+    ticket.market = undefined;
+    return ticket;
+  }
+
+  /** Listino del mercato secondario: biglietti LISTED con royalty e tetto calcolati. */
+  market(): Array<{
+    ticketId: string;
+    eventId: string;
+    title: string;
+    sellerName: string;
+    askPriceCents: number;
+    royaltyCents: number;
+    capCents: number;
+  }> {
+    return this.store.listedTickets().map((t) => ({
+      ticketId: t.id,
+      eventId: t.eventId,
+      title: this.store.events.get(t.eventId)?.title ?? "",
+      sellerName: t.holderName,
+      askPriceCents: t.askPriceCents ?? 0,
+      royaltyCents: royaltyCents(t.originalPriceCents),
+      capCents: resaleCapCents(t.paidCents)
+    }));
+  }
+
+  /**
+   * Acquisto sul mercato secondario: il compratore paga ask + royalty (1% sul prezzo
+   * originale), la royalty va al ledger 0,5/0,5, il costo base viaggia col token (R3),
+   * il venditore riceve goodwill (~euro). Registra un Transfer PAYMENT/DONE.
+   */
+  buyFromMarket(ticketId: string, buyerId: string): {
+    ticket: Ticket;
+    royalty: {tinftCents: number; organizerCents: number};
+    paidByBuyerCents: number;
+  } {
+    const ticket = this.getTicket(ticketId);
+    if (ticket.status !== "LISTED") throw new DomainError("NOT_LISTED", "biglietto non in vendita", 409);
+    const buyer = this.getAccount(buyerId);
+    const seller = this.getAccount(ticket.ownerId);
+    if (seller.id === buyer.id) throw new DomainError("SELF_TRANSFER", "venditore e compratore coincidono");
+    this.assertOrderWithinEventLimit(ticket.eventId, buyer.id, 1);
+
+    const askPriceCents = ticket.askPriceCents ?? 0;
+    const royalty = royaltyCents(ticket.originalPriceCents);
+    const split = royaltySplitCents(ticket.originalPriceCents);
+    const paidByBuyerCents = askPriceCents + royalty;
+
+    const transfer: Transfer = {
+      id: this.store.id("xfr"),
+      ticketId: ticket.id,
+      fromId: seller.id,
+      toId: buyer.id,
+      mode: "PAYMENT",
+      priceCents: askPriceCents,
+      royaltyCents: royalty,
+      royaltyTinftCents: split.tinftCents,
+      royaltyOrganizerCents: split.organizerCents,
+      status: "DONE",
+      ttlSeconds: 0,
+      createdAt: this.now()
+    };
+    this.store.transfers.set(transfer.id, transfer);
+
+    // ledger: la royalty è ricavo di piattaforma/organizzatore
+    this.store.ledger.royaltyTinftCents += split.tinftCents;
+    this.store.ledger.royaltyOrganizerCents += split.organizerCents;
+
+    // trasferimento proprietà: il costo base segue il prezzo pagato (R3)
+    ticket.ownerId = buyer.id;
+    ticket.paidCents = askPriceCents;
+    ticket.status = "ACTIVE";
+    ticket.holderName = `${buyer.nome} ${buyer.cognome}`;
+    ticket.askPriceCents = undefined;
+    ticket.market = undefined;
+
+    // goodwill al venditore (~euro)
+    seller.goodwill += Math.round(askPriceCents / 100);
+
+    return {ticket, royalty: {tinftCents: split.tinftCents, organizerCents: split.organizerCents}, paidByBuyerCents};
+  }
+
   /** Lega un'identità SPID verificata al wallet (abilita il limite 2/evento). */
   verifyIdentity(accountId: string, cfHash: string): Account {
     const account = this.getAccount(accountId);
@@ -353,6 +632,25 @@ export class TicketingService {
     if (!buyer.cfHash) return; // wallet non registrato: esente (il backend registra via SPID)
     const held = this.store.heldCountForIdentity(eventId, buyer.cfHash);
     if (!canAcquireForEvent(held)) throw new DomainError("EVENT_LIMIT", "max 2 biglietti per evento", 409);
+  }
+
+  /**
+   * Limite 2/evento per ordini e mercato: conta i biglietti del compratore (ACTIVE/LISTED)
+   * più i trasferimenti in entrata pendenti per l'evento; verifica che la quantità richiesta
+   * rientri nell'allowance residua (MAX_PER_EVENT - controllati).
+   */
+  private assertOrderWithinEventLimit(eventId: string, buyerId: string, quantity: number): void {
+    const held = this.store.heldForEventByBuyer(eventId, buyerId);
+    const remaining = MAX_PER_EVENT - held;
+    if (quantity > remaining) {
+      throw new DomainError("EVENT_LIMIT", `max ${MAX_PER_EVENT} biglietti per evento`, 409);
+    }
+  }
+
+  private getTier(id: string): Tier {
+    const t = this.store.tiers.get(id);
+    if (!t) throw NotFound("fascia");
+    return t;
   }
 
   private getAccount(id: string): Account {

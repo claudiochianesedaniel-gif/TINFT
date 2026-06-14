@@ -42,9 +42,9 @@ export function buildServer(
   opts: {store?: MemoryStore; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier} = {}
 ): FastifyInstance {
   const store = opts.store ?? new MemoryStore();
-  const ticketing = new TicketingService(store);
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
+  const ticketing = new TicketingService(store, undefined, verifier);
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
   const app = Fastify({logger: false});
@@ -120,6 +120,29 @@ export function buildServer(
     return reply.status(201).send(account);
   });
 
+  // -------- registrazione via email + OTP (v2)
+  app.post<{
+    Body: {
+      nome: string;
+      cognome: string;
+      cf: string;
+      email: string;
+      dateOfBirth?: string;
+      placeOfBirth?: string;
+      gender?: string;
+      address?: string;
+      city?: string;
+      zip?: string;
+      province?: string;
+      phone?: string;
+      username?: string;
+    };
+  }>("/auth/register/email", async (req, reply) => reply.status(201).send(ticketing.startEmailRegistration(req.body)));
+
+  app.post<{Body: {email: string; code: string}}>("/auth/register/email/verify", async (req, reply) =>
+    reply.status(201).send(ticketing.verifyEmailRegistration(req.body.email, req.body.code))
+  );
+
   // GDPR — cancellazione account (right to erasure). Gating admin via token;
   // in produzione: auth reale + allow-list (cfr. pattern Mindful Trading Club).
   const adminToken = process.env.ADMIN_TOKEN ?? "dev-admin";
@@ -174,8 +197,43 @@ export function buildServer(
       reply.status(201).send(ticketing.purchasePrimary(req.params.id, req.body.buyerId, {holderName: req.body.holderName}))
   );
 
+  // -------- fasce di prezzo (tier) (v2)
+  app.get<{Params: {id: string}}>("/events/:id/tiers", async (req) => ticketing.listTiers(req.params.id));
+  app.post<{Params: {id: string}; Body: {organizerId: string; name: string; priceCents: number; note?: string}}>(
+    "/events/:id/tiers",
+    async (req, reply) => reply.status(201).send(ticketing.createTier(req.params.id, req.body))
+  );
+
+  // -------- ordini / checkout v2 (commissione 4% + quantità + limite 2)
+  app.post<{Body: {buyerId: string; eventId: string; tierId?: string; quantity: number}}>(
+    "/orders",
+    async (req, reply) => reply.status(201).send(ticketing.createOrder(req.body))
+  );
+  app.post<{Params: {id: string}; Body: Record<string, never>}>(
+    "/orders/:id/pay",
+    async (req) => ticketing.payOrder(req.params.id)
+  );
+  app.get<{Params: {id: string}}>("/orders/:id", async (req) => ticketing.getOrder(req.params.id));
+  app.get<{Params: {id: string}}>("/accounts/:id/orders", async (req) => ticketing.ordersOf(req.params.id));
+
+  // -------- mercato secondario (rivendita) (v2)
+  app.get("/market", async () => ticketing.market());
+  app.post<{Params: {ticketId: string}; Body: {buyerId: string}}>(
+    "/market/:ticketId/buy",
+    async (req) => ticketing.buyFromMarket(req.params.ticketId, req.body.buyerId)
+  );
+
   // -------- biglietti
   app.get<{Params: {id: string}}>("/accounts/:id/tickets", async (req) => ticketing.ticketsOf(req.params.id));
+
+  app.post<{Params: {id: string}; Body: {ownerId: string; priceCents: number}}>(
+    "/tickets/:id/list",
+    async (req, reply) => reply.status(201).send(ticketing.listTicket(req.params.id, req.body.ownerId, req.body.priceCents))
+  );
+  app.post<{Params: {id: string}; Body: {ownerId: string}}>(
+    "/tickets/:id/unlist",
+    async (req) => ticketing.unlistTicket(req.params.id, req.body.ownerId)
+  );
 
   app.post<{
     Params: {id: string};

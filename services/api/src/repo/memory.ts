@@ -1,4 +1,4 @@
-import type {Account, Club, Event, Ticket, Transfer, Validation} from "../domain/models";
+import type {Account, Club, Event, Ledger, Order, PendingRegistration, Ticket, Tier, Transfer, Validation} from "../domain/models";
 import type {Payment} from "../payments/types";
 
 /**
@@ -10,11 +10,22 @@ export class MemoryStore {
   readonly accounts = new Map<string, Account>();
   readonly clubs = new Map<string, Club>();
   readonly events = new Map<string, Event>();
+  readonly tiers = new Map<string, Tier>();
+  readonly orders = new Map<string, Order>();
   readonly tickets = new Map<string, Ticket>();
   readonly transfers = new Map<string, Transfer>();
   readonly validations = new Map<string, Validation>();
   readonly payments = new Map<string, Payment>();
+  readonly pendingRegistrations = new Map<string, PendingRegistration>();
   readonly processedWebhooks = new Set<string>();
+
+  /** Ledger di piattaforma: ricavi (commissioni di prevendita, royalty, fee d'uscita). */
+  readonly ledger: Ledger = {
+    presaleCommissionCents: 0,
+    royaltyTinftCents: 0,
+    royaltyOrganizerCents: 0,
+    exitFeeCents: 0
+  };
 
   private seq: Record<string, number> = {};
   private tokenSeq = 0;
@@ -40,6 +51,36 @@ export class MemoryStore {
     return [...this.tickets.values()].filter(
       (t) => t.eventId === eventId && owners.has(t.ownerId) && (t.status === "ACTIVE" || t.status === "LISTED")
     ).length;
+  }
+
+  tiersByEvent(eventId: string): Tier[] {
+    return [...this.tiers.values()].filter((t) => t.eventId === eventId);
+  }
+
+  ordersByBuyer(buyerId: string): Order[] {
+    return [...this.orders.values()].filter((o) => o.buyerId === buyerId);
+  }
+
+  listedTickets(): Ticket[] {
+    return [...this.tickets.values()].filter((t) => t.status === "LISTED");
+  }
+
+  /**
+   * Biglietti "controllati" da un account per un evento, ai fini del limite 2/evento
+   * sugli ordini e sul mercato: biglietti ACTIVE o LISTED (esclusi USED/EXPORTED)
+   * PIÙ eventuali trasferimenti in entrata ancora pendenti (PENDING/ESCROW) per l'evento.
+   */
+  heldForEventByBuyer(eventId: string, buyerId: string): number {
+    const tickets = [...this.tickets.values()].filter(
+      (t) => t.eventId === eventId && t.ownerId === buyerId && (t.status === "ACTIVE" || t.status === "LISTED")
+    ).length;
+    const incoming = [...this.transfers.values()].filter((x) => {
+      if (x.toId !== buyerId) return false;
+      if (x.status !== "PENDING" && x.status !== "ESCROW") return false;
+      const ticket = this.tickets.get(x.ticketId);
+      return !!ticket && ticket.eventId === eventId;
+    }).length;
+    return tickets + incoming;
   }
 
   activeTransferForTicket(ticketId: string): Transfer | undefined {
