@@ -69,7 +69,9 @@ export function buildServer(
   const store: Store = opts.store ?? new MemoryStore();
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
-  const ticketing = new TicketingService(store, undefined, verifier);
+  // Stessa istanza `chain` passata a ticketing e payments: l'acquisto primario/ordini
+  // conia via TicketingService, il flusso PSP via PaymentsService (entrambi on-chain con ViemChain).
+  const ticketing = new TicketingService(store, undefined, verifier, chain);
   const content = new ContentService(store);
   const consoleSvc = new ConsoleService(store);
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);

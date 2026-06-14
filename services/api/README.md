@@ -22,11 +22,19 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
   **webhook idempotente** che a pagamento riuscito concia il biglietto. Adapter **Stripe reale**
   (`StripeProvider`: `checkout.sessions.create` + verifica firma `constructEvent`, raw body catturato)
   attivabile via `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`; altrimenti `FakeProvider` (CI/dev).
-- **Wiring on-chain** ([`src/chain`](./src/chain)): `ChainPort` (+ `FakeChain`); al pagamento il
-  webhook esegue il **mint** e salva `tokenId`/`txHash` sul biglietto. Adapter **reale `viem`**
-  (`ViemChain`→`TinftTicket.mint`) **verificato con un e2e contro anvil** (`scripts/chain-e2e.sh`:
-  deploy + mint + `ownerOf`). L'API usa il mint reale se sono presenti `CHAIN_RPC_URL` /
-  `CHAIN_PRIVATE_KEY` / `TICKET_ADDRESS`, altrimenti il fake.
+- **Wiring on-chain** ([`src/chain`](./src/chain)): `ChainPort` (+ `FakeChain`). L'acquisto primario
+  (`TicketingService.purchasePrimary`, usato da `payOrder` e da `/events/:id/purchase`) e il webhook
+  pagamenti eseguono il **mint** e salvano `tokenId`/`txHash` reali sul biglietto. Adapter **reale
+  `viem`** (`ViemChain`→`TinftTicket.mint`, `onlyOwner`: il backend firma con la chiave del deployer)
+  **verificato con un e2e contro anvil** (`scripts/chain-e2e.sh`: deploy + mint + `ownerOf`). L'API usa
+  il mint reale se sono presenti `CHAIN_RPC_URL` / `CHAIN_PRIVATE_KEY` / `TICKET_ADDRESS`, altrimenti il
+  fake (default, deterministico per i test). L'`eventId` off-chain è mappato a un `uint` on-chain in
+  modo deterministico dall'adapter (`ViemChain.referenceToOnchainId`).
+  - **On-chain reale (Base Sepolia)**: 1) deploya i contratti — `forge script contracts/script/Deploy.s.sol
+    --rpc-url $BASE_SEPOLIA_RPC_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast` (richiede
+    `TINFT_PAYEE`/`ORGANIZER_PAYEE`); 2) prendi l'indirizzo `TinftTicket` dai log; 3) avvia il backend con
+    `CHAIN_RPC_URL=$BASE_SEPOLIA_RPC_URL`, `CHAIN_PRIVATE_KEY=$DEPLOYER_PRIVATE_KEY` (l'owner del contratto)
+    e `TICKET_ADDRESS=<indirizzo>`.
 - **Identità SPID (M8, fondamenta)** ([`src/identity`](./src/identity)): `IdentityVerifier`
   (+ `FakeSpid`); `POST /identity/spid/verify` lega `hash(CF)` al wallet (on-chain mai il CF in
   chiaro) e abilita il limite 2/evento. Adapter OIDC reale via aggregatore come innesto.

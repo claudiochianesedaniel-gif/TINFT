@@ -30,6 +30,8 @@ import {
 } from "../domain/rules";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import {hashPassword} from "../auth/password";
+import type {ChainPort} from "../chain/port";
+import {FakeChain} from "../chain/fake";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -43,7 +45,8 @@ export class TicketingService {
   constructor(
     private readonly store: Store,
     private readonly now: () => number = nowSeconds,
-    private readonly verifier: IdentityVerifier = new FakeSpid()
+    private readonly verifier: IdentityVerifier = new FakeSpid(),
+    private readonly chain: ChainPort = new FakeChain()
   ) {}
 
   // -------------------------------------------------------------- account
@@ -361,7 +364,14 @@ export class TicketingService {
   }
 
   // ----------------------------------------------------- acquisto primario
-  /** Registra l'acquisto primario. `opts.tokenId`/`txHash` arrivano dal mint on-chain. */
+  /**
+   * Registra l'acquisto primario. Se `opts.tokenId` non è fornito (path ordini /
+   * acquisto diretto), conia il biglietto sul contratto via {@link ChainPort}:
+   * con `ViemChain` è un mint REALE su TinftTicket.mint (tokenId + txHash on-chain);
+   * con `FakeChain` (default, test) il risultato è deterministico. Quando il mint è
+   * già avvenuto a monte (es. PaymentsService) `opts.tokenId`/`txHash` arrivano dal
+   * chiamante e qui NON si conia di nuovo.
+   */
   async purchasePrimary(
     eventId: string,
     buyerId: string,
@@ -373,18 +383,31 @@ export class TicketingService {
     if (event.sold >= event.capacity) throw new DomainError("SOLD_OUT", "evento esaurito", 409);
     await this.assertCanAcquire(event.id, buyer);
 
+    // Mint on-chain solo se non già coniato dal chiamante (evita doppio mint).
+    let tokenId = opts.tokenId;
+    let txHash = opts.txHash;
+    if (tokenId === undefined) {
+      const mint = await this.chain.mintTicket({
+        to: buyer.walletAddress,
+        reference: event.id, // off-chain eventId → uint on-chain (mappato dall'adapter)
+        priceCents: event.priceCents
+      });
+      tokenId = mint.tokenId;
+      txHash = mint.txHash;
+    }
+
     const ticket: Ticket = {
       id: this.store.id("tkt"),
       eventId: event.id,
       ownerId: buyer.id,
-      tokenId: opts.tokenId ?? (await this.store.nextTokenId()),
+      tokenId,
       originalPriceCents: event.priceCents,
       paidCents: event.priceCents,
       status: "ACTIVE",
       exportMode: "NONE",
       exitFeeCents: 0,
       holderName: opts.holderName?.trim() || `${buyer.nome} ${buyer.cognome}`,
-      txHash: opts.txHash
+      txHash
     };
     await this.store.createTicket(ticket);
     event.sold += 1;
