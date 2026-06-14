@@ -9,6 +9,7 @@ export type ExportMode = "NONE" | "FREE" | "ENFORCED";
 export type TransferMode = "GIFT" | "PAYMENT";
 export type TransferStatus = "PENDING" | "ESCROW" | "DONE" | "RECLAIMED";
 export type ValidationOutcome = "VALID" | "SCREENSHOT" | "DUPLICATE" | "ESCROW" | "FAKE";
+export type KycStatus = "NONE" | "PENDING" | "VERIFIED" | "REJECTED";
 
 export interface Account {
   id: string;
@@ -16,6 +17,8 @@ export interface Account {
   nome: string;
   cognome: string;
   email: string;
+  // KYC dell'organizzatore (NONE di default): abilita la pubblicazione degli eventi
+  kycStatus?: KycStatus;
   // dati SPID completi (in chiaro off-chain; on-chain solo l'hash del CF)
   cf?: string; // codice fiscale
   cfHash?: string; // keccak256(CF + salt); presente = identità verificata
@@ -39,6 +42,15 @@ export interface Club {
   city: string;
   fidelityPriceCents: number; // 0 = nessun Fidelity
   fidelityUses: number; // ingressi del carnet, validi su tutti gli eventi del club
+  // dati di fatturazione (opzionali) del club/esercente
+  ragioneSociale?: string;
+  piva?: string;
+  sedeLegale?: string;
+  pec?: string;
+  sdi?: string; // codice destinatario SDI
+  iban?: string;
+  genre?: string; // genere musicale prevalente del locale
+  color?: string; // colore identitario per la UI
 }
 
 export interface Event {
@@ -150,6 +162,40 @@ export interface Validation {
   validatorId?: string;
   outcome: ValidationOutcome;
   at: number;
+}
+
+/** Varco/gate di un evento: codice usato dai validatori in app. */
+export interface Validator {
+  id: string;
+  eventId: string;
+  code: string; // es. "VARCO-1234"
+  createdAt: number; // epoch seconds
+}
+
+// -------- contenuti editoriali (artisti, blog, news) ----------------------
+
+export interface Artist {
+  id: string;
+  name: string;
+  genre: string;
+  initials: string;
+  color: string;
+  followers: number;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  tag: string;
+  title: string;
+  excerpt: string;
+  readMins: number;
+}
+
+export interface News {
+  id: string;
+  date: string;
+  title: string;
 }
 
 /** Errore di dominio con codice e status HTTP associato. */

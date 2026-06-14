@@ -3,6 +3,8 @@ import fastifyCors from "@fastify/cors";
 import {DomainError} from "../domain/models";
 import {MemoryStore} from "../repo/memory";
 import {TicketingService} from "../services/ticketing";
+import {ContentService} from "../services/content";
+import {ConsoleService} from "../services/console";
 import {FakeProvider, type PaymentProvider} from "../payments/provider";
 import {StripeProvider} from "../payments/stripe";
 import {PaymentsService} from "../payments/service";
@@ -45,6 +47,8 @@ export function buildServer(
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
   const ticketing = new TicketingService(store, undefined, verifier);
+  const content = new ContentService(store);
+  const consoleSvc = new ConsoleService(store);
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
   const app = Fastify({logger: false});
@@ -160,10 +164,23 @@ export function buildServer(
   });
 
   // -------- club & eventi del club (M9)
-  app.post<{Body: {organizerId: string; name: string; city?: string; fidelityPriceCents?: number; fidelityUses?: number}}>(
-    "/clubs",
-    async (req, reply) => reply.status(201).send(ticketing.createClub(req.body))
-  );
+  app.post<{
+    Body: {
+      organizerId: string;
+      name: string;
+      city?: string;
+      fidelityPriceCents?: number;
+      fidelityUses?: number;
+      ragioneSociale?: string;
+      piva?: string;
+      sedeLegale?: string;
+      pec?: string;
+      sdi?: string;
+      iban?: string;
+      genre?: string;
+      color?: string;
+    };
+  }>("/clubs", async (req, reply) => reply.status(201).send(ticketing.createClub(req.body)));
   app.get("/clubs", async () => ticketing.listClubs());
   app.get<{Params: {id: string}}>("/clubs/:id", async (req) => ticketing.getClub(req.params.id));
   app.get<{Params: {id: string}}>("/clubs/:id/events", async (req) => {
@@ -183,10 +200,17 @@ export function buildServer(
   );
 
   // -------- eventi
-  app.post<{Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number}}>(
-    "/events",
-    async (req, reply) => reply.status(201).send(ticketing.createEvent(req.body))
-  );
+  app.post<{
+    Body: {
+      organizerId: string;
+      title: string;
+      venue: string;
+      date: string;
+      priceCents: number;
+      capacity: number;
+      status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
+    };
+  }>("/events", async (req, reply) => reply.status(201).send(ticketing.createEvent(req.body)));
   app.get("/events", async () => ticketing.listEvents());
   app.get<{Params: {id: string}}>("/events/:id", async (req) => ticketing.getEvent(req.params.id));
 
@@ -259,6 +283,51 @@ export function buildServer(
   app.post<{Params: {id: string}; Body: {ownerId: string; mode: "FREE" | "ENFORCED"}}>(
     "/tickets/:id/export",
     async (req) => ticketing.exportTicket(req.params.id, req.body.ownerId, req.body.mode)
+  );
+
+  // -------- contenuti editoriali (B5): artisti, blog, news
+  app.get("/artists", async () => content.listArtists());
+  app.post<{Params: {id: string}}>(
+    "/artists/:id/follow",
+    async (req) => content.followArtist(req.params.id)
+  );
+  app.get("/blog", async () => content.listBlog());
+  app.get<{Params: {slug: string}}>("/blog/:slug", async (req) => content.getBlogBySlug(req.params.slug));
+  app.get("/news", async () => content.listNews());
+
+  // -------- console organizzatore (B6): dashboard, incassi, accessi, varchi
+  app.get<{Params: {id: string}}>("/organizers/:id/dashboard", async (req) => consoleSvc.dashboard(req.params.id));
+  app.get<{Params: {id: string}}>("/organizers/:id/incassi", async (req) => consoleSvc.incassi(req.params.id));
+  app.get<{Params: {id: string}}>("/events/:id/accessi", async (req) => consoleSvc.eventAccess(req.params.id));
+
+  app.get<{Params: {id: string}}>("/events/:id/validators", async (req) => ticketing.listValidators(req.params.id));
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/validators",
+    async (req, reply) => reply.status(201).send(ticketing.createValidator(req.params.id, req.body.organizerId))
+  );
+
+  // -------- console piattaforma (B6): ricavi dal ledger + GMV + conteggio P2P
+  app.get("/platform/revenue", async () => consoleSvc.platformRevenue());
+
+  // -------- KYC organizzatore (B7): submit (org) + decision (admin)
+  app.post<{Params: {id: string}}>(
+    "/organizers/:id/kyc/submit",
+    async (req) => ticketing.submitKyc(req.params.id)
+  );
+  app.post<{Params: {id: string}; Body: {decision: "VERIFIED" | "REJECTED"}}>(
+    "/organizers/:id/kyc/decision",
+    async (req, reply) => {
+      if (req.headers["x-admin-token"] !== adminToken) {
+        return reply.status(403).send({error: "FORBIDDEN", message: "richiede token admin"});
+      }
+      return ticketing.decideKyc(req.params.id, req.body.decision);
+    }
+  );
+
+  // -------- pubblicazione evento con gate KYC (B7): DRAFT → ON_SALE
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/publish",
+    async (req) => ticketing.publishEvent(req.params.id, req.body.organizerId)
   );
 
   // -------- pagamenti (M7)

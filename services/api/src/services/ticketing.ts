@@ -4,6 +4,7 @@ import {
   type Club,
   DomainError,
   type Event,
+  type EventStatus,
   type EventType,
   NotFound,
   type Order,
@@ -12,7 +13,8 @@ import {
   type Transfer,
   type TransferMode,
   type Validation,
-  type ValidationOutcome
+  type ValidationOutcome,
+  type Validator
 } from "../domain/models";
 import {MemoryStore} from "../repo/memory";
 import {
@@ -60,9 +62,12 @@ export class TicketingService {
     phone?: string;
     walletAddress?: string;
   }): Account {
+    const role = input.role ?? "CLIENTE";
     const account: Account = {
       id: this.store.id("acc"),
-      role: input.role ?? "CLIENTE",
+      role,
+      // KYC solo per gli organizzatori: parte da NONE (deve essere verificato per pubblicare)
+      kycStatus: role === "ORGANIZER" ? "NONE" : undefined,
       nome: input.nome,
       cognome: input.cognome,
       email: input.email,
@@ -172,6 +177,7 @@ export class TicketingService {
     type?: EventType;
     priceCents: number;
     capacity: number;
+    status?: EventStatus;
   }): Event {
     this.getAccount(input.organizerId);
     if (input.priceCents < 0 || input.capacity <= 0) {
@@ -188,7 +194,7 @@ export class TicketingService {
       priceCents: input.priceCents,
       capacity: input.capacity,
       sold: 0,
-      status: "ON_SALE"
+      status: input.status ?? "ON_SALE"
     };
     this.store.events.set(event.id, event);
     return event;
@@ -204,8 +210,81 @@ export class TicketingService {
     return e;
   }
 
+  // ----------------------------------------------- KYC organizzatore (B7)
+  /** L'organizzatore invia il KYC: da NONE/REJECTED passa a PENDING. */
+  submitKyc(organizerId: string): Account {
+    const org = this.getAccount(organizerId);
+    if (org.role !== "ORGANIZER") throw new DomainError("NOT_ORGANIZER", "non è un organizzatore", 409);
+    const status = org.kycStatus ?? "NONE";
+    if (status !== "NONE" && status !== "REJECTED") {
+      throw new DomainError("KYC_STATE", `KYC non inviabile dallo stato ${status}`, 409);
+    }
+    org.kycStatus = "PENDING";
+    return org;
+  }
+
+  /** Decisione admin sul KYC: VERIFIED o REJECTED (il gating del token è in server.ts). */
+  decideKyc(organizerId: string, decision: "VERIFIED" | "REJECTED"): Account {
+    const org = this.getAccount(organizerId);
+    if (org.role !== "ORGANIZER") throw new DomainError("NOT_ORGANIZER", "non è un organizzatore", 409);
+    if (decision !== "VERIFIED" && decision !== "REJECTED") {
+      throw new DomainError("INVALID_DECISION", "decisione non valida", 400);
+    }
+    org.kycStatus = decision;
+    return org;
+  }
+
+  /** Pubblica un evento DRAFT → ON_SALE; solo l'organizzatore proprietario e con KYC verificato. */
+  publishEvent(eventId: string, organizerId: string): Event {
+    const event = this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    const org = this.getAccount(organizerId);
+    if ((org.kycStatus ?? "NONE") !== "VERIFIED") {
+      throw new DomainError("KYC_REQUIRED", "KYC organizzatore non verificato", 403);
+    }
+    if (event.status === "ON_SALE") return event; // idempotente
+    if (event.status !== "DRAFT") throw new DomainError("NOT_DRAFT", "evento non in bozza", 409);
+    event.status = "ON_SALE";
+    return event;
+  }
+
+  // ------------------------------------------------ varchi / validatori (B6)
+  /** Crea un varco (gate) per l'evento; solo l'organizzatore proprietario. */
+  createValidator(eventId: string, organizerId: string): Validator {
+    const event = this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    const code = "VARCO-" + Math.floor(1000 + Math.random() * 9000);
+    const validator: Validator = {
+      id: this.store.id("gate"),
+      eventId: event.id,
+      code,
+      createdAt: this.now()
+    };
+    this.store.validators.set(validator.id, validator);
+    return validator;
+  }
+
+  listValidators(eventId: string): Validator[] {
+    this.getEvent(eventId);
+    return this.store.validatorsByEvent(eventId);
+  }
+
   // -------------------------------------------------------------- club (M9)
-  createClub(input: {organizerId: string; name: string; city?: string; fidelityPriceCents?: number; fidelityUses?: number}): Club {
+  createClub(input: {
+    organizerId: string;
+    name: string;
+    city?: string;
+    fidelityPriceCents?: number;
+    fidelityUses?: number;
+    ragioneSociale?: string;
+    piva?: string;
+    sedeLegale?: string;
+    pec?: string;
+    sdi?: string;
+    iban?: string;
+    genre?: string;
+    color?: string;
+  }): Club {
     this.getAccount(input.organizerId);
     if (!input.name.trim()) throw new DomainError("INVALID_CLUB", "nome club obbligatorio");
     const club: Club = {
@@ -214,7 +293,15 @@ export class TicketingService {
       name: input.name,
       city: input.city ?? "—",
       fidelityPriceCents: input.fidelityPriceCents ?? 0,
-      fidelityUses: input.fidelityUses ?? 0
+      fidelityUses: input.fidelityUses ?? 0,
+      ragioneSociale: input.ragioneSociale,
+      piva: input.piva,
+      sedeLegale: input.sedeLegale,
+      pec: input.pec,
+      sdi: input.sdi,
+      iban: input.iban,
+      genre: input.genre,
+      color: input.color
     };
     this.store.clubs.set(club.id, club);
     return club;
@@ -623,6 +710,8 @@ export class TicketingService {
 
     ticket.exportMode = mode;
     ticket.exitFeeCents = mode === "FREE" ? exitFeeCents(ticket.originalPriceCents) : 0;
+    // l'export libero versa la fee d'uscita (25%) al ledger di piattaforma
+    if (mode === "FREE") this.store.ledger.exitFeeCents += ticket.exitFeeCents;
     ticket.status = "EXPORTED";
     return ticket;
   }

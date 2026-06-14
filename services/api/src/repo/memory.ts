@@ -1,4 +1,19 @@
-import type {Account, Club, Event, Ledger, Order, PendingRegistration, Ticket, Tier, Transfer, Validation} from "../domain/models";
+import type {
+  Account,
+  Artist,
+  BlogPost,
+  Club,
+  Event,
+  Ledger,
+  News,
+  Order,
+  PendingRegistration,
+  Ticket,
+  Tier,
+  Transfer,
+  Validation,
+  Validator
+} from "../domain/models";
 import type {Payment} from "../payments/types";
 
 /**
@@ -15,9 +30,15 @@ export class MemoryStore {
   readonly tickets = new Map<string, Ticket>();
   readonly transfers = new Map<string, Transfer>();
   readonly validations = new Map<string, Validation>();
+  readonly validators = new Map<string, Validator>();
   readonly payments = new Map<string, Payment>();
   readonly pendingRegistrations = new Map<string, PendingRegistration>();
   readonly processedWebhooks = new Set<string>();
+
+  // contenuti editoriali (seedati nel costruttore)
+  readonly artists = new Map<string, Artist>();
+  readonly blogPosts = new Map<string, BlogPost>();
+  readonly news = new Map<string, News>();
 
   /** Ledger di piattaforma: ricavi (commissioni di prevendita, royalty, fee d'uscita). */
   readonly ledger: Ledger = {
@@ -29,6 +50,64 @@ export class MemoryStore {
 
   private seq: Record<string, number> = {};
   private tokenSeq = 0;
+
+  constructor() {
+    this.seedContent();
+  }
+
+  /** Seed dei contenuti editoriali (artisti, blog, news) per la home del sito. */
+  private seedContent(): void {
+    const palette = ["#2f4f8a", "#0a8a5c", "#9c5e00", "#7a3550"];
+    const artists: Array<Omit<Artist, "id">> = [
+      {name: "Charlotte de Witte", genre: "Techno", initials: "CW", color: palette[0]!, followers: 12840},
+      {name: "Adam Beyer", genre: "Techno", initials: "AB", color: palette[1]!, followers: 9760},
+      {name: "Mind Against", genre: "Melodic", initials: "MA", color: palette[2]!, followers: 6420},
+      {name: "Blue Room Quartet", genre: "Jazz", initials: "BR", color: palette[3]!, followers: 2150}
+    ];
+    for (const a of artists) {
+      const id = this.id("art");
+      this.artists.set(id, {id, ...a});
+    }
+
+    const posts: Array<Omit<BlogPost, "id">> = [
+      {
+        slug: "guida-acquisto-biglietti-nft",
+        tag: "GUIDA",
+        title: "Come acquistare un biglietto NFT su TINFT",
+        excerpt: "Dalla registrazione SPID al wallet: il percorso completo per il tuo primo biglietto.",
+        readMins: 5
+      },
+      {
+        slug: "dietro-le-quinte-mint-on-chain",
+        tag: "DIETRO LE QUINTE",
+        title: "Dietro le quinte: come funziona il mint on-chain",
+        excerpt: "Cosa succede quando paghi: escrow, mint del token e ledger di piattaforma.",
+        readMins: 7
+      },
+      {
+        slug: "mercato-secondario-tetto-prezzo",
+        tag: "MERCATO",
+        title: "Mercato secondario: il tetto +5% e la royalty",
+        excerpt: "Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.",
+        readMins: 4
+      }
+    ];
+    for (const p of posts) {
+      const id = this.id("post");
+      this.blogPosts.set(id, {id, ...p});
+    }
+
+    const news: Array<Omit<News, "id">> = [
+      {date: "2026-05-02", title: "TINFT apre le vendite per la stagione estiva"},
+      {date: "2026-05-18", title: "Nuovi club partner a Milano e Bologna"},
+      {date: "2026-06-01", title: "Aggiornamento: export libero con fee d'uscita 25%"},
+      {date: "2026-06-10", title: "Charlotte de Witte annuncia una data esclusiva"}
+    ];
+    for (const n of news) {
+      const id = this.id("news");
+      this.news.set(id, {id, ...n});
+    }
+  }
 
   id(prefix: string): string {
     this.seq[prefix] = (this.seq[prefix] ?? 0) + 1;
@@ -91,5 +170,26 @@ export class MemoryStore {
 
   paymentByProviderRef(ref: string): Payment | undefined {
     return [...this.payments.values()].find((p) => p.providerRef === ref);
+  }
+
+  // -------- query per console organizzatore / piattaforma --------------------
+
+  eventsByOrganizer(organizerId: string): Event[] {
+    return [...this.events.values()].filter((e) => e.organizerId === organizerId);
+  }
+
+  blogBySlug(slug: string): BlogPost | undefined {
+    return [...this.blogPosts.values()].find((p) => p.slug === slug);
+  }
+
+  validationsByEvent(eventId: string): Validation[] {
+    return [...this.validations.values()].filter((v) => {
+      const ticket = this.tickets.get(v.ticketId);
+      return !!ticket && ticket.eventId === eventId;
+    });
+  }
+
+  validatorsByEvent(eventId: string): Validator[] {
+    return [...this.validators.values()].filter((g) => g.eventId === eventId);
   }
 }
