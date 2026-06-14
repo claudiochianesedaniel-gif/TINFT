@@ -1,7 +1,10 @@
-// TINFT — modello dati (M6). Sorgente: docs/SPEC-VERIFICATA.md §3 + collegamenti on-chain.
-// Gli importi monetari sono in CENTESIMI di euro (Int) per coerenza con i contratti.
-// NB: l'integrazione runtime (PrismaClient + Postgres) viene attivata nel prossimo
-// step di M6; qui lo schema è la specifica del modello dati.
+// TINFT — modello dati (M6, v2). Sorgente: docs/SPEC-VERIFICATA.md §3 + i prototipi v2.
+// Importi monetari in CENTESIMI di euro (Int) per coerenza con i contratti on-chain.
+// NB: questo è il BLUEPRINT di persistenza. Il runtime attuale è in-memory (MemoryStore,
+// coperto dai test); l'integrazione PrismaClient + Postgres si attiva in fase di deploy
+// (eseguire `prisma validate` / `prisma migrate` quando il DB è disponibile).
+// I dati personali (PII) sono memorizzati cifrati a riposo a livello applicativo; on-chain
+// finisce SOLO l'hash del codice fiscale (cfHash).
 
 generator client {
   provider = "prisma-client-js"
@@ -19,6 +22,13 @@ enum AccountRole {
   PLATFORM
 }
 
+enum KycStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 enum EventType {
   TICKET_NFT
   FIDELITY
@@ -33,14 +43,19 @@ enum EventStatus {
 
 enum TicketStatus {
   ACTIVE // attivo
-  LISTED // in vendita (escrow)
+  LISTED // in vendita sul mercato secondario
   USED // validato al varco (collectible)
   EXPORTED // esportato
 }
 
+enum TicketKind {
+  EVENT
+  FIDELITY // carnet del club
+}
+
 enum ExportMode {
   NONE
-  FREE // rilascio libero (fee 25%)
+  FREE // rilascio libero (fee d'uscita 25%)
   ENFORCED // royalty 1% per sempre
 }
 
@@ -56,6 +71,12 @@ enum TransferStatus {
   RECLAIMED // tornato al venditore (timeout/annullo)
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 enum ValidationOutcome {
   VALID
   SCREENSHOT // codice non rotante/scaduto
@@ -67,20 +88,32 @@ enum ValidationOutcome {
 model Account {
   id            String      @id @default(cuid())
   role          AccountRole @default(CLIENTE)
+  kycStatus     KycStatus?  // solo organizzatore: gate alla pubblicazione eventi
   nome          String
   cognome       String
   email         String      @unique
-  // SPID: in chiaro off-chain (cifrato a livello applicativo), on-chain solo l'hash
+  // Identità: on-chain SOLO l'hash; PII in chiaro cifrate a riposo a livello applicativo.
   cfHash        String?     @unique // keccak256(CF + salt)
+  cf            String? // codice fiscale (cifrato a riposo)
+  dateOfBirth   String?
+  placeOfBirth  String?
+  gender        String?
+  address       String? // indirizzo di residenza
+  city          String?
+  zip           String?
+  province      String?
+  phone         String?
+  username      String?
   verified      Boolean     @default(false)
   walletAddress String?     @unique // smart account (account abstraction)
   goodwill      Int         @default(0)
   createdAt     DateTime    @default(now())
 
-  organizer       Organizer?
-  ticketsOwned    Ticket[]   @relation("TicketOwner")
-  transfersFrom   Transfer[] @relation("TransferFrom")
-  transfersTo     Transfer[] @relation("TransferTo")
+  organizer     Organizer?
+  ticketsOwned  Ticket[]   @relation("TicketOwner")
+  transfersFrom Transfer[] @relation("TransferFrom")
+  transfersTo   Transfer[] @relation("TransferTo")
+  orders        Order[]
 
   @@index([role])
 }
@@ -92,30 +125,95 @@ model Organizer {
   name         String
   piva         String  @unique
   payoutWallet String?
-  events       Event[]
+
+  events Event[]
+  clubs  Club[]
+}
+
+model Club {
+  id                 String   @id @default(cuid())
+  organizer          Organizer @relation(fields: [organizerId], references: [id])
+  organizerId        String
+  name               String
+  city               String
+  fidelityPriceCents Int      @default(0) // 0 = nessun Fidelity
+  fidelityUses       Int      @default(0)
+  // dati societari / fatturazione del locale/esercente
+  ragioneSociale     String?
+  piva               String?
+  sedeLegale         String?
+  pec                String?
+  sdi                String? // codice destinatario SDI
+  iban               String?
+  genre              String?
+  color              String?
+  createdAt          DateTime @default(now())
+
+  events Event[]
+
+  @@index([organizerId])
 }
 
 model Event {
-  id                 String      @id @default(cuid())
-  organizer          Organizer   @relation(fields: [organizerId], references: [id])
-  organizerId        String
-  title              String
-  venue              String
-  date               String
-  type               EventType   @default(TICKET_NFT)
-  priceCents         Int
-  capacity           Int
-  sold               Int         @default(0)
-  status             EventStatus @default(DRAFT)
-  onchainCollection  String? // indirizzo collezione ERC-721 su Base
-  onchainEventId     BigInt? // eventId on-chain
-  createdAt          DateTime    @default(now())
+  id                String      @id @default(cuid())
+  organizer         Organizer   @relation(fields: [organizerId], references: [id])
+  organizerId       String
+  club              Club?       @relation(fields: [clubId], references: [id])
+  clubId            String?
+  title             String
+  venue             String
+  date              String
+  type              EventType   @default(TICKET_NFT)
+  priceCents        Int
+  capacity          Int
+  sold              Int         @default(0)
+  status            EventStatus @default(DRAFT)
+  onchainCollection String? // indirizzo collezione ERC-721 su Base
+  onchainEventId    BigInt? // eventId on-chain
+  createdAt         DateTime    @default(now())
 
+  tiers      Tier[]
   tickets    Ticket[]
+  orders     Order[]
   validators Validator[]
 
   @@index([organizerId])
+  @@index([clubId])
   @@index([status])
+}
+
+model Tier {
+  id         String  @id @default(cuid())
+  event      Event   @relation(fields: [eventId], references: [id])
+  eventId    String
+  name       String
+  priceCents Int
+  note       String?
+  soldOut    Boolean @default(false)
+
+  @@index([eventId])
+}
+
+model Order {
+  id                     String      @id @default(cuid())
+  buyer                  Account     @relation(fields: [buyerId], references: [id])
+  buyerId                String
+  event                  Event       @relation(fields: [eventId], references: [id])
+  eventId                String
+  tierId                 String?
+  quantity               Int
+  unitPriceCents         Int
+  presaleCommissionCents Int // commissione di prevendita 10% per biglietto (solo TINFT)
+  feeTotalCents          Int
+  subtotalCents          Int
+  totalCents             Int
+  status                 OrderStatus @default(PENDING)
+  createdAt              DateTime    @default(now())
+
+  tickets Ticket[]
+
+  @@index([buyerId])
+  @@index([eventId])
 }
 
 model Ticket {
@@ -124,12 +222,20 @@ model Ticket {
   eventId            String
   owner              Account      @relation("TicketOwner", fields: [ownerId], references: [id])
   ownerId            String
+  order              Order?       @relation(fields: [orderId], references: [id])
+  orderId            String?
   tokenId            BigInt // id on-chain
+  kind               TicketKind   @default(EVENT)
+  clubId             String? // Fidelity: club di appartenenza
   originalPriceCents Int // base immutabile della royalty 1%
   paidCents          Int // costo base corrente (tetto +5%)
   status             TicketStatus @default(ACTIVE)
   exportMode         ExportMode   @default(NONE)
   exitFeeCents       Int          @default(0)
+  askPriceCents      Int? // prezzo richiesto sul mercato secondario (status LISTED)
+  market             String? // etichetta mercato, es. "Re-Selling"
+  uses               Int? // Fidelity: ingressi totali
+  used               Int? // Fidelity: ingressi consumati
   holderName         String
   txHash             String? // tx di mint on-chain
   createdAt          DateTime     @default(now())
@@ -139,26 +245,27 @@ model Ticket {
 
   @@unique([eventId, tokenId])
   @@index([ownerId])
+  @@index([orderId])
   @@index([status])
 }
 
 model Transfer {
-  id                     String         @id @default(cuid())
-  ticket                 Ticket         @relation(fields: [ticketId], references: [id])
-  ticketId               String
-  from                   Account        @relation("TransferFrom", fields: [fromId], references: [id])
-  fromId                 String
-  to                     Account?       @relation("TransferTo", fields: [toId], references: [id])
-  toId                   String?
-  mode                   TransferMode
-  priceCents             Int            @default(0)
-  royaltyCents           Int            @default(0)
-  royaltyTinftCents      Int            @default(0)
-  royaltyOrganizerCents  Int            @default(0)
-  status                 TransferStatus
-  ttlSeconds             Int            @default(600)
-  txHash                 String?
-  createdAt              DateTime       @default(now())
+  id                    String         @id @default(cuid())
+  ticket                Ticket         @relation(fields: [ticketId], references: [id])
+  ticketId              String
+  from                  Account        @relation("TransferFrom", fields: [fromId], references: [id])
+  fromId                String
+  to                    Account?       @relation("TransferTo", fields: [toId], references: [id])
+  toId                  String?
+  mode                  TransferMode
+  priceCents            Int            @default(0)
+  royaltyCents          Int            @default(0)
+  royaltyTinftCents     Int            @default(0)
+  royaltyOrganizerCents Int            @default(0)
+  status                TransferStatus
+  ttlSeconds            Int            @default(600)
+  txHash                String?
+  createdAt             DateTime       @default(now())
 
   @@index([ticketId])
   @@index([status])
@@ -189,4 +296,37 @@ model Validation {
 
   @@index([ticketId])
   @@index([validatorId])
+}
+
+// Registrazione email in attesa di verifica OTP (non ancora un account).
+model EmailVerification {
+  email     String   @id
+  code      String // OTP a 6 cifre
+  createdAt DateTime @default(now())
+}
+
+// ---- contenuti editoriali (artisti, blog, news) per sito/app -----------------
+
+model Artist {
+  id        String @id @default(cuid())
+  name      String
+  genre     String
+  initials  String
+  color     String
+  followers Int    @default(0)
+}
+
+model BlogPost {
+  id       String @id @default(cuid())
+  slug     String @unique
+  tag      String
+  title    String
+  excerpt  String
+  readMins Int
+}
+
+model News {
+  id    String @id @default(cuid())
+  date  String
+  title String
 }
