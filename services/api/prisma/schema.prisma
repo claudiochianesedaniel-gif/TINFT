@@ -104,6 +104,7 @@ model Account {
   province      String?
   phone         String?
   username      String?
+  passwordHash  String? // hash scrypt (salt:hash) per il login email/password
   verified      Boolean     @default(false)
   walletAddress String?     @unique // smart account (account abstraction)
   goodwill      Int         @default(0)

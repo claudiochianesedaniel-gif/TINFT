@@ -1,5 +1,5 @@
 import {NotFound} from "../domain/models";
-import type {MemoryStore} from "../repo/memory";
+import type {Store} from "../repo/store";
 
 export interface OrganizerDashboard {
   grossCents: number; // Σ(event.sold × event.priceCents) sugli eventi dell'org
@@ -37,36 +37,37 @@ export interface PlatformRevenue {
  * accessi live) e per la piattaforma (ricavi dal ledger). Nessuna mutazione.
  */
 export class ConsoleService {
-  constructor(private readonly store: MemoryStore) {}
+  constructor(private readonly store: Store) {}
 
   // ----------------------------------------------------------- organizzatore
-  dashboard(organizerId: string): OrganizerDashboard {
-    this.getOrganizer(organizerId);
-    const events = this.store.eventsByOrganizer(organizerId);
+  async dashboard(organizerId: string): Promise<OrganizerDashboard> {
+    await this.getOrganizer(organizerId);
+    const events = await this.store.eventsByOrganizer(organizerId);
     const eventIds = new Set(events.map((e) => e.id));
 
     const grossCents = events.reduce((sum, e) => sum + e.sold * e.priceCents, 0);
     const ticketsSold = events.reduce((sum, e) => sum + e.sold, 0);
     const eventsOnSale = events.filter((e) => e.status === "ON_SALE").length;
 
-    const validated = [...this.store.validations.values()].filter((v) => {
-      if (v.outcome !== "VALID") return false;
-      const ticket = this.store.tickets.get(v.ticketId);
-      return !!ticket && eventIds.has(ticket.eventId);
-    }).length;
+    let validated = 0;
+    for (const v of await this.store.listValidations()) {
+      if (v.outcome !== "VALID") continue;
+      const ticket = await this.store.getTicket(v.ticketId);
+      if (ticket && eventIds.has(ticket.eventId)) validated++;
+    }
 
-    const royaltyOrganizerCents = [...this.store.transfers.values()].reduce((sum, x) => {
-      if (x.status !== "DONE") return sum;
-      const ticket = this.store.tickets.get(x.ticketId);
-      if (!ticket || !eventIds.has(ticket.eventId)) return sum;
-      return sum + x.royaltyOrganizerCents;
-    }, 0);
+    let royaltyOrganizerCents = 0;
+    for (const x of await this.store.listTransfers()) {
+      if (x.status !== "DONE") continue;
+      const ticket = await this.store.getTicket(x.ticketId);
+      if (ticket && eventIds.has(ticket.eventId)) royaltyOrganizerCents += x.royaltyOrganizerCents;
+    }
 
     return {grossCents, ticketsSold, eventsOnSale, validated, royaltyOrganizerCents};
   }
 
-  incassi(organizerId: string): OrganizerIncassi {
-    const d = this.dashboard(organizerId);
+  async incassi(organizerId: string): Promise<OrganizerIncassi> {
+    const d = await this.dashboard(organizerId);
     // Nessuna trattenuta TINFT sul primario: il compratore ha già pagato la prevendita 10%.
     const netCents = d.grossCents + d.royaltyOrganizerCents;
     return {
@@ -79,39 +80,38 @@ export class ConsoleService {
   }
 
   /** Accessi live (read-only): specchio delle validazioni dei biglietti dell'evento. */
-  eventAccess(eventId: string): EventAccess {
-    const event = this.store.events.get(eventId);
+  async eventAccess(eventId: string): Promise<EventAccess> {
+    const event = await this.store.getEvent(eventId);
     if (!event) throw NotFound("evento");
 
-    const validations = this.store.validationsByEvent(eventId);
+    const validations = await this.store.validationsByEvent(eventId);
     const validated = validations.filter((v) => v.outcome === "VALID").length;
 
-    const recentEntries = [...validations]
-      .sort((a, b) => b.at - a.at)
-      .slice(0, 10)
-      .map((v) => ({
-        holderName: this.store.tickets.get(v.ticketId)?.holderName ?? "—",
-        outcome: v.outcome,
-        at: v.at
-      }));
+    const ordered = [...validations].sort((a, b) => b.at - a.at).slice(0, 10);
+    const recentEntries = [];
+    for (const v of ordered) {
+      const ticket = await this.store.getTicket(v.ticketId);
+      recentEntries.push({holderName: ticket?.holderName ?? "—", outcome: v.outcome, at: v.at});
+    }
 
     return {capacity: event.capacity, validated, recentEntries};
   }
 
   // -------------------------------------------------------------- piattaforma
-  platformRevenue(): PlatformRevenue {
-    const {presaleCommissionCents, royaltyTinftCents, exitFeeCents} = this.store.ledger;
+  async platformRevenue(): Promise<PlatformRevenue> {
+    const {presaleCommissionCents, royaltyTinftCents, exitFeeCents} = await this.store.getLedger();
     const totalCents = presaleCommissionCents + royaltyTinftCents + exitFeeCents;
-    const gmvPrimaryCents = [...this.store.events.values()].reduce((sum, e) => sum + e.sold * e.priceCents, 0);
-    const p2pCount = [...this.store.transfers.values()].filter(
+    const events = await this.store.listEvents();
+    const gmvPrimaryCents = events.reduce((sum, e) => sum + e.sold * e.priceCents, 0);
+    const p2pCount = (await this.store.listTransfers()).filter(
       (x) => x.mode === "PAYMENT" && x.status === "DONE"
     ).length;
     return {presaleCommissionCents, royaltyTinftCents, exitFeeCents, totalCents, gmvPrimaryCents, p2pCount};
   }
 
   // ------------------------------------------------------------------ helper
-  private getOrganizer(id: string) {
-    const a = this.store.accounts.get(id);
+  private async getOrganizer(id: string) {
+    const a = await this.store.getAccount(id);
     if (!a) throw NotFound("account");
     return a;
   }

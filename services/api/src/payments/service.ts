@@ -1,5 +1,5 @@
 import {NotFound} from "../domain/models";
-import {MemoryStore} from "../repo/memory";
+import type {Store} from "../repo/store";
 import {TicketingService} from "../services/ticketing";
 import type {ChainPort} from "../chain/port";
 import type {PaymentProvider} from "./provider";
@@ -20,7 +20,7 @@ export interface WebhookResult {
  */
 export class PaymentsService {
   constructor(
-    private readonly store: MemoryStore,
+    private readonly store: Store,
     private readonly ticketing: TicketingService,
     private readonly provider: PaymentProvider,
     private readonly chain: ChainPort,
@@ -31,8 +31,8 @@ export class PaymentsService {
     eventId: string,
     buyerId: string
   ): Promise<{payment: Payment; session: {providerRef: string; url: string}}> {
-    const event = this.ticketing.getEvent(eventId);
-    if (!this.store.accounts.get(buyerId)) throw NotFound("account");
+    const event = await this.ticketing.getEvent(eventId);
+    if (!(await this.store.getAccount(buyerId))) throw NotFound("account");
 
     const session = await this.provider.createCheckout({
       kind: "PRIMARY",
@@ -52,7 +52,7 @@ export class PaymentsService {
       providerRef: session.providerRef,
       createdAt: this.now()
     };
-    this.store.payments.set(payment.id, payment);
+    await this.store.createPayment(payment);
     return {payment, session};
   }
 
@@ -65,14 +65,17 @@ export class PaymentsService {
 
   async handleWebhook(event: PspEvent): Promise<WebhookResult> {
     // idempotenza: stesso evento PSP già processato → no-op
-    if (this.store.processedWebhooks.has(event.id)) return {handled: false, deduped: true};
-    this.store.processedWebhooks.add(event.id);
+    if (await this.store.hasProcessedWebhook(event.id)) return {handled: false, deduped: true};
+    await this.store.markProcessedWebhook(event.id);
 
-    const payment = this.store.paymentByProviderRef(event.providerRef);
+    const payment = await this.store.paymentByProviderRef(event.providerRef);
     if (!payment) return {handled: false};
 
     if (event.type === "payment_failed") {
-      if (payment.status === "PENDING") payment.status = "FAILED";
+      if (payment.status === "PENDING") {
+        payment.status = "FAILED";
+        await this.store.updatePayment(payment);
+      }
       return {handled: true, paymentId: payment.id};
     }
     // payment_succeeded — già pagato (difesa anti doppio mint da eventi distinti)
@@ -83,20 +86,21 @@ export class PaymentsService {
 
     let ticketId: string | undefined;
     if (payment.kind === "PRIMARY" && payment.eventId) {
-      const buyer = this.store.accounts.get(payment.accountId);
+      const buyer = await this.store.getAccount(payment.accountId);
       // mint on-chain (TinftTicket.mint) → tokenId + txHash, poi registra il biglietto
       const mint = await this.chain.mintTicket({
         to: buyer?.walletAddress,
         reference: payment.eventId,
         priceCents: payment.amountCents
       });
-      const ticket = this.ticketing.purchasePrimary(payment.eventId, payment.accountId, {
+      const ticket = await this.ticketing.purchasePrimary(payment.eventId, payment.accountId, {
         tokenId: mint.tokenId,
         txHash: mint.txHash
       });
       payment.ticketMintedId = ticket.id;
       ticketId = ticket.id;
     }
+    await this.store.updatePayment(payment);
     return {handled: true, paymentId: payment.id, ticketId};
   }
 }

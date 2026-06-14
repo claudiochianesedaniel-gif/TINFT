@@ -1,37 +1,38 @@
 import type {Artist, BlogPost, News} from "../domain/models";
 import {NotFound} from "../domain/models";
-import type {MemoryStore} from "../repo/memory";
+import type {Store} from "../repo/store";
 
 /**
  * Contenuti editoriali (sola lettura + follow): artisti, blog, news.
- * I dati sono seedati in MemoryStore; questo servizio espone le query usate dal sito.
+ * I dati sono seedati nello Store; questo servizio espone le query usate dal sito.
  */
 export class ContentService {
-  constructor(private readonly store: MemoryStore) {}
+  constructor(private readonly store: Store) {}
 
-  listArtists(): Artist[] {
-    return [...this.store.artists.values()];
+  async listArtists(): Promise<Artist[]> {
+    return this.store.listArtists();
   }
 
   /** Incrementa i follower di un artista e lo restituisce aggiornato. */
-  followArtist(id: string): Artist {
-    const artist = this.store.artists.get(id);
+  async followArtist(id: string): Promise<Artist> {
+    const artist = await this.store.getArtist(id);
     if (!artist) throw NotFound("artista");
     artist.followers += 1;
+    await this.store.updateArtist(artist);
     return artist;
   }
 
-  listBlog(): BlogPost[] {
-    return [...this.store.blogPosts.values()];
+  async listBlog(): Promise<BlogPost[]> {
+    return this.store.listBlogPosts();
   }
 
-  getBlogBySlug(slug: string): BlogPost {
-    const post = this.store.blogBySlug(slug);
+  async getBlogBySlug(slug: string): Promise<BlogPost> {
+    const post = await this.store.blogBySlug(slug);
     if (!post) throw NotFound("articolo");
     return post;
   }
 
-  listNews(): News[] {
-    return [...this.store.news.values()];
+  async listNews(): Promise<News[]> {
+    return this.store.listNews();
   }
 }

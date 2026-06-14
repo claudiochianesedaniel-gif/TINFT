@@ -1,30 +1,33 @@
 # Persistenza dati — TINFT API
 
-## Stato attuale
-- **Runtime di default: in-memory** (`services/api/src/repo/memory.ts`). È completamente coperto dai test (vitest) ed è la sorgente di verità per CI e sviluppo locale rapido. Affidabile e deterministico.
-- **Persistenza Postgres: pronta e verificata a livello di schema.**
-  - Schema: `services/api/prisma/schema.prisma` — validato con `prisma validate` ✅.
-  - Client tipizzato: generabile con `prisma generate` ✅ (`@prisma/client` è già in dipendenze).
-  - Migrazione iniziale: `services/api/prisma/migrations/0_init/migration.sql` — generata da Prisma (11 enum + 14 tabelle + indici + 16 foreign key), applicabile con `prisma migrate deploy`.
+Il backend dipende da un'unica interfaccia **`Store`** (async, `services/api/src/repo/store.ts`) con **due implementazioni**:
 
-## Avviare Postgres in locale
+| Modalità | Quando | Persistenza |
+|---|---|---|
+| **In-memory** (`MemoryStore`) | default (`pnpm dev` senza `DATABASE_URL`) | snapshot JSON su file (`.tinft-data.json`), salvataggio periodico + alla chiusura; sopravvive ai riavvii |
+| **PostgreSQL** (`PrismaStore`) | quando `DATABASE_URL` è impostata | relazionale su Postgres via Prisma |
+
+`index.ts` sceglie lo store da `DATABASE_URL`. Il percorso in-memory non carica nemmeno `@prisma/client` (import lazy), quindi il prototipo gira senza DB.
+
+## Avviare con PostgreSQL
 ```bash
-# 1) DB via docker compose (dalla root del repo)
-docker compose up -d db                     # Postgres 16 su localhost:5432 (tinft/tinft)
+# 1) Postgres (docker oppure locale). Esempio docker:
+docker compose up -d db                       # vedi docker-compose.yml (tinft/tinft)
 
-# 2) applica lo schema
+# 2) applica le migrazioni + genera il client
 cd services/api
 export DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft
-pnpm prisma:deploy                          # esegue prisma/migrations
-pnpm prisma:studio                          # (opzionale) ispeziona i dati
+pnpm prisma:deploy                            # applica prisma/migrations (0_init, 1_add_password_hash)
+pnpm prisma:generate                          # (postinstall lo fa già su pnpm install)
+
+# 3) avvia in modalità Postgres
+DATABASE_URL=$DATABASE_URL pnpm dev           # log: "store: PostgreSQL"
 ```
-Le stesse variabili sono in `.env.example` (`DATABASE_URL`).
 
-## Passo finale per far persistere l'app su Postgres
-I servizi applicativi (`src/services/*.ts`) oggi leggono/scrivono sullo store **in modo sincrono** (Map in memoria), mentre Prisma è **asincrono**. Per far sì che l'app usi davvero Postgres serve:
-1. estrarre un'interfaccia `Store` (già di fatto implementata da `MemoryStore`);
-2. implementare un `PrismaStore` che la soddisfa con query Prisma;
-3. rendere **async** i metodi dei servizi (e gli handler già lo sono) e aggiornare i test;
-4. selezionare lo store da `DATABASE_URL` (presente → `PrismaStore`, assente → `MemoryStore`).
+## Verificato
+- Suite completa su MemoryStore: **87 test** (+ test di integrazione PG saltato senza `DATABASE_URL`).
+- Test di integrazione **contro Postgres reale** (`src/repo/prisma-store.it.test.ts`, attivo con `DATABASE_URL`): flusso completo account→club→evento+tier→ordine (prevendita 10%)→pay/mint→mercato (royalty 1%)→validazione→console, con verifica delle righe nel DB.
+- Smoke server in modalità Postgres: dati realmente persistiti nelle tabelle (`Account`, `Event`, `Order`, `Ticket`, `Transfer`…); login email/password via colonna `passwordHash`.
 
-È un refactor ampio e va fatto **con il DB attivo e i test eseguiti contro Postgres** (non alla cieca), per non intaccare l'affidabilità del runtime in-memory già testato. Lo schema, la migrazione e il client sono già pronti, quindi il lavoro residuo è il cablaggio del repository + la conversione async.
+## Limitazioni note del percorso Postgres (TODO produzione)
+Lo schema relazionale copre le entità di dominio. Restano **in memoria di processo** anche in modalità PG (non ancora mappati su tabelle): **ledger** ricavi piattaforma (derivabile), **pagamenti PSP**, **registrazioni email OTP in attesa**, **dedup webhook**. Sono operativi/transitori; aggiungerli come tabelle dedicate è il passo successivo. I biglietti **Fidelity** (senza evento) non sono supportati sul percorso PG (FK evento obbligatoria).

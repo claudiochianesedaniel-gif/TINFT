@@ -5,6 +5,7 @@
   "type": "module",
   "description": "TINFT backend API (eventi, biglietti, trasferimenti, account) — M6+",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

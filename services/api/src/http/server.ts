@@ -2,6 +2,7 @@ import Fastify, {type FastifyInstance, type preHandlerHookHandler} from "fastify
 import fastifyCors from "@fastify/cors";
 import {DomainError} from "../domain/models";
 import {MemoryStore} from "../repo/memory";
+import type {Store} from "../repo/store";
 import {TicketingService} from "../services/ticketing";
 import {ContentService} from "../services/content";
 import {ConsoleService} from "../services/console";
@@ -63,9 +64,9 @@ function providerFromEnv(): PaymentProvider | undefined {
  * (store condiviso). Testabile via `app.inject` senza rete né DB.
  */
 export function buildServer(
-  opts: {store?: MemoryStore; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier; rateLimit?: boolean} = {}
+  opts: {store?: Store; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier; rateLimit?: boolean} = {}
 ): FastifyInstance {
-  const store = opts.store ?? new MemoryStore();
+  const store: Store = opts.store ?? new MemoryStore();
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
   const ticketing = new TicketingService(store, undefined, verifier);
@@ -174,8 +175,11 @@ export function buildServer(
     };
   }>("/accounts", async (req, reply) => {
     const {password, ...rest} = req.body;
-    const account = ticketing.createAccount(rest);
-    if (password) setPassword(account, password);
+    const account = await ticketing.createAccount(rest);
+    if (password) {
+      setPassword(account, password);
+      await store.updateAccount(account);
+    }
     return reply.status(201).send(account);
   });
 
@@ -199,7 +203,7 @@ export function buildServer(
   }>("/register", async (req, reply) => {
     const b = req.body;
     const id = verifier.verify({cf: b.cf, nome: b.nome, cognome: b.cognome});
-    const account = ticketing.createAccount({
+    const account = await ticketing.createAccount({
       role: "CLIENTE",
       nome: b.nome,
       cognome: b.cognome,
@@ -215,7 +219,10 @@ export function buildServer(
       province: b.province,
       phone: b.phone
     });
-    if (b.password) setPassword(account, b.password);
+    if (b.password) {
+      setPassword(account, b.password);
+      await store.updateAccount(account);
+    }
     return reply.status(201).send(account);
   });
 
@@ -237,15 +244,15 @@ export function buildServer(
       username?: string;
       password?: string;
     };
-  }>("/auth/register/email", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => reply.status(201).send(ticketing.startEmailRegistration(req.body)));
+  }>("/auth/register/email", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => reply.status(201).send(await ticketing.startEmailRegistration(req.body)));
 
   app.post<{Body: {email: string; code: string}}>("/auth/register/email/verify", async (req, reply) =>
-    reply.status(201).send(ticketing.verifyEmailRegistration(req.body.email, req.body.code))
+    reply.status(201).send(await ticketing.verifyEmailRegistration(req.body.email, req.body.code))
   );
 
   // -------- login: email + password → token + account
   app.post<{Body: {email: string; password: string}}>("/auth/login", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => {
-    const account = ticketing.findAccountByEmail(req.body.email ?? "");
+    const account = await ticketing.findAccountByEmail(req.body.email ?? "");
     if (!account || !verifyPassword(account, req.body.password ?? "")) {
       throw new DomainError("BAD_CREDENTIALS", "credenziali non valide", 401);
     }
@@ -267,7 +274,7 @@ export function buildServer(
   app.post<{Body: {accountId: string; cf: string; salt?: string}}>("/identity/spid/verify", async (req) => {
     const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});
     return ticketing.verifyIdentity(req.body.accountId, identity.cfHash);
-  });
+  }); // deleteAccount/verifyIdentity restituiscono Promise → Fastify le risolve
 
   // -------- club & eventi del club (M9)
   app.post<{
@@ -288,12 +295,12 @@ export function buildServer(
     };
   }>("/clubs", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
     assertSelf(req, req.body.organizerId);
-    return reply.status(201).send(ticketing.createClub(req.body));
+    return reply.status(201).send(await ticketing.createClub(req.body));
   });
   app.get("/clubs", async () => ticketing.listClubs());
   app.get<{Params: {id: string}}>("/clubs/:id", async (req) => ticketing.getClub(req.params.id));
   app.get<{Params: {id: string}}>("/clubs/:id/events", async (req) => {
-    ticketing.getClub(req.params.id);
+    await ticketing.getClub(req.params.id);
     return ticketing.clubEvents(req.params.id);
   });
   app.post<{
@@ -301,15 +308,15 @@ export function buildServer(
     Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number};
   }>("/clubs/:id/events", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
     assertSelf(req, req.body.organizerId);
-    ticketing.getClub(req.params.id);
-    return reply.status(201).send(ticketing.createEvent({...req.body, clubId: req.params.id}));
+    await ticketing.getClub(req.params.id);
+    return reply.status(201).send(await ticketing.createEvent({...req.body, clubId: req.params.id}));
   });
   app.post<{Params: {id: string}; Body: {buyerId: string}}>(
     "/clubs/:id/fidelity",
     {preHandler: authenticate},
     async (req, reply) => {
       assertSelf(req, req.body.buyerId);
-      return reply.status(201).send(ticketing.purchaseFidelity(req.params.id, req.body.buyerId));
+      return reply.status(201).send(await ticketing.purchaseFidelity(req.params.id, req.body.buyerId));
     }
   );
 
@@ -326,7 +333,7 @@ export function buildServer(
     };
   }>("/events", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
     assertSelf(req, req.body.organizerId);
-    return reply.status(201).send(ticketing.createEvent(req.body));
+    return reply.status(201).send(await ticketing.createEvent(req.body));
   });
   app.get("/events", async () => ticketing.listEvents());
   app.get<{Params: {id: string}}>("/events/:id", async (req) => ticketing.getEvent(req.params.id));
@@ -335,7 +342,7 @@ export function buildServer(
   app.post<{Params: {id: string}; Body: {buyerId: string; holderName?: string}}>(
     "/events/:id/purchase",
     async (req, reply) =>
-      reply.status(201).send(ticketing.purchasePrimary(req.params.id, req.body.buyerId, {holderName: req.body.holderName}))
+      reply.status(201).send(await ticketing.purchasePrimary(req.params.id, req.body.buyerId, {holderName: req.body.holderName}))
   );
 
   // -------- fasce di prezzo (tier) (v2)
@@ -345,7 +352,7 @@ export function buildServer(
     {preHandler: requireRole("ORGANIZER", "PLATFORM")},
     async (req, reply) => {
       assertSelf(req, req.body.organizerId);
-      return reply.status(201).send(ticketing.createTier(req.params.id, req.body));
+      return reply.status(201).send(await ticketing.createTier(req.params.id, req.body));
     }
   );
 
@@ -355,20 +362,20 @@ export function buildServer(
     {preHandler: authenticate},
     async (req, reply) => {
       assertSelf(req, req.body.buyerId);
-      return reply.status(201).send(ticketing.createOrder(req.body));
+      return reply.status(201).send(await ticketing.createOrder(req.body));
     }
   );
   app.post<{Params: {id: string}; Body: Record<string, never>}>(
     "/orders/:id/pay",
     {preHandler: authenticate},
     async (req) => {
-      const order = ticketing.getOrder(req.params.id);
+      const order = await ticketing.getOrder(req.params.id);
       assertSelf(req, order.buyerId);
       return ticketing.payOrder(req.params.id);
     }
   );
   app.get<{Params: {id: string}}>("/orders/:id", {preHandler: authenticate}, async (req) => {
-    const order = ticketing.getOrder(req.params.id);
+    const order = await ticketing.getOrder(req.params.id);
     assertSelf(req, order.buyerId);
     return order;
   });
@@ -399,7 +406,7 @@ export function buildServer(
     {preHandler: authenticate},
     async (req, reply) => {
       assertSelf(req, req.body.ownerId);
-      return reply.status(201).send(ticketing.listTicket(req.params.id, req.body.ownerId, req.body.priceCents));
+      return reply.status(201).send(await ticketing.listTicket(req.params.id, req.body.ownerId, req.body.priceCents));
     }
   );
   app.post<{Params: {id: string}; Body: {ownerId: string}}>(
@@ -417,7 +424,7 @@ export function buildServer(
   }>("/tickets/:id/transfers", {preHandler: authenticate}, async (req, reply) => {
     const {fromId, ...rest} = req.body;
     assertSelf(req, fromId);
-    return reply.status(201).send(ticketing.createTransfer(req.params.id, fromId, rest));
+    return reply.status(201).send(await ticketing.createTransfer(req.params.id, fromId, rest));
   });
 
   app.post<{Params: {id: string}; Body: {toId: string; holderName?: string}}>(
@@ -483,7 +490,7 @@ export function buildServer(
     "/events/:id/accessi",
     {preHandler: requireRole("ORGANIZER", "PLATFORM")},
     async (req) => {
-      assertSelf(req, ticketing.getEvent(req.params.id).organizerId);
+      assertSelf(req, (await ticketing.getEvent(req.params.id)).organizerId);
       return consoleSvc.eventAccess(req.params.id);
     }
   );
@@ -492,7 +499,7 @@ export function buildServer(
     "/events/:id/validators",
     {preHandler: requireRole("ORGANIZER", "PLATFORM")},
     async (req) => {
-      assertSelf(req, ticketing.getEvent(req.params.id).organizerId);
+      assertSelf(req, (await ticketing.getEvent(req.params.id)).organizerId);
       return ticketing.listValidators(req.params.id);
     }
   );
@@ -501,7 +508,7 @@ export function buildServer(
     {preHandler: requireRole("ORGANIZER", "PLATFORM")},
     async (req, reply) => {
       assertSelf(req, req.body.organizerId);
-      return reply.status(201).send(ticketing.createValidator(req.params.id, req.body.organizerId));
+      return reply.status(201).send(await ticketing.createValidator(req.params.id, req.body.organizerId));
     }
   );
 

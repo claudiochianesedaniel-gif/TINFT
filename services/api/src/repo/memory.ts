@@ -15,13 +15,18 @@ import type {
   Validator
 } from "../domain/models";
 import type {Payment} from "../payments/types";
+import type {Store} from "./store";
 
 /**
- * Store in-memory: implementa la persistenza per i test e lo sviluppo locale.
- * In M6 (step successivo) verrà affiancato/sostituito da un adapter Prisma su
- * PostgreSQL; il servizio applicativo dipende solo da questa interfaccia di dati.
+ * Store in-memory: implementa {@link Store} per i test e lo sviluppo locale
+ * (default del prototipo, con persistenza su file via snapshot/restore).
+ * In produzione l'adapter Prisma su PostgreSQL ({@link ../repo/prisma-store.PrismaStore})
+ * implementa la stessa interfaccia; i servizi dipendono solo da `Store`.
+ *
+ * Le Map e il ledger restano pubblici per la persistenza su file (snapshot) e per
+ * i test esistenti; i servizi però usano esclusivamente i metodi async di Store.
  */
-export class MemoryStore {
+export class MemoryStore implements Store {
   readonly accounts = new Map<string, Account>();
   readonly clubs = new Map<string, Club>();
   readonly events = new Map<string, Event>();
@@ -52,11 +57,319 @@ export class MemoryStore {
   private tokenSeq = 0;
 
   constructor() {
-    this.seedContent();
+    this.seedContentSync();
+  }
+
+  // -------- generatori di id --------------------------------------------------
+  id(prefix: string): string {
+    this.seq[prefix] = (this.seq[prefix] ?? 0) + 1;
+    return `${prefix}_${this.seq[prefix]}`;
+  }
+
+  async nextTokenId(): Promise<number> {
+    return ++this.tokenSeq;
+  }
+
+  // -------- account -----------------------------------------------------------
+  async getAccount(id: string): Promise<Account | undefined> {
+    return this.accounts.get(id);
+  }
+
+  async getAccountByEmail(email: string): Promise<Account | undefined> {
+    const target = email.trim().toLowerCase();
+    return [...this.accounts.values()].find((a) => a.email.trim().toLowerCase() === target);
+  }
+
+  async listAccounts(): Promise<Account[]> {
+    return [...this.accounts.values()];
+  }
+
+  async createAccount(account: Account): Promise<Account> {
+    this.accounts.set(account.id, account);
+    return account;
+  }
+
+  async updateAccount(account: Account): Promise<Account> {
+    this.accounts.set(account.id, account);
+    return account;
+  }
+
+  async deleteAccount(id: string): Promise<void> {
+    this.accounts.delete(id);
+  }
+
+  // -------- club --------------------------------------------------------------
+  async getClub(id: string): Promise<Club | undefined> {
+    return this.clubs.get(id);
+  }
+
+  async listClubs(): Promise<Club[]> {
+    return [...this.clubs.values()];
+  }
+
+  async createClub(club: Club): Promise<Club> {
+    this.clubs.set(club.id, club);
+    return club;
+  }
+
+  async updateClub(club: Club): Promise<Club> {
+    this.clubs.set(club.id, club);
+    return club;
+  }
+
+  // -------- eventi ------------------------------------------------------------
+  async getEvent(id: string): Promise<Event | undefined> {
+    return this.events.get(id);
+  }
+
+  async listEvents(): Promise<Event[]> {
+    return [...this.events.values()];
+  }
+
+  async eventsByOrganizer(organizerId: string): Promise<Event[]> {
+    return [...this.events.values()].filter((e) => e.organizerId === organizerId);
+  }
+
+  async eventsByClub(clubId: string): Promise<Event[]> {
+    return [...this.events.values()].filter((e) => e.clubId === clubId);
+  }
+
+  async createEvent(event: Event): Promise<Event> {
+    this.events.set(event.id, event);
+    return event;
+  }
+
+  async updateEvent(event: Event): Promise<Event> {
+    this.events.set(event.id, event);
+    return event;
+  }
+
+  // -------- tier --------------------------------------------------------------
+  async getTier(id: string): Promise<Tier | undefined> {
+    return this.tiers.get(id);
+  }
+
+  async tiersByEvent(eventId: string): Promise<Tier[]> {
+    return [...this.tiers.values()].filter((t) => t.eventId === eventId);
+  }
+
+  async createTier(tier: Tier): Promise<Tier> {
+    this.tiers.set(tier.id, tier);
+    return tier;
+  }
+
+  async updateTier(tier: Tier): Promise<Tier> {
+    this.tiers.set(tier.id, tier);
+    return tier;
+  }
+
+  // -------- ordini ------------------------------------------------------------
+  async getOrder(id: string): Promise<Order | undefined> {
+    return this.orders.get(id);
+  }
+
+  async ordersByBuyer(buyerId: string): Promise<Order[]> {
+    return [...this.orders.values()].filter((o) => o.buyerId === buyerId);
+  }
+
+  async createOrder(order: Order): Promise<Order> {
+    this.orders.set(order.id, order);
+    return order;
+  }
+
+  async updateOrder(order: Order): Promise<Order> {
+    this.orders.set(order.id, order);
+    return order;
+  }
+
+  // -------- biglietti ---------------------------------------------------------
+  async getTicket(id: string): Promise<Ticket | undefined> {
+    return this.tickets.get(id);
+  }
+
+  async ticketsByOwner(ownerId: string): Promise<Ticket[]> {
+    return [...this.tickets.values()].filter((t) => t.ownerId === ownerId);
+  }
+
+  async listedTickets(): Promise<Ticket[]> {
+    return [...this.tickets.values()].filter((t) => t.status === "LISTED");
+  }
+
+  async heldCountForIdentity(eventId: string, cfHash: string): Promise<number> {
+    const owners = new Set(
+      [...this.accounts.values()].filter((a) => a.cfHash === cfHash).map((a) => a.id)
+    );
+    return [...this.tickets.values()].filter(
+      (t) => t.eventId === eventId && owners.has(t.ownerId) && (t.status === "ACTIVE" || t.status === "LISTED")
+    ).length;
+  }
+
+  async heldForEventByBuyer(eventId: string, buyerId: string): Promise<number> {
+    const tickets = [...this.tickets.values()].filter(
+      (t) => t.eventId === eventId && t.ownerId === buyerId && (t.status === "ACTIVE" || t.status === "LISTED")
+    ).length;
+    const incoming = [...this.transfers.values()].filter((x) => {
+      if (x.toId !== buyerId) return false;
+      if (x.status !== "PENDING" && x.status !== "ESCROW") return false;
+      const ticket = this.tickets.get(x.ticketId);
+      return !!ticket && ticket.eventId === eventId;
+    }).length;
+    return tickets + incoming;
+  }
+
+  async createTicket(ticket: Ticket): Promise<Ticket> {
+    this.tickets.set(ticket.id, ticket);
+    return ticket;
+  }
+
+  async updateTicket(ticket: Ticket): Promise<Ticket> {
+    this.tickets.set(ticket.id, ticket);
+    return ticket;
+  }
+
+  async deleteTicket(id: string): Promise<void> {
+    this.tickets.delete(id);
+  }
+
+  // -------- trasferimenti -----------------------------------------------------
+  async getTransfer(id: string): Promise<Transfer | undefined> {
+    return this.transfers.get(id);
+  }
+
+  async listTransfers(): Promise<Transfer[]> {
+    return [...this.transfers.values()];
+  }
+
+  async activeTransferForTicket(ticketId: string): Promise<Transfer | undefined> {
+    return [...this.transfers.values()].find(
+      (x) => x.ticketId === ticketId && (x.status === "PENDING" || x.status === "ESCROW")
+    );
+  }
+
+  async createTransfer(transfer: Transfer): Promise<Transfer> {
+    this.transfers.set(transfer.id, transfer);
+    return transfer;
+  }
+
+  async updateTransfer(transfer: Transfer): Promise<Transfer> {
+    this.transfers.set(transfer.id, transfer);
+    return transfer;
+  }
+
+  // -------- validazioni / varchi ----------------------------------------------
+  async listValidations(): Promise<Validation[]> {
+    return [...this.validations.values()];
+  }
+
+  async validationsByEvent(eventId: string): Promise<Validation[]> {
+    return [...this.validations.values()].filter((v) => {
+      const ticket = this.tickets.get(v.ticketId);
+      return !!ticket && ticket.eventId === eventId;
+    });
+  }
+
+  async createValidation(validation: Validation): Promise<Validation> {
+    this.validations.set(validation.id, validation);
+    return validation;
+  }
+
+  async validatorsByEvent(eventId: string): Promise<Validator[]> {
+    return [...this.validators.values()].filter((g) => g.eventId === eventId);
+  }
+
+  async createValidator(validator: Validator): Promise<Validator> {
+    this.validators.set(validator.id, validator);
+    return validator;
+  }
+
+  // -------- pagamenti ---------------------------------------------------------
+  async getPayment(id: string): Promise<Payment | undefined> {
+    return this.payments.get(id);
+  }
+
+  async paymentByProviderRef(ref: string): Promise<Payment | undefined> {
+    return [...this.payments.values()].find((p) => p.providerRef === ref);
+  }
+
+  async createPayment(payment: Payment): Promise<Payment> {
+    this.payments.set(payment.id, payment);
+    return payment;
+  }
+
+  async updatePayment(payment: Payment): Promise<Payment> {
+    this.payments.set(payment.id, payment);
+    return payment;
+  }
+
+  // -------- registrazioni email (OTP) -----------------------------------------
+  async getPendingRegistration(email: string): Promise<PendingRegistration | undefined> {
+    return this.pendingRegistrations.get(email);
+  }
+
+  async setPendingRegistration(pending: PendingRegistration): Promise<PendingRegistration> {
+    this.pendingRegistrations.set(pending.email, pending);
+    return pending;
+  }
+
+  async deletePendingRegistration(email: string): Promise<void> {
+    this.pendingRegistrations.delete(email);
+  }
+
+  // -------- idempotenza webhook ----------------------------------------------
+  async hasProcessedWebhook(id: string): Promise<boolean> {
+    return this.processedWebhooks.has(id);
+  }
+
+  async markProcessedWebhook(id: string): Promise<void> {
+    this.processedWebhooks.add(id);
+  }
+
+  // -------- ledger di piattaforma --------------------------------------------
+  async getLedger(): Promise<Ledger> {
+    return {...this.ledger};
+  }
+
+  async addToLedger(delta: Partial<Ledger>): Promise<Ledger> {
+    if (delta.presaleCommissionCents) this.ledger.presaleCommissionCents += delta.presaleCommissionCents;
+    if (delta.royaltyTinftCents) this.ledger.royaltyTinftCents += delta.royaltyTinftCents;
+    if (delta.royaltyOrganizerCents) this.ledger.royaltyOrganizerCents += delta.royaltyOrganizerCents;
+    if (delta.exitFeeCents) this.ledger.exitFeeCents += delta.exitFeeCents;
+    return {...this.ledger};
+  }
+
+  // -------- contenuti editoriali ---------------------------------------------
+  async listArtists(): Promise<Artist[]> {
+    return [...this.artists.values()];
+  }
+
+  async getArtist(id: string): Promise<Artist | undefined> {
+    return this.artists.get(id);
+  }
+
+  async updateArtist(artist: Artist): Promise<Artist> {
+    this.artists.set(artist.id, artist);
+    return artist;
+  }
+
+  async listBlogPosts(): Promise<BlogPost[]> {
+    return [...this.blogPosts.values()];
+  }
+
+  async blogBySlug(slug: string): Promise<BlogPost | undefined> {
+    return [...this.blogPosts.values()].find((p) => p.slug === slug);
+  }
+
+  async listNews(): Promise<News[]> {
+    return [...this.news.values()];
+  }
+
+  async seedContent(): Promise<void> {
+    if (this.artists.size > 0 || this.blogPosts.size > 0 || this.news.size > 0) return;
+    this.seedContentSync();
   }
 
   /** Seed dei contenuti editoriali (artisti, blog, news) per la home del sito. */
-  private seedContent(): void {
+  private seedContentSync(): void {
     const palette = ["#2f4f8a", "#0a8a5c", "#9c5e00", "#7a3550"];
     const artists: Array<Omit<Artist, "id">> = [
       {name: "Charlotte de Witte", genre: "Techno", initials: "CW", color: palette[0]!, followers: 12840},
@@ -107,90 +420,6 @@ export class MemoryStore {
       const id = this.id("news");
       this.news.set(id, {id, ...n});
     }
-  }
-
-  id(prefix: string): string {
-    this.seq[prefix] = (this.seq[prefix] ?? 0) + 1;
-    return `${prefix}_${this.seq[prefix]}`;
-  }
-
-  nextTokenId(): number {
-    return ++this.tokenSeq;
-  }
-
-  ticketsByOwner(ownerId: string): Ticket[] {
-    return [...this.tickets.values()].filter((t) => t.ownerId === ownerId);
-  }
-
-  /** Biglietti "controllati" da un'identità (cfHash) per un evento (R4). */
-  heldCountForIdentity(eventId: string, cfHash: string): number {
-    const owners = new Set(
-      [...this.accounts.values()].filter((a) => a.cfHash === cfHash).map((a) => a.id)
-    );
-    return [...this.tickets.values()].filter(
-      (t) => t.eventId === eventId && owners.has(t.ownerId) && (t.status === "ACTIVE" || t.status === "LISTED")
-    ).length;
-  }
-
-  tiersByEvent(eventId: string): Tier[] {
-    return [...this.tiers.values()].filter((t) => t.eventId === eventId);
-  }
-
-  ordersByBuyer(buyerId: string): Order[] {
-    return [...this.orders.values()].filter((o) => o.buyerId === buyerId);
-  }
-
-  listedTickets(): Ticket[] {
-    return [...this.tickets.values()].filter((t) => t.status === "LISTED");
-  }
-
-  /**
-   * Biglietti "controllati" da un account per un evento, ai fini del limite 2/evento
-   * sugli ordini e sul mercato: biglietti ACTIVE o LISTED (esclusi USED/EXPORTED)
-   * PIÙ eventuali trasferimenti in entrata ancora pendenti (PENDING/ESCROW) per l'evento.
-   */
-  heldForEventByBuyer(eventId: string, buyerId: string): number {
-    const tickets = [...this.tickets.values()].filter(
-      (t) => t.eventId === eventId && t.ownerId === buyerId && (t.status === "ACTIVE" || t.status === "LISTED")
-    ).length;
-    const incoming = [...this.transfers.values()].filter((x) => {
-      if (x.toId !== buyerId) return false;
-      if (x.status !== "PENDING" && x.status !== "ESCROW") return false;
-      const ticket = this.tickets.get(x.ticketId);
-      return !!ticket && ticket.eventId === eventId;
-    }).length;
-    return tickets + incoming;
-  }
-
-  activeTransferForTicket(ticketId: string): Transfer | undefined {
-    return [...this.transfers.values()].find(
-      (x) => x.ticketId === ticketId && (x.status === "PENDING" || x.status === "ESCROW")
-    );
-  }
-
-  paymentByProviderRef(ref: string): Payment | undefined {
-    return [...this.payments.values()].find((p) => p.providerRef === ref);
-  }
-
-  // -------- query per console organizzatore / piattaforma --------------------
-
-  eventsByOrganizer(organizerId: string): Event[] {
-    return [...this.events.values()].filter((e) => e.organizerId === organizerId);
-  }
-
-  blogBySlug(slug: string): BlogPost | undefined {
-    return [...this.blogPosts.values()].find((p) => p.slug === slug);
-  }
-
-  validationsByEvent(eventId: string): Validation[] {
-    return [...this.validations.values()].filter((v) => {
-      const ticket = this.tickets.get(v.ticketId);
-      return !!ticket && ticket.eventId === eventId;
-    });
-  }
-
-  validatorsByEvent(eventId: string): Validator[] {
-    return [...this.validators.values()].filter((g) => g.eventId === eventId);
   }
 
   /** Snapshot serializzabile dell'intero store (persistenza su file del prototipo). */

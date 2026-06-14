@@ -13,11 +13,11 @@ const acc = (id: string, email: string): Account => ({
 });
 
 describe("persistenza store (snapshot/restore)", () => {
-  it("round-trip via JSON conserva dati, ledger e contatori", () => {
+  it("round-trip via JSON conserva dati, ledger e contatori", async () => {
     const a = new MemoryStore();
     const id1 = a.id("acc"); // avanza il contatore seq.acc
     a.accounts.set(id1, acc(id1, "marco@e.it"));
-    const tok = a.nextTokenId(); // avanza tokenSeq
+    const tok = await a.nextTokenId(); // avanza tokenSeq
     a.ledger.presaleCommissionCents = 315;
     a.processedWebhooks.add("evt_1");
 
@@ -33,7 +33,7 @@ describe("persistenza store (snapshot/restore)", () => {
     expect(b.artists.size).toBeGreaterThan(0); // contenuti seedati conservati
     // i contatori proseguono senza collisioni dopo il restore
     expect(b.id("acc")).not.toBe(id1);
-    expect(b.nextTokenId()).toBe(tok + 1);
+    expect(await b.nextTokenId()).toBe(tok + 1);
   });
 
   it("restore tollera uno snapshot parziale", () => {

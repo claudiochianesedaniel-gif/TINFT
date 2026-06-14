@@ -16,7 +16,7 @@ import {
   type ValidationOutcome,
   type Validator
 } from "../domain/models";
-import {MemoryStore} from "../repo/memory";
+import type {Store} from "../repo/store";
 import {
   canAcquireForEvent,
   exitFeeCents,
@@ -36,17 +36,18 @@ const nowSeconds = () => Math.floor(Date.now() / 1000);
 /**
  * Servizio applicativo TINFT: orchestra i flussi dei 4 profili applicando le
  * regole economiche (rules.ts), le stesse enforced on-chain dai contratti M1–M5.
- * Il regolamento on-chain (mint/escrow) verrà agganciato via job nei pagamenti (M7).
+ * Dipende dall'interfaccia {@link Store} (in-memory o Postgres/Prisma): ogni
+ * mutazione di un'entità è persistita esplicitamente via `store.update*`.
  */
 export class TicketingService {
   constructor(
-    private readonly store: MemoryStore,
+    private readonly store: Store,
     private readonly now: () => number = nowSeconds,
     private readonly verifier: IdentityVerifier = new FakeSpid()
   ) {}
 
   // -------------------------------------------------------------- account
-  createAccount(input: {
+  async createAccount(input: {
     role?: AccountRole;
     nome: string;
     cognome: string;
@@ -63,7 +64,7 @@ export class TicketingService {
     phone?: string;
     walletAddress?: string;
     passwordHash?: string;
-  }): Account {
+  }): Promise<Account> {
     const role = input.role ?? "CLIENTE";
     const account: Account = {
       id: this.store.id("acc"),
@@ -88,19 +89,18 @@ export class TicketingService {
       goodwill: 0,
       passwordHash: input.passwordHash
     };
-    this.store.accounts.set(account.id, account);
+    await this.store.createAccount(account);
     return account;
   }
 
   /** Cerca un account per email (case-insensitive). Per il login. */
-  findAccountByEmail(email: string): Account | undefined {
-    const target = email.trim().toLowerCase();
-    return [...this.store.accounts.values()].find((a) => a.email.trim().toLowerCase() === target);
+  async findAccountByEmail(email: string): Promise<Account | undefined> {
+    return this.store.getAccountByEmail(email);
   }
 
   // --------------------------------------------- registrazione email + OTP (v2)
   /** Avvia la registrazione via email: genera un codice OTP a 6 cifre e tiene il dato in attesa. */
-  startEmailRegistration(input: {
+  async startEmailRegistration(input: {
     nome: string;
     cognome: string;
     cf: string;
@@ -115,10 +115,10 @@ export class TicketingService {
     phone?: string;
     username?: string;
     password?: string;
-  }): {email: string; devCode: string} {
+  }): Promise<{email: string; devCode: string}> {
     if (!input.email?.trim()) throw new DomainError("INVALID_EMAIL", "email obbligatoria");
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    this.store.pendingRegistrations.set(input.email, {
+    await this.store.setPendingRegistration({
       email: input.email,
       code,
       nome: input.nome,
@@ -140,11 +140,11 @@ export class TicketingService {
   }
 
   /** Verifica l'OTP: se corretto crea un account CLIENTE verificato (hash CF) e ripulisce il pending. */
-  verifyEmailRegistration(email: string, code: string): Account {
-    const pending = this.store.pendingRegistrations.get(email);
+  async verifyEmailRegistration(email: string, code: string): Promise<Account> {
+    const pending = await this.store.getPendingRegistration(email);
     if (!pending || pending.code !== code) throw new DomainError("BAD_CODE", "codice errato o scaduto", 400);
     const identity = this.verifier.verify({cf: pending.cf, nome: pending.nome, cognome: pending.cognome});
-    const account = this.createAccount({
+    const account = await this.createAccount({
       role: "CLIENTE",
       nome: pending.nome,
       cognome: pending.cognome,
@@ -161,26 +161,25 @@ export class TicketingService {
       phone: pending.phone,
       passwordHash: pending.passwordHash
     });
-    this.store.pendingRegistrations.delete(email);
+    await this.store.deletePendingRegistration(email);
     return account;
   }
 
   /** GDPR — diritto alla cancellazione: elimina l'account e i suoi biglietti (dati collegati). */
-  deleteAccount(id: string): {deleted: string; tickets: number} {
-    if (!this.store.accounts.get(id)) throw NotFound("account");
-    this.store.accounts.delete(id);
+  async deleteAccount(id: string): Promise<{deleted: string; tickets: number}> {
+    if (!(await this.store.getAccount(id))) throw NotFound("account");
+    const owned = await this.store.ticketsByOwner(id);
     let removed = 0;
-    for (const t of [...this.store.tickets.values()]) {
-      if (t.ownerId === id) {
-        this.store.tickets.delete(t.id);
-        removed++;
-      }
+    for (const t of owned) {
+      await this.store.deleteTicket(t.id);
+      removed++;
     }
+    await this.store.deleteAccount(id);
     return {deleted: id, tickets: removed};
   }
 
   // -------------------------------------------------------------- eventi
-  createEvent(input: {
+  async createEvent(input: {
     organizerId: string;
     clubId?: string;
     title: string;
@@ -190,8 +189,8 @@ export class TicketingService {
     priceCents: number;
     capacity: number;
     status?: EventStatus;
-  }): Event {
-    this.getAccount(input.organizerId);
+  }): Promise<Event> {
+    await this.getAccount(input.organizerId);
     if (input.priceCents < 0 || input.capacity <= 0) {
       throw new DomainError("INVALID_EVENT", "prezzo o capienza non validi");
     }
@@ -208,62 +207,65 @@ export class TicketingService {
       sold: 0,
       status: input.status ?? "ON_SALE"
     };
-    this.store.events.set(event.id, event);
+    await this.store.createEvent(event);
     return event;
   }
 
-  listEvents(): Event[] {
-    return [...this.store.events.values()];
+  async listEvents(): Promise<Event[]> {
+    return this.store.listEvents();
   }
 
-  getEvent(id: string): Event {
-    const e = this.store.events.get(id);
+  async getEvent(id: string): Promise<Event> {
+    const e = await this.store.getEvent(id);
     if (!e) throw NotFound("evento");
     return e;
   }
 
   // ----------------------------------------------- KYC organizzatore (B7)
   /** L'organizzatore invia il KYC: da NONE/REJECTED passa a PENDING. */
-  submitKyc(organizerId: string): Account {
-    const org = this.getAccount(organizerId);
+  async submitKyc(organizerId: string): Promise<Account> {
+    const org = await this.getAccount(organizerId);
     if (org.role !== "ORGANIZER") throw new DomainError("NOT_ORGANIZER", "non è un organizzatore", 409);
     const status = org.kycStatus ?? "NONE";
     if (status !== "NONE" && status !== "REJECTED") {
       throw new DomainError("KYC_STATE", `KYC non inviabile dallo stato ${status}`, 409);
     }
     org.kycStatus = "PENDING";
+    await this.store.updateAccount(org);
     return org;
   }
 
   /** Decisione admin sul KYC: VERIFIED o REJECTED (il gating del token è in server.ts). */
-  decideKyc(organizerId: string, decision: "VERIFIED" | "REJECTED"): Account {
-    const org = this.getAccount(organizerId);
+  async decideKyc(organizerId: string, decision: "VERIFIED" | "REJECTED"): Promise<Account> {
+    const org = await this.getAccount(organizerId);
     if (org.role !== "ORGANIZER") throw new DomainError("NOT_ORGANIZER", "non è un organizzatore", 409);
     if (decision !== "VERIFIED" && decision !== "REJECTED") {
       throw new DomainError("INVALID_DECISION", "decisione non valida", 400);
     }
     org.kycStatus = decision;
+    await this.store.updateAccount(org);
     return org;
   }
 
   /** Pubblica un evento DRAFT → ON_SALE; solo l'organizzatore proprietario e con KYC verificato. */
-  publishEvent(eventId: string, organizerId: string): Event {
-    const event = this.getEvent(eventId);
+  async publishEvent(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
     if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
-    const org = this.getAccount(organizerId);
+    const org = await this.getAccount(organizerId);
     if ((org.kycStatus ?? "NONE") !== "VERIFIED") {
       throw new DomainError("KYC_REQUIRED", "KYC organizzatore non verificato", 403);
     }
     if (event.status === "ON_SALE") return event; // idempotente
     if (event.status !== "DRAFT") throw new DomainError("NOT_DRAFT", "evento non in bozza", 409);
     event.status = "ON_SALE";
+    await this.store.updateEvent(event);
     return event;
   }
 
   // ------------------------------------------------ varchi / validatori (B6)
   /** Crea un varco (gate) per l'evento; solo l'organizzatore proprietario. */
-  createValidator(eventId: string, organizerId: string): Validator {
-    const event = this.getEvent(eventId);
+  async createValidator(eventId: string, organizerId: string): Promise<Validator> {
+    const event = await this.getEvent(eventId);
     if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
     const code = "VARCO-" + Math.floor(1000 + Math.random() * 9000);
     const validator: Validator = {
@@ -272,17 +274,17 @@ export class TicketingService {
       code,
       createdAt: this.now()
     };
-    this.store.validators.set(validator.id, validator);
+    await this.store.createValidator(validator);
     return validator;
   }
 
-  listValidators(eventId: string): Validator[] {
-    this.getEvent(eventId);
+  async listValidators(eventId: string): Promise<Validator[]> {
+    await this.getEvent(eventId);
     return this.store.validatorsByEvent(eventId);
   }
 
   // -------------------------------------------------------------- club (M9)
-  createClub(input: {
+  async createClub(input: {
     organizerId: string;
     name: string;
     city?: string;
@@ -296,8 +298,8 @@ export class TicketingService {
     iban?: string;
     genre?: string;
     color?: string;
-  }): Club {
-    this.getAccount(input.organizerId);
+  }): Promise<Club> {
+    await this.getAccount(input.organizerId);
     if (!input.name.trim()) throw new DomainError("INVALID_CLUB", "nome club obbligatorio");
     const club: Club = {
       id: this.store.id("club"),
@@ -315,28 +317,28 @@ export class TicketingService {
       genre: input.genre,
       color: input.color
     };
-    this.store.clubs.set(club.id, club);
+    await this.store.createClub(club);
     return club;
   }
 
-  listClubs(): Club[] {
-    return [...this.store.clubs.values()];
+  async listClubs(): Promise<Club[]> {
+    return this.store.listClubs();
   }
 
-  getClub(id: string): Club {
-    const c = this.store.clubs.get(id);
+  async getClub(id: string): Promise<Club> {
+    const c = await this.store.getClub(id);
     if (!c) throw NotFound("club");
     return c;
   }
 
-  clubEvents(clubId: string): Event[] {
-    return [...this.store.events.values()].filter((e) => e.clubId === clubId);
+  async clubEvents(clubId: string): Promise<Event[]> {
+    return this.store.eventsByClub(clubId);
   }
 
   /** Acquisto del Fidelity del club: carnet multi-ingresso valido sugli eventi del club. */
-  purchaseFidelity(clubId: string, buyerId: string): Ticket {
-    const club = this.getClub(clubId);
-    const buyer = this.getAccount(buyerId);
+  async purchaseFidelity(clubId: string, buyerId: string): Promise<Ticket> {
+    const club = await this.getClub(clubId);
+    const buyer = await this.getAccount(buyerId);
     if (club.fidelityUses <= 0) throw new DomainError("NO_FIDELITY", "questo club non ha un Fidelity", 409);
     const ticket: Ticket = {
       id: this.store.id("tkt"),
@@ -344,7 +346,7 @@ export class TicketingService {
       clubId: club.id,
       kind: "FIDELITY",
       ownerId: buyer.id,
-      tokenId: this.store.nextTokenId(),
+      tokenId: await this.store.nextTokenId(),
       originalPriceCents: club.fidelityPriceCents,
       paidCents: club.fidelityPriceCents,
       status: "ACTIVE",
@@ -354,28 +356,28 @@ export class TicketingService {
       uses: club.fidelityUses,
       used: 0
     };
-    this.store.tickets.set(ticket.id, ticket);
+    await this.store.createTicket(ticket);
     return ticket;
   }
 
   // ----------------------------------------------------- acquisto primario
   /** Registra l'acquisto primario. `opts.tokenId`/`txHash` arrivano dal mint on-chain. */
-  purchasePrimary(
+  async purchasePrimary(
     eventId: string,
     buyerId: string,
     opts: {holderName?: string; tokenId?: number; txHash?: string} = {}
-  ): Ticket {
-    const event = this.getEvent(eventId);
-    const buyer = this.getAccount(buyerId);
+  ): Promise<Ticket> {
+    const event = await this.getEvent(eventId);
+    const buyer = await this.getAccount(buyerId);
     if (event.status !== "ON_SALE") throw new DomainError("NOT_ON_SALE", "evento non in vendita", 409);
     if (event.sold >= event.capacity) throw new DomainError("SOLD_OUT", "evento esaurito", 409);
-    this.assertCanAcquire(event.id, buyer);
+    await this.assertCanAcquire(event.id, buyer);
 
     const ticket: Ticket = {
       id: this.store.id("tkt"),
       eventId: event.id,
       ownerId: buyer.id,
-      tokenId: opts.tokenId ?? this.store.nextTokenId(),
+      tokenId: opts.tokenId ?? (await this.store.nextTokenId()),
       originalPriceCents: event.priceCents,
       paidCents: event.priceCents,
       status: "ACTIVE",
@@ -384,15 +386,16 @@ export class TicketingService {
       holderName: opts.holderName?.trim() || `${buyer.nome} ${buyer.cognome}`,
       txHash: opts.txHash
     };
-    this.store.tickets.set(ticket.id, ticket);
+    await this.store.createTicket(ticket);
     event.sold += 1;
+    await this.store.updateEvent(event);
     return ticket;
   }
 
   // -------------------------------------------------------------- tier (v2)
   /** Crea una fascia di prezzo per un evento; solo l'organizzatore proprietario. */
-  createTier(eventId: string, input: {organizerId: string; name: string; priceCents: number; note?: string}): Tier {
-    const event = this.getEvent(eventId);
+  async createTier(eventId: string, input: {organizerId: string; name: string; priceCents: number; note?: string}): Promise<Tier> {
+    const event = await this.getEvent(eventId);
     if (event.organizerId !== input.organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
     if (!input.name.trim()) throw new DomainError("INVALID_TIER", "nome fascia obbligatorio");
     if (input.priceCents < 0) throw new DomainError("INVALID_TIER", "prezzo non valido");
@@ -404,31 +407,31 @@ export class TicketingService {
       note: input.note,
       soldOut: false
     };
-    this.store.tiers.set(tier.id, tier);
+    await this.store.createTier(tier);
     return tier;
   }
 
-  listTiers(eventId: string): Tier[] {
-    this.getEvent(eventId);
+  async listTiers(eventId: string): Promise<Tier[]> {
+    await this.getEvent(eventId);
     return this.store.tiersByEvent(eventId);
   }
 
   // ----------------------------------------------------- ordini / checkout (v2)
-  /** Crea un ordine PENDING con il dettaglio completo (commissione 4% + quantità + limite 2). */
-  createOrder(input: {buyerId: string; eventId: string; tierId?: string; quantity: number}): Order {
-    const event = this.getEvent(input.eventId);
-    this.getAccount(input.buyerId);
+  /** Crea un ordine PENDING con il dettaglio completo (commissione 10% + quantità + limite 2). */
+  async createOrder(input: {buyerId: string; eventId: string; tierId?: string; quantity: number}): Promise<Order> {
+    const event = await this.getEvent(input.eventId);
+    await this.getAccount(input.buyerId);
     if (event.status !== "ON_SALE") throw new DomainError("NOT_ON_SALE", "evento non in vendita", 409);
 
     let unitPriceCents = event.priceCents;
     if (input.tierId) {
-      const tier = this.getTier(input.tierId);
+      const tier = await this.getTier(input.tierId);
       if (tier.eventId !== event.id) throw new DomainError("WRONG_TIER", "fascia non appartiene all'evento", 409);
       unitPriceCents = tier.priceCents;
     }
 
     const totals = orderTotalCents(unitPriceCents, input.quantity);
-    this.assertOrderWithinEventLimit(event.id, input.buyerId, totals.quantity);
+    await this.assertOrderWithinEventLimit(event.id, input.buyerId, totals.quantity);
 
     const order: Order = {
       id: this.store.id("ord"),
@@ -445,7 +448,7 @@ export class TicketingService {
       ticketIds: [],
       createdAt: this.now()
     };
-    this.store.orders.set(order.id, order);
+    await this.store.createOrder(order);
     return order;
   }
 
@@ -453,43 +456,46 @@ export class TicketingService {
    * Simula il successo PSP: conia `quantity` biglietti, segna l'ordine PAID,
    * accredita la commissione al ledger e il goodwill al compratore. Idempotente.
    */
-  payOrder(orderId: string): Order {
-    const order = this.getOrder(orderId);
+  async payOrder(orderId: string): Promise<Order> {
+    const order = await this.getOrder(orderId);
     if (order.status === "PAID") return order; // idempotente: nessun doppio mint
     if (order.status === "CANCELLED") throw new DomainError("ORDER_CANCELLED", "ordine annullato", 409);
 
     const ticketIds: string[] = [];
     for (let i = 0; i < order.quantity; i++) {
-      const ticket = this.purchasePrimary(order.eventId, order.buyerId);
+      const ticket = await this.purchasePrimary(order.eventId, order.buyerId);
       // l'ordine fissa il prezzo unitario di fascia: il costo base segue il prezzo pagato
       ticket.originalPriceCents = order.unitPriceCents;
       ticket.paidCents = order.unitPriceCents;
+      await this.store.updateTicket(ticket);
       ticketIds.push(ticket.id);
     }
 
-    this.store.ledger.presaleCommissionCents += order.feeTotalCents;
-    const buyer = this.getAccount(order.buyerId);
+    await this.store.addToLedger({presaleCommissionCents: order.feeTotalCents});
+    const buyer = await this.getAccount(order.buyerId);
     buyer.goodwill += GOODWILL_PER_TICKET * order.quantity;
+    await this.store.updateAccount(buyer);
 
     order.ticketIds = ticketIds;
     order.status = "PAID";
+    await this.store.updateOrder(order);
     return order;
   }
 
-  getOrder(id: string): Order {
-    const o = this.store.orders.get(id);
+  async getOrder(id: string): Promise<Order> {
+    const o = await this.store.getOrder(id);
     if (!o) throw NotFound("ordine");
     return o;
   }
 
-  ordersOf(buyerId: string): Order[] {
+  async ordersOf(buyerId: string): Promise<Order[]> {
     return this.store.ordersByBuyer(buyerId);
   }
 
   // -------------------------------------------------- mercato secondario (v2)
   /** Mette in vendita un biglietto ACTIVE rispettando il tetto +5%; solo il proprietario. */
-  listTicket(ticketId: string, ownerId: string, priceCents: number): Ticket {
-    const ticket = this.getTicket(ticketId);
+  async listTicket(ticketId: string, ownerId: string, priceCents: number): Promise<Ticket> {
+    const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non quotabile", 409);
     if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
@@ -499,22 +505,24 @@ export class TicketingService {
     ticket.status = "LISTED";
     ticket.askPriceCents = priceCents;
     ticket.market = "Re-Selling";
+    await this.store.updateTicket(ticket);
     return ticket;
   }
 
   /** Ritira dal mercato un biglietto LISTED; solo il proprietario. */
-  unlistTicket(ticketId: string, ownerId: string): Ticket {
-    const ticket = this.getTicket(ticketId);
+  async unlistTicket(ticketId: string, ownerId: string): Promise<Ticket> {
+    const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.status !== "LISTED") throw new DomainError("NOT_LISTED", "biglietto non in vendita", 409);
     ticket.status = "ACTIVE";
     ticket.askPriceCents = undefined;
     ticket.market = undefined;
+    await this.store.updateTicket(ticket);
     return ticket;
   }
 
   /** Listino del mercato secondario: biglietti LISTED con royalty e tetto calcolati. */
-  market(): Array<{
+  async market(): Promise<Array<{
     ticketId: string;
     eventId: string;
     title: string;
@@ -522,16 +530,22 @@ export class TicketingService {
     askPriceCents: number;
     royaltyCents: number;
     capCents: number;
-  }> {
-    return this.store.listedTickets().map((t) => ({
-      ticketId: t.id,
-      eventId: t.eventId,
-      title: this.store.events.get(t.eventId)?.title ?? "",
-      sellerName: t.holderName,
-      askPriceCents: t.askPriceCents ?? 0,
-      royaltyCents: royaltyCents(t.originalPriceCents),
-      capCents: resaleCapCents(t.paidCents)
-    }));
+  }>> {
+    const listed = await this.store.listedTickets();
+    const out = [];
+    for (const t of listed) {
+      const event = await this.store.getEvent(t.eventId);
+      out.push({
+        ticketId: t.id,
+        eventId: t.eventId,
+        title: event?.title ?? "",
+        sellerName: t.holderName,
+        askPriceCents: t.askPriceCents ?? 0,
+        royaltyCents: royaltyCents(t.originalPriceCents),
+        capCents: resaleCapCents(t.paidCents)
+      });
+    }
+    return out;
   }
 
   /**
@@ -539,17 +553,17 @@ export class TicketingService {
    * originale), la royalty va al ledger 0,5/0,5, il costo base viaggia col token (R3),
    * il venditore riceve goodwill (~euro). Registra un Transfer PAYMENT/DONE.
    */
-  buyFromMarket(ticketId: string, buyerId: string): {
+  async buyFromMarket(ticketId: string, buyerId: string): Promise<{
     ticket: Ticket;
     royalty: {tinftCents: number; organizerCents: number};
     paidByBuyerCents: number;
-  } {
-    const ticket = this.getTicket(ticketId);
+  }> {
+    const ticket = await this.getTicket(ticketId);
     if (ticket.status !== "LISTED") throw new DomainError("NOT_LISTED", "biglietto non in vendita", 409);
-    const buyer = this.getAccount(buyerId);
-    const seller = this.getAccount(ticket.ownerId);
+    const buyer = await this.getAccount(buyerId);
+    const seller = await this.getAccount(ticket.ownerId);
     if (seller.id === buyer.id) throw new DomainError("SELF_TRANSFER", "venditore e compratore coincidono");
-    this.assertOrderWithinEventLimit(ticket.eventId, buyer.id, 1);
+    await this.assertOrderWithinEventLimit(ticket.eventId, buyer.id, 1);
 
     const askPriceCents = ticket.askPriceCents ?? 0;
     const royalty = royaltyCents(ticket.originalPriceCents);
@@ -570,11 +584,10 @@ export class TicketingService {
       ttlSeconds: 0,
       createdAt: this.now()
     };
-    this.store.transfers.set(transfer.id, transfer);
+    await this.store.createTransfer(transfer);
 
     // ledger: la royalty è ricavo di piattaforma/organizzatore
-    this.store.ledger.royaltyTinftCents += split.tinftCents;
-    this.store.ledger.royaltyOrganizerCents += split.organizerCents;
+    await this.store.addToLedger({royaltyTinftCents: split.tinftCents, royaltyOrganizerCents: split.organizerCents});
 
     // trasferimento proprietà: il costo base segue il prezzo pagato (R3)
     ticket.ownerId = buyer.id;
@@ -583,32 +596,35 @@ export class TicketingService {
     ticket.holderName = `${buyer.nome} ${buyer.cognome}`;
     ticket.askPriceCents = undefined;
     ticket.market = undefined;
+    await this.store.updateTicket(ticket);
 
     // goodwill al venditore (~euro)
     seller.goodwill += Math.round(askPriceCents / 100);
+    await this.store.updateAccount(seller);
 
     return {ticket, royalty: {tinftCents: split.tinftCents, organizerCents: split.organizerCents}, paidByBuyerCents};
   }
 
   /** Lega un'identità SPID verificata al wallet (abilita il limite 2/evento). */
-  verifyIdentity(accountId: string, cfHash: string): Account {
-    const account = this.getAccount(accountId);
+  async verifyIdentity(accountId: string, cfHash: string): Promise<Account> {
+    const account = await this.getAccount(accountId);
     account.cfHash = cfHash;
     account.verified = true;
+    await this.store.updateAccount(account);
     return account;
   }
 
-  ticketsOf(ownerId: string): Ticket[] {
+  async ticketsOf(ownerId: string): Promise<Ticket[]> {
     return this.store.ticketsByOwner(ownerId);
   }
 
   // --------------------------------------------- trasferimento P2P (escrow)
-  createTransfer(
+  async createTransfer(
     ticketId: string,
     fromId: string,
     input: {mode: TransferMode; toId?: string; priceCents?: number; ttlSeconds?: number}
-  ): Transfer {
-    const ticket = this.getTicket(ticketId);
+  ): Promise<Transfer> {
+    const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== fromId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non trasferibile", 409);
 
@@ -639,37 +655,40 @@ export class TicketingService {
       ttlSeconds: input.ttlSeconds ?? 600,
       createdAt: this.now()
     };
-    this.store.transfers.set(transfer.id, transfer);
+    await this.store.createTransfer(transfer);
     ticket.status = "LISTED";
+    await this.store.updateTicket(ticket);
     return transfer;
   }
 
-  acceptTransfer(transferId: string, toId: string, holderName?: string): Transfer {
-    const transfer = this.getTransfer(transferId);
+  async acceptTransfer(transferId: string, toId: string, holderName?: string): Promise<Transfer> {
+    const transfer = await this.getTransfer(transferId);
     if (transfer.status !== "PENDING" && transfer.status !== "ESCROW") {
       throw new DomainError("NOT_PENDING", "trasferimento non accettabile", 409);
     }
     if (transfer.toId && transfer.toId !== toId) {
       throw new DomainError("WRONG_RECIPIENT", "destinatario non corrispondente", 403);
     }
-    const buyer = this.getAccount(toId);
+    const buyer = await this.getAccount(toId);
     if (buyer.id === transfer.fromId) throw new DomainError("SELF_TRANSFER", "venditore e compratore coincidono");
-    const ticket = this.getTicket(transfer.ticketId);
-    this.assertCanAcquire(ticket.eventId, buyer);
+    const ticket = await this.getTicket(transfer.ticketId);
+    await this.assertCanAcquire(ticket.eventId, buyer);
 
     ticket.ownerId = buyer.id;
     if (transfer.mode === "PAYMENT") ticket.paidCents = transfer.priceCents; // il costo base viaggia col token (R3)
     ticket.status = "ACTIVE";
     ticket.holderName = holderName?.trim() || `${buyer.nome} ${buyer.cognome}`;
+    await this.store.updateTicket(ticket);
 
     transfer.toId = buyer.id;
     transfer.status = "DONE";
+    await this.store.updateTransfer(transfer);
     return transfer;
   }
 
   /** Recupero: a timeout chiunque, oppure il venditore in qualsiasi momento (annullo). */
-  reclaimTransfer(transferId: string, byId?: string): Transfer {
-    const transfer = this.getTransfer(transferId);
+  async reclaimTransfer(transferId: string, byId?: string): Promise<Transfer> {
+    const transfer = await this.getTransfer(transferId);
     if (transfer.status !== "PENDING" && transfer.status !== "ESCROW") {
       throw new DomainError("NOT_PENDING", "trasferimento non recuperabile", 409);
     }
@@ -677,15 +696,17 @@ export class TicketingService {
     if (!expired && byId !== transfer.fromId) {
       throw new DomainError("NOT_EXPIRED", "non ancora scaduto", 409);
     }
-    const ticket = this.getTicket(transfer.ticketId);
+    const ticket = await this.getTicket(transfer.ticketId);
     ticket.status = "ACTIVE"; // torna disponibile al venditore (resta ownerId = fromId)
+    await this.store.updateTicket(ticket);
     transfer.status = "RECLAIMED";
+    await this.store.updateTransfer(transfer);
     return transfer;
   }
 
   // ------------------------------------------------------------ validazione
-  validate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Validation {
-    const ticket = this.store.tickets.get(ticketId);
+  async validate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
+    const ticket = await this.store.getTicket(ticketId);
     let outcome: ValidationOutcome;
     if (!ticket) outcome = "FAKE";
     else if (scenario === "screenshot") outcome = "SCREENSHOT";
@@ -700,6 +721,7 @@ export class TicketingService {
       } else {
         ticket.status = "USED";
       }
+      await this.store.updateTicket(ticket);
     }
 
     const validation: Validation = {
@@ -709,13 +731,13 @@ export class TicketingService {
       outcome,
       at: this.now()
     };
-    this.store.validations.set(validation.id, validation);
+    await this.store.createValidation(validation);
     return validation;
   }
 
   // ----------------------------------------------------------------- export
-  exportTicket(ticketId: string, ownerId: string, mode: "FREE" | "ENFORCED"): Ticket {
-    const ticket = this.getTicket(ticketId);
+  async exportTicket(ticketId: string, ownerId: string, mode: "FREE" | "ENFORCED"): Promise<Ticket> {
+    const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.exportMode !== "NONE") throw new DomainError("ALREADY_EXPORTED", "già esportato", 409);
     if (ticket.status !== "USED") throw new DomainError("NOT_USED", "esportabile solo a evento concluso", 409);
@@ -723,15 +745,16 @@ export class TicketingService {
     ticket.exportMode = mode;
     ticket.exitFeeCents = mode === "FREE" ? exitFeeCents(ticket.originalPriceCents) : 0;
     // l'export libero versa la fee d'uscita (25%) al ledger di piattaforma
-    if (mode === "FREE") this.store.ledger.exitFeeCents += ticket.exitFeeCents;
+    if (mode === "FREE") await this.store.addToLedger({exitFeeCents: ticket.exitFeeCents});
     ticket.status = "EXPORTED";
+    await this.store.updateTicket(ticket);
     return ticket;
   }
 
   // ------------------------------------------------------------- helpers
-  private assertCanAcquire(eventId: string, buyer: Account): void {
+  private async assertCanAcquire(eventId: string, buyer: Account): Promise<void> {
     if (!buyer.cfHash) return; // wallet non registrato: esente (il backend registra via SPID)
-    const held = this.store.heldCountForIdentity(eventId, buyer.cfHash);
+    const held = await this.store.heldCountForIdentity(eventId, buyer.cfHash);
     if (!canAcquireForEvent(held)) throw new DomainError("EVENT_LIMIT", "max 2 biglietti per evento", 409);
   }
 
@@ -740,34 +763,34 @@ export class TicketingService {
    * più i trasferimenti in entrata pendenti per l'evento; verifica che la quantità richiesta
    * rientri nell'allowance residua (MAX_PER_EVENT - controllati).
    */
-  private assertOrderWithinEventLimit(eventId: string, buyerId: string, quantity: number): void {
-    const held = this.store.heldForEventByBuyer(eventId, buyerId);
+  private async assertOrderWithinEventLimit(eventId: string, buyerId: string, quantity: number): Promise<void> {
+    const held = await this.store.heldForEventByBuyer(eventId, buyerId);
     const remaining = MAX_PER_EVENT - held;
     if (quantity > remaining) {
       throw new DomainError("EVENT_LIMIT", `max ${MAX_PER_EVENT} biglietti per evento`, 409);
     }
   }
 
-  private getTier(id: string): Tier {
-    const t = this.store.tiers.get(id);
+  private async getTier(id: string): Promise<Tier> {
+    const t = await this.store.getTier(id);
     if (!t) throw NotFound("fascia");
     return t;
   }
 
-  private getAccount(id: string): Account {
-    const a = this.store.accounts.get(id);
+  private async getAccount(id: string): Promise<Account> {
+    const a = await this.store.getAccount(id);
     if (!a) throw NotFound("account");
     return a;
   }
 
-  private getTicket(id: string): Ticket {
-    const t = this.store.tickets.get(id);
+  private async getTicket(id: string): Promise<Ticket> {
+    const t = await this.store.getTicket(id);
     if (!t) throw NotFound("biglietto");
     return t;
   }
 
-  private getTransfer(id: string): Transfer {
-    const x = this.store.transfers.get(id);
+  private async getTransfer(id: string): Promise<Transfer> {
+    const x = await this.store.getTransfer(id);
     if (!x) throw NotFound("trasferimento");
     return x;
   }
