@@ -1,0 +1,23 @@
+# TINFT — servizi di sviluppo locale (Postgres per la persistenza).
+# Uso: `docker compose up -d db` poi, da services/api:
+#   DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft pnpm prisma:deploy
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tinft-pg
+    environment:
+      POSTGRES_USER: tinft
+      POSTGRES_PASSWORD: tinft
+      POSTGRES_DB: tinft
+    ports:
+      - "5432:5432"
+    volumes:
+      - tinft_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tinft -d tinft"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tinft_pgdata:
