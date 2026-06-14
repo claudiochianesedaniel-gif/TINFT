@@ -192,4 +192,59 @@ export class MemoryStore {
   validatorsByEvent(eventId: string): Validator[] {
     return [...this.validators.values()].filter((g) => g.eventId === eventId);
   }
+
+  /** Snapshot serializzabile dell'intero store (persistenza su file del prototipo). */
+  snapshot(): StoreSnapshot {
+    const e = <V>(m: Map<string, V>): [string, V][] => [...m.entries()];
+    return {
+      accounts: e(this.accounts), clubs: e(this.clubs), events: e(this.events), tiers: e(this.tiers),
+      orders: e(this.orders), tickets: e(this.tickets), transfers: e(this.transfers),
+      validations: e(this.validations), validators: e(this.validators), payments: e(this.payments),
+      pendingRegistrations: e(this.pendingRegistrations), artists: e(this.artists),
+      blogPosts: e(this.blogPosts), news: e(this.news),
+      processedWebhooks: [...this.processedWebhooks], ledger: {...this.ledger},
+      seq: {...this.seq}, tokenSeq: this.tokenSeq
+    };
+  }
+
+  /** Ripristina lo store da uno snapshot (sostituisce il contenuto corrente). */
+  restore(s: StoreSnapshot): void {
+    const load = <V>(m: Map<string, V>, arr?: [string, V][]): void => {
+      m.clear();
+      for (const [k, v] of arr ?? []) m.set(k, v);
+    };
+    load(this.accounts, s.accounts); load(this.clubs, s.clubs); load(this.events, s.events);
+    load(this.tiers, s.tiers); load(this.orders, s.orders); load(this.tickets, s.tickets);
+    load(this.transfers, s.transfers); load(this.validations, s.validations);
+    load(this.validators, s.validators); load(this.payments, s.payments);
+    load(this.pendingRegistrations, s.pendingRegistrations); load(this.artists, s.artists);
+    load(this.blogPosts, s.blogPosts); load(this.news, s.news);
+    this.processedWebhooks.clear();
+    for (const w of s.processedWebhooks ?? []) this.processedWebhooks.add(w);
+    if (s.ledger) Object.assign(this.ledger, s.ledger);
+    if (s.seq) this.seq = s.seq;
+    if (typeof s.tokenSeq === "number") this.tokenSeq = s.tokenSeq;
+  }
+}
+
+/** Forma serializzabile dello store (snapshot/restore su file). */
+export interface StoreSnapshot {
+  accounts: [string, Account][];
+  clubs: [string, Club][];
+  events: [string, Event][];
+  tiers: [string, Tier][];
+  orders: [string, Order][];
+  tickets: [string, Ticket][];
+  transfers: [string, Transfer][];
+  validations: [string, Validation][];
+  validators: [string, Validator][];
+  payments: [string, Payment][];
+  pendingRegistrations: [string, PendingRegistration][];
+  artists: [string, Artist][];
+  blogPosts: [string, BlogPost][];
+  news: [string, News][];
+  processedWebhooks: string[];
+  ledger: Ledger;
+  seq: Record<string, number>;
+  tokenSeq: number;
 }

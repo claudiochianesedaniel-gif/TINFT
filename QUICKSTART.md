@@ -36,6 +36,6 @@ Le app si **collegano da sole** all'account demo del ruolo scelto; aprendole **s
 - Export libero: **fee d'uscita 25%**.
 
 ## Note
-- Persistenza: **in-memory** (i dati demo si ricaricano a ogni riavvio). Per Postgres vedi `docs/PERSISTENCE.md`.
-- Disattivare il seed demo: `SEED_DEMO=0 pnpm dev`.
+- Persistenza: i dati **sopravvivono ai riavvii** (snapshot su `services/api/.tinft-data.json`, salvataggio periodico + alla chiusura). Per ripartire pulito cancella quel file. Per Postgres in produzione vedi `docs/PERSISTENCE.md`.
+- Disattivare il seed demo: `SEED_DEMO=0 pnpm dev`. Disattivare la persistenza: `PERSIST=0 pnpm dev`.
 - Pagamenti reali (Stripe) e SPID OIDC: non attivi nel prototipo (vedi `.env.example`).
