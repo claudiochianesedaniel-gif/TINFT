@@ -6,7 +6,9 @@
 | Componente | Esito |
 |---|---|
 | Smart contract (Foundry) | ✓ 65/65 · fmt+build ok |
-| Backend (vitest) | ✓ 90 pass + 2 skip (DB) · tsc pulito |
+| Backend (vitest) | ✓ 103 pass + 2 skip (DB) · tsc pulito |
+| Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
+| App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
 | Frontend (render harness) | ✓ 5/5 (sito, web app, console, registrazione, demo) |
 | Live — store in-memory (default) | ✓ e2e 27/27 · launcher `/` e sito serviti |
 | Live — store PostgreSQL | ✓ e2e 27/27 · dati persistiti |
@@ -24,10 +26,12 @@
 - Pagamenti Stripe end-to-end (checkout ordine → webhook → mint, idempotente).
 - Mint on-chain reale (ViemChain) — verificato su anvil.
 - Frontend v2 (Quicksand/#4472c4): Sito, Web App, Console + launcher; fallback demo offline; un solo server serve API + pagine; seed demo.
+- Backbone validazione: token QR firmato (rotante ~30s) + `/validate/scan` con i 5 esiti (103 test).
+- App nativa **Expo React Native** (`apps/mobile`): Validatore (scan QR + NFC Android), Cliente (QR rotante), coda offline + sync — codice reale e buildabile.
 
 ### ☐ Da fare (per beta/pilota)
 - SPID reale (OIDC) con aggregatore accreditato — esterno (settimane).
-- App nativa per validazione/NFC al varco (PWA insufficiente) — settimane.
+- **Build + test dell'app su dispositivo reale** (Expo dev build) + tap NFC via HCE Android (opzionale).
 - Wallet custodial reale (ERC-4337) + paymaster + recovery SPID.
 - Deploy contratti su Base Sepolia poi audit prima del mainnet.
 - Payout venditori sul secondario (KYC venditore) + rimborsi/chargeback.
@@ -55,6 +59,12 @@
 - [ ] paga un ordine → ticket con `txHash`; `cast call <addr> 'ownerOf(uint256)(address)' <id>` = wallet compratore
 
 **G · CI** — `git push` → GitHub Actions: `Contracts (Foundry)` + `Backend (API)` verdi.
+
+**H · App nativa (su dispositivo)** — `cd apps/mobile && npm install`; serve un **dev build** (camera/NFC nativi, Expo Go non basta): `npx expo run:android` / `npx expo run:ios` (o `eas build --profile development`). Imposta `API_BASE` all'IP LAN del backend.
+- [ ] login `cli@tinft.io` → apri un biglietto → il QR ruota (~30s)
+- [ ] login `org@tinft.io` (Validatore, PIN 1234) → scansiona il QR → VALID; riscansiona → DUPLICATE
+- [ ] screenshot di un QR vecchio → SCREENSHOT; biglietto in vendita → ESCROW
+- [ ] (Android) "Leggi NFC" valida un tag; (iOS) mostra "usa il QR"
 
 ## 4 · Regole economiche
 - **Prevendita 10%** sul PRIMO acquisto → solo TINFT (a carico del compratore).
