@@ -1,4 +1,4 @@
-import {NotFound} from "../domain/models";
+import {DomainError, NotFound} from "../domain/models";
 import type {Store} from "../repo/store";
 import {TicketingService} from "../services/ticketing";
 import type {ChainPort} from "../chain/port";
@@ -56,6 +56,39 @@ export class PaymentsService {
     return {payment, session};
   }
 
+  /**
+   * Checkout di un ordine v2 (multi-biglietto): apre una sessione PSP per
+   * `order.totalCents` portando l'`orderId` nei metadati e registra un Payment
+   * PRIMARY PENDING. Al webbook "succeeded" si concretizza via ticketing.payOrder.
+   */
+  async createOrderCheckout(orderId: string): Promise<{payment: Payment; checkoutUrl: string; providerRef: string}> {
+    const order = await this.ticketing.getOrder(orderId);
+    if (order.status !== "PENDING") throw new DomainError("ORDER_NOT_PENDING", "ordine non in attesa di pagamento", 409);
+
+    const session = await this.provider.createCheckout({
+      kind: "PRIMARY",
+      amountCents: order.totalCents,
+      currency: "EUR",
+      accountId: order.buyerId,
+      eventId: order.eventId,
+      orderId: order.id
+    });
+    const payment: Payment = {
+      id: this.store.id("pay"),
+      kind: "PRIMARY",
+      status: "PENDING",
+      amountCents: order.totalCents,
+      currency: "EUR",
+      accountId: order.buyerId,
+      eventId: order.eventId,
+      orderId: order.id,
+      providerRef: session.providerRef,
+      createdAt: this.now()
+    };
+    await this.store.createPayment(payment);
+    return {payment, checkoutUrl: session.url, providerRef: session.providerRef};
+  }
+
   /** Ingestione webhook: verifica/normalizza e processa in modo idempotente. */
   async ingestWebhook(rawBody: string, signature?: string): Promise<WebhookResult> {
     const event = this.provider.parseWebhook(rawBody, signature);
@@ -82,6 +115,17 @@ export class PaymentsService {
     if (payment.status === "PAID") {
       return {handled: true, paymentId: payment.id, ticketId: payment.ticketMintedId};
     }
+
+    // Checkout di un ordine v2: delega a ticketing.payOrder (idempotente) che concia
+    // gli N biglietti, accredita ledger e goodwill; il Payment passa a PAID.
+    if (payment.orderId) {
+      const order = await this.ticketing.payOrder(payment.orderId);
+      payment.status = "PAID";
+      payment.ticketMintedId = order.ticketIds[0];
+      await this.store.updatePayment(payment);
+      return {handled: true, paymentId: payment.id, ticketId: order.ticketIds[0]};
+    }
+
     payment.status = "PAID";
 
     let ticketId: string | undefined;

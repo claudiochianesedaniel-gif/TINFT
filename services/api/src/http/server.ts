@@ -374,6 +374,17 @@ export function buildServer(
       return ticketing.payOrder(req.params.id);
     }
   );
+  // Checkout PSP reale (Stripe se configurato, altrimenti FakeProvider): apre la sessione di
+  // pagamento; al webhook "succeeded" (/webhooks/psp) l'ordine viene pagato e i biglietti coniati.
+  app.post<{Params: {id: string}; Body: Record<string, never>}>(
+    "/orders/:id/checkout",
+    {preHandler: authenticate},
+    async (req, reply) => {
+      const order = await ticketing.getOrder(req.params.id);
+      assertSelf(req, order.buyerId);
+      return reply.status(201).send(await payments.createOrderCheckout(req.params.id));
+    }
+  );
   app.get<{Params: {id: string}}>("/orders/:id", {preHandler: authenticate}, async (req) => {
     const order = await ticketing.getOrder(req.params.id);
     assertSelf(req, order.buyerId);

@@ -15,8 +15,10 @@ export interface PaymentProvider {
 export class FakeProvider implements PaymentProvider {
   private seq = 0;
 
-  async createCheckout(_intent: CheckoutIntent): Promise<CheckoutSession> {
-    const providerRef = `cs_fake_${++this.seq}`;
+  async createCheckout(intent: CheckoutIntent): Promise<CheckoutSession> {
+    // id deterministico: per gli ordini include l'orderId così i test possono
+    // ricostruire la sessione e fabbricare l'evento "succeeded" corrispondente.
+    const providerRef = intent.orderId ? `cs_fake_ord_${intent.orderId}` : `cs_fake_${++this.seq}`;
     return {providerRef, url: `https://sandbox.tinft.local/checkout/${providerRef}`};
   }
 
@@ -30,6 +32,6 @@ export class FakeProvider implements PaymentProvider {
     if (!obj.id || !obj.providerRef || (obj.type !== "payment_succeeded" && obj.type !== "payment_failed")) {
       throw new DomainError("BAD_WEBHOOK", "evento webhook incompleto");
     }
-    return {id: obj.id, type: obj.type, providerRef: obj.providerRef};
+    return {id: obj.id, type: obj.type, providerRef: obj.providerRef, orderId: obj.orderId};
   }
 }

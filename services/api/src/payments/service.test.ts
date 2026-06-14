@@ -57,4 +57,47 @@ describe("PaymentsService", () => {
     const s = await setup();
     await expect(s.payments.ingestWebhook("non-json")).rejects.toThrow();
   });
+
+  it("ordine: createOrderCheckout → webhook 'succeeded' paga l'ordine (idempotente)", async () => {
+    const s = await setup();
+    const order = await s.ticketing.createOrder({buyerId: s.buyer.id, eventId: s.event.id, quantity: 2});
+    expect(order.status).toBe("PENDING");
+    expect(order.totalCents).toBe(6_930); // (3150 + prevendita 10% 315) × 2
+
+    const {payment, checkoutUrl, providerRef} = await s.payments.createOrderCheckout(order.id);
+    expect(payment.status).toBe("PENDING");
+    expect(payment.orderId).toBe(order.id);
+    expect(payment.amountCents).toBe(6_930);
+    expect(checkoutUrl).toContain(providerRef);
+    expect(s.store.payments.get(payment.id)!.status).toBe("PENDING");
+
+    // evento PSP "succeeded" corrispondente alla sessione dell'ordine
+    const body = JSON.stringify({id: "evt_ord_1", type: "payment_succeeded", providerRef, orderId: order.id});
+    const res = await s.payments.ingestWebhook(body);
+    expect(res.handled).toBe(true);
+    expect(res.ticketId).toBeDefined();
+
+    // payOrder è andato a buon fine: ordine PAID, 2 biglietti, ledger + goodwill
+    const paid = await s.ticketing.getOrder(order.id);
+    expect(paid.status).toBe("PAID");
+    expect(paid.ticketIds).toHaveLength(2);
+    expect(await s.ticketing.ticketsOf(s.buyer.id)).toHaveLength(2);
+    expect((await s.store.getLedger()).presaleCommissionCents).toBe(630); // 315 × 2
+    expect(s.store.accounts.get(s.buyer.id)!.goodwill).toBe(30); // 15 × 2
+    expect(s.store.payments.get(payment.id)!.status).toBe("PAID");
+
+    // stesso webhook di nuovo → dedup, nessun doppio mint
+    const again = await s.payments.ingestWebhook(body);
+    expect(again.deduped).toBe(true);
+    expect(await s.ticketing.ticketsOf(s.buyer.id)).toHaveLength(2);
+    expect((await s.store.getLedger()).presaleCommissionCents).toBe(630);
+    expect(s.store.accounts.get(s.buyer.id)!.goodwill).toBe(30);
+  });
+
+  it("ordine: checkout consentito solo su ordine PENDING", async () => {
+    const s = await setup();
+    const order = await s.ticketing.createOrder({buyerId: s.buyer.id, eventId: s.event.id, quantity: 1});
+    await s.ticketing.payOrder(order.id); // ora è PAID
+    await expect(s.payments.createOrderCheckout(order.id)).rejects.toThrowError(/PENDING|attesa/i);
+  });
 });

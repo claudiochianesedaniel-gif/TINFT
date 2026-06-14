@@ -84,6 +84,42 @@ describe("API HTTP v2 (tier, ordini, mercato, OTP)", () => {
     expect(orders.json()).toHaveLength(1);
   });
 
+  it("checkout PSP: auth obbligatoria (401 senza token); happy path → checkoutUrl", async () => {
+    const o = await org("o-co@e.it");
+    const ev = await event(o);
+    const b = await buyer("b-co@e.it", "idCo");
+    const order = (await post("/orders", {buyerId: b.account.id, eventId: ev.id, quantity: 2}, b.headers)).json();
+
+    // senza token → 401
+    const noAuth = await post(`/orders/${order.id}/checkout`, {});
+    expect(noAuth.statusCode).toBe(401);
+
+    // happy path (FakeProvider) → 201 con sessione di checkout
+    const co = await post(`/orders/${order.id}/checkout`, {}, b.headers);
+    expect(co.statusCode).toBe(201);
+    expect(co.json().checkoutUrl).toMatch(/^https?:\/\//);
+    expect(co.json().providerRef).toBeTruthy();
+    expect(co.json().payment.status).toBe("PENDING");
+    expect(co.json().payment.orderId).toBe(order.id);
+
+    // ordine ancora PENDING finché non arriva il webhook "succeeded"
+    const stillPending = await get(`/orders/${order.id}`, b.headers);
+    expect(stillPending.json().status).toBe("PENDING");
+
+    // il webhook PSP paga l'ordine e concia i biglietti
+    const hook = await post("/webhooks/psp", {
+      id: "evt_http_ord",
+      type: "payment_succeeded",
+      providerRef: co.json().providerRef,
+      orderId: order.id
+    });
+    expect(hook.statusCode).toBe(200);
+    expect(hook.json().handled).toBe(true);
+    const paid = await get(`/orders/${order.id}`, b.headers);
+    expect(paid.json().status).toBe("PAID");
+    expect((await get(`/accounts/${b.account.id}/tickets`, b.headers)).json()).toHaveLength(2);
+  });
+
   it("ordine oltre l'allowance → 409 EVENT_LIMIT", async () => {
     const o = await org("o-lim@e.it");
     const ev = await event(o);

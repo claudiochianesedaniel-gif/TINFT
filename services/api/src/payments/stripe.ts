@@ -32,9 +32,12 @@ export class StripeProvider implements PaymentProvider {
           }
         }
       ],
-      success_url: this.urls.success ?? "https://tinft.app/checkout/ok",
-      cancel_url: this.urls.cancel ?? "https://tinft.app/checkout/ko",
-      metadata: {kind: intent.kind, accountId: intent.accountId, eventId: intent.eventId ?? ""}
+      success_url: this.urls.success ?? process.env.CHECKOUT_SUCCESS_URL ?? "http://localhost:8080/checkout/ok",
+      cancel_url: this.urls.cancel ?? process.env.CHECKOUT_CANCEL_URL ?? "http://localhost:8080/checkout/ko",
+      // metadati portati fino al webhook: orderId è il riferimento che lega la sessione all'ordine v2
+      metadata: {kind: intent.kind, accountId: intent.accountId, eventId: intent.eventId ?? "", orderId: intent.orderId ?? ""},
+      // anche il PaymentIntent porta i metadati: così payment_intent.succeeded espone l'orderId
+      payment_intent_data: {metadata: {orderId: intent.orderId ?? ""}}
     });
     return {providerRef: session.id, url: session.url ?? ""};
   }
@@ -47,12 +50,14 @@ export class StripeProvider implements PaymentProvider {
     } catch {
       throw new DomainError("BAD_WEBHOOK", "firma webhook non valida");
     }
-    const providerRef = (event.data.object as {id?: string}).id ?? "";
-    if (event.type === "checkout.session.completed") {
-      return {id: event.id, type: "payment_succeeded", providerRef};
+    const object = event.data.object as {id?: string; metadata?: Record<string, string> | null};
+    const providerRef = object.id ?? "";
+    const orderId = object.metadata?.orderId || undefined;
+    if (event.type === "checkout.session.completed" || event.type === "payment_intent.succeeded") {
+      return {id: event.id, type: "payment_succeeded", providerRef, orderId};
     }
     if (event.type === "checkout.session.expired" || event.type === "payment_intent.payment_failed") {
-      return {id: event.id, type: "payment_failed", providerRef};
+      return {id: event.id, type: "payment_failed", providerRef, orderId};
     }
     return null; // evento non rilevante → ack senza azione
   }
