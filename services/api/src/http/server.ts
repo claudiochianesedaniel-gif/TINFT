@@ -1,4 +1,4 @@
-import Fastify, {type FastifyInstance} from "fastify";
+import Fastify, {type FastifyInstance, type preHandlerHookHandler} from "fastify";
 import fastifyCors from "@fastify/cors";
 import {DomainError} from "../domain/models";
 import {MemoryStore} from "../repo/memory";
@@ -63,7 +63,7 @@ function providerFromEnv(): PaymentProvider | undefined {
  * (store condiviso). Testabile via `app.inject` senza rete né DB.
  */
 export function buildServer(
-  opts: {store?: MemoryStore; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier} = {}
+  opts: {store?: MemoryStore; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier; rateLimit?: boolean} = {}
 ): FastifyInstance {
   const store = opts.store ?? new MemoryStore();
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
@@ -73,8 +73,39 @@ export function buildServer(
   const consoleSvc = new ConsoleService(store);
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
-  const app = Fastify({logger: false});
+  const app = Fastify({logger: false, bodyLimit: 262_144}); // body max 256 KB
   app.register(fastifyCors, {origin: true}); // consumo dal frontend (webapp/sito)
+
+  // Security header di base su ogni risposta (no CSP stretta: le pagine servite usano script inline + Google Fonts).
+  app.addHook("onSend", async (_req, reply, payload) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "SAMEORIGIN");
+    reply.header("Referrer-Policy", "no-referrer");
+    reply.header("X-DNS-Prefetch-Control", "off");
+    return payload;
+  });
+
+  // Rate limiting in-memory (per istanza) sulle route sensibili (anti brute-force).
+  // Disattivo sotto test (VITEST) salvo override esplicito via opts.rateLimit.
+  const rlEnabled = opts.rateLimit ?? !process.env.VITEST;
+  const rlHits = new Map<string, {count: number; reset: number}>();
+  function rateLimit(max: number, windowMs: number): preHandlerHookHandler {
+    return async (req, reply) => {
+      if (!rlEnabled) return;
+      const key = `${req.ip}|${req.url.split("?")[0]}`;
+      const now = Date.now();
+      const e = rlHits.get(key);
+      if (!e || now > e.reset) {
+        rlHits.set(key, {count: 1, reset: now + windowMs});
+        return;
+      }
+      e.count += 1;
+      if (e.count > max) {
+        reply.header("Retry-After", Math.ceil((e.reset - now) / 1000));
+        throw new DomainError("RATE_LIMITED", "troppe richieste, riprova tra poco", 429);
+      }
+    };
+  }
 
   // cattura il raw body (per la verifica firma webhook Stripe) mantenendo il JSON parsato
   app.addContentTypeParser("application/json", {parseAs: "string"}, (req, payload, done) => {
@@ -206,14 +237,14 @@ export function buildServer(
       username?: string;
       password?: string;
     };
-  }>("/auth/register/email", async (req, reply) => reply.status(201).send(ticketing.startEmailRegistration(req.body)));
+  }>("/auth/register/email", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => reply.status(201).send(ticketing.startEmailRegistration(req.body)));
 
   app.post<{Body: {email: string; code: string}}>("/auth/register/email/verify", async (req, reply) =>
     reply.status(201).send(ticketing.verifyEmailRegistration(req.body.email, req.body.code))
   );
 
   // -------- login: email + password → token + account
-  app.post<{Body: {email: string; password: string}}>("/auth/login", async (req, reply) => {
+  app.post<{Body: {email: string; password: string}}>("/auth/login", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => {
     const account = ticketing.findAccountByEmail(req.body.email ?? "");
     if (!account || !verifyPassword(account, req.body.password ?? "")) {
       throw new DomainError("BAD_CREDENTIALS", "credenziali non valide", 401);
