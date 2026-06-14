@@ -272,7 +272,7 @@
         <div class="actions">
           <div class="apibox">
             <span class="eyebrow">API</span>
-            <input id="api" value="http://localhost:3001" spellcheck="false" />
+            <input id="api" spellcheck="false" />
             <span class="dot" id="dot"></span>
             <button class="connect ghost" onclick="init()">Connetti</button>
           </div>
@@ -299,6 +299,13 @@
 
 var $ = function(id){ return (typeof document!=='undefined'&&document.getElementById) ? document.getElementById(id) : null; };
 
+/* API base: same-origin when served over http(s), localhost:3001 from disk. */
+var API_BASE = (typeof location!=='undefined' && (location.protocol === 'file:' || !location.host)) ? 'http://localhost:3001' : (typeof location!=='undefined' ? location.origin : 'http://localhost:3001');
+
+/* fixed seeded demo organizer (password "demo123") */
+var DEMO_ORG_EMAIL = 'org@tinft.io';
+var DEMO_PW = 'demo123';
+
 /* ---- app state ---- */
 var ctx = {
   route: 'dash',       // dash | club | eventi | incassi | accessi | holders
@@ -319,7 +326,7 @@ var NAV = [
   {key:'holders', label:'Holder',    icon:'◉', title:'Holder & community',  sub:'Chi possiede i tuoi titoli NFT'}
 ];
 
-function base(){ return ($('api') ? $('api').value : 'http://localhost:3001').replace(/\/$/, ''); }
+function base(){ return ($('api') && $('api').value ? $('api').value : API_BASE).replace(/\/$/, ''); }
 function eur(c){ return '€ ' + ((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function eur0(c){ return '€ ' + Math.round((c||0)/100).toLocaleString('it-IT'); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];}); }
@@ -492,10 +499,29 @@ function aapi(path, method, body){ return api(path, method, body, ctx.auth ? ctx
 function meId(){ return ctx.auth ? ctx.auth.accountId : null; }
 
 /* =========================================================================
-   BOOTSTRAP — probe /health, auto-provision a demo ORGANIZER and log in to get
-   a Bearer token. On any failure, fall back to MOCK and still render.
+   SESSION PERSISTENCE + DEMO LOGIN (organizer)
+   ========================================================================= */
+function sessKey(role){ return 'tinft_sess_' + role; }
+function saveSess(role, sess){ try{ localStorage.setItem(sessKey(role), JSON.stringify(sess)); }catch(e){} }
+function loadSess(role){ try{ var raw = localStorage.getItem(sessKey(role)); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
+// POST /auth/login {email, password:"demo123"} -> {token, account}; persist.
+function loginDemo(email){
+  return api('/auth/login','POST',{ email:email, password:DEMO_PW }).then(function(r){
+    if(!r || !r.token || !r.account) throw new Error('login demo fallito');
+    var sess = { token:r.token, accountId:r.account.id, account:r.account };
+    ctx.auth = sess;
+    saveSess('organizzatore', sess);
+    return sess;
+  });
+}
+
+/* =========================================================================
+   BOOTSTRAP — probe /health, log in to the fixed seeded organizer demo account
+   (org@tinft.io) to get a Bearer token. On any failure, fall back to the legacy
+   auto-provision-or-MOCK path and still render.
    ========================================================================= */
 function init(){
+  if($('api') && !$('api').value) $('api').value = API_BASE;
   if($('content')) $('content').innerHTML = '<div class="muted"><span class="spin"></span>Connessione all\'API…</div>';
   ctx.mock = false;
   return api('/health').then(function(){ ctx.mock = false; })
@@ -514,20 +540,37 @@ function init(){
     });
 }
 
-// Provision a demo organizer with a unique email + password "1234", then login.
+// Reflect the logged-in organizer account into ctx + sidebar chrome.
+function applyAccount(account){
+  ctx.kyc = (account && account.kycStatus) || 'NONE';
+  var nm = (((account&&account.nome)||'Club') + ' ' + ((account&&account.cognome)||'Owner')).trim();
+  if($('orgName')) $('orgName').textContent = nm;
+  var ini = initials(nm);
+  if($('orgAv')) $('orgAv').textContent = ini;
+  if($('orgAvN')) $('orgAvN').textContent = ini;
+}
+
+// Log in to the fixed seeded organizer demo account (org@tinft.io). On failure
+// (no seed / API unreachable) reuse a stored session, else legacy auto-provision.
 function provision(){
+  var saved = loadSess('organizzatore');
+  return loginDemo(DEMO_ORG_EMAIL)
+    .then(function(sess){ applyAccount(sess.account); })
+    .catch(function(){
+      if(saved && saved.token){ ctx.auth = saved; applyAccount(saved.account); return; }
+      return provisionFallback();
+    });
+}
+
+// Legacy fallback: provision a random demo organizer (password "1234"), login.
+function provisionFallback(){
   var pw = '1234';
   var orgEmail = 'org' + uid('') + '@tinft.io';
   return api('/accounts','POST',{ role:'ORGANIZER', nome:'Club', cognome:'Owner', email:orgEmail, password:pw })
     .then(function(){ return api('/auth/login','POST',{ email:orgEmail, password:pw }); })
     .then(function(r){
       ctx.auth = { token:r.token, accountId:r.account.id, account:r.account };
-      ctx.kyc = (r.account && r.account.kycStatus) || 'NONE';
-      var nm = ((r.account.nome||'Club') + ' ' + (r.account.cognome||'Owner')).trim();
-      if($('orgName')) $('orgName').textContent = nm;
-      var ini = initials(nm);
-      if($('orgAv')) $('orgAv').textContent = ini;
-      if($('orgAvN')) $('orgAvN').textContent = ini;
+      applyAccount(r.account);
     });
 }
 

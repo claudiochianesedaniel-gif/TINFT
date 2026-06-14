@@ -247,7 +247,8 @@
    ========================================================================= */
 
 var $ = function(id){ return document.getElementById(id); };
-var API_BASE = 'http://localhost:3001';
+/* API base: same-origin when served over http(s), localhost:3001 from disk. */
+var API_BASE = (location.protocol === 'file:' || !location.host) ? 'http://localhost:3001' : location.origin;
 
 /* ---- app state ---- */
 var ctx = {

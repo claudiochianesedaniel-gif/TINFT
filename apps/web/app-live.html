@@ -147,7 +147,7 @@
     </div>
     <div class="api">
       <span class="eyebrow">API</span>
-      <input id="api" value="http://localhost:3001" spellcheck="false" />
+      <input id="api" spellcheck="false" />
       <span class="dot" id="dot"></span>
       <button class="connect ghost" onclick="init()">Connetti</button>
     </div>
@@ -167,6 +167,13 @@
 
 var $ = function(id){ return document.getElementById(id); };
 
+/* API base: same-origin when served over http(s), localhost:3001 from disk. */
+var API_BASE = (location.protocol === 'file:' || !location.host) ? 'http://localhost:3001' : location.origin;
+
+/* fixed seeded demo accounts (all password "demo123") */
+var DEMO_PW = 'demo123';
+var DEMO_EMAIL = { cliente:'cli@tinft.io', organizzatore:'org@tinft.io' };
+
 /* ---- app state ---- */
 var ctx = {
   role: 'cliente',
@@ -178,7 +185,7 @@ var ctx = {
   auth: { organizzatore: null, cliente: null, validatore: null }
 };
 
-function base(){ return ($('api') ? $('api').value : 'http://localhost:3001').replace(/\/$/, ''); }
+function base(){ return ($('api') && $('api').value ? $('api').value : API_BASE).replace(/\/$/, ''); }
 function eur(c){ return '€ ' + ((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];}); }
 function uid(p){ return p + Date.now() + Math.floor(Math.random()*1000); }
@@ -410,17 +417,44 @@ function aapi(path, method, body){
 function meId(){ var a = ctx.auth[ctx.role]; return a ? a.accountId : null; }
 
 /* =========================================================================
-   BOOTSTRAP — probe /health, then provision demo accounts and log in to get
-   Bearer tokens for each role. On any failure, fall back to MOCK.
+   SESSION PERSISTENCE + DEMO LOGIN
+   Store/restore the per-role session so a reload keeps the same demo account
+   (a client who buys a ticket still sees it after refresh).
+   ========================================================================= */
+function sessKey(role){ return 'tinft_sess_' + role; }
+function saveSess(role, sess){
+  try{ localStorage.setItem(sessKey(role), JSON.stringify(sess)); }catch(e){}
+}
+function loadSess(role){
+  try{ var raw = localStorage.getItem(sessKey(role)); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+// POST /auth/login {email, password:"demo123"} -> {token, account}; persist per role.
+function loginDemo(role){
+  var email = DEMO_EMAIL[role];
+  return api('/auth/login','POST',{ email:email, password:DEMO_PW }).then(function(r){
+    if(!r || !r.token || !r.account) throw new Error('login demo fallito');
+    var sess = { token:r.token, accountId:r.account.id, account:r.account };
+    ctx.auth[role] = sess;
+    saveSess(role, sess);
+    return sess;
+  });
+}
+
+/* =========================================================================
+   BOOTSTRAP — probe /health, then log in to the fixed seeded demo accounts to
+   get Bearer tokens for each role. On any failure, fall back to the legacy
+   auto-provision-or-MOCK path so nothing breaks.
    ========================================================================= */
 function init(){
+  if($('api') && !$('api').value) $('api').value = API_BASE;
   if($('content')) $('content').innerHTML = '<div class="muted"><span class="spin"></span>Connessione all\'API…</div>';
   ctx.mock = false;
   return api('/health').then(function(){ ctx.mock = false; })
     .catch(function(){ ctx.mock = true; })
     .then(function(){ return provision(); })
+    .then(function(){ return refreshClientTickets(); })
     .then(function(){
-      setDot(true);
+      setDot(!ctx.mock);
       toast(ctx.mock ? 'Modalità DEMO offline · dati locali' : 'Connesso · dati reali dal backend', ctx.mock ? '' : 'ok');
       ctx.view = null;
       return render();
@@ -433,10 +467,29 @@ function init(){
     });
 }
 
-// Provision an organizer + a verified client, log both in.
+// Log in to the fixed seeded demo accounts (cli@tinft.io / org@tinft.io).
 // The organizer also acts as the "validator" surface (validates the client's
-// tickets) — the backend validate endpoint just needs any authenticated user.
+// tickets) — the backend validate endpoint just needs any authenticated user,
+// so the validator role reuses the organizer token.
+// On failure (no seed / API unreachable) fall back to legacy auto-provision/MOCK.
 function provision(){
+  // try to restore persisted sessions first so a reload is instant
+  var savedOrg = loadSess('organizzatore'), savedCli = loadSess('cliente');
+  return loginDemo('organizzatore')
+    .then(function(){ ctx.auth.validatore = ctx.auth.organizzatore; })
+    .then(function(){ return loginDemo('cliente'); })
+    .catch(function(){
+      // demo accounts not available → reuse any stored session, else auto-provision
+      if(savedOrg && savedCli){
+        ctx.auth.organizzatore = savedOrg; ctx.auth.validatore = savedOrg; ctx.auth.cliente = savedCli;
+        return;
+      }
+      return provisionFallback();
+    });
+}
+
+// Legacy fallback: provision a random organizer + verified client and log in.
+function provisionFallback(){
   var pw = '1234';
   var orgEmail = 'org' + uid('') + '@tinft.io';
   var cliEmail = 'cli' + uid('') + '@email.it';
@@ -448,6 +501,16 @@ function provision(){
     })
     .then(function(){ return api('/auth/login','POST',{ email:cliEmail, password:pw }); })
     .then(function(r){ ctx.auth.cliente = { token:r.token, accountId:r.account.id }; });
+}
+
+// After login, refresh the client's tickets from GET /accounts/:id/tickets with
+// the stored token, so a ticket bought earlier still shows after a reload.
+function refreshClientTickets(){
+  var a = ctx.auth.cliente;
+  if(!a || !a.accountId) return Promise.resolve([]);
+  return api('/accounts/'+a.accountId+'/tickets','GET',undefined,a.token)
+    .then(function(tks){ ctx.clientTickets = tks || []; return ctx.clientTickets; })
+    .catch(function(){ ctx.clientTickets = ctx.clientTickets || []; return ctx.clientTickets; });
 }
 
 /* =========================================================================
