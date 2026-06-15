@@ -35,7 +35,7 @@
 - SPID reale (OIDC) con aggregatore accreditato — esterno (settimane).
 - **Build + test dell'app su dispositivo reale** (Expo dev build) + tap NFC via HCE Android (opzionale).
 - Wallet custodial reale (ERC-4337) + paymaster + recovery SPID.
-- Deploy contratti su Base Sepolia poi audit prima del mainnet.
+- Deploy contratti su Base Sepolia: tooling **chiavi in mano** pronto e provato su anvil (`scripts/deploy-base-sepolia.sh` + `docs/DEPLOY-BASE-SEPOLIA.md`) — manca solo lanciarlo con una **chiave testnet finanziata**. Audit prima del mainnet.
 - Payout venditori sul secondario (KYC venditore) + rimborsi/chargeback.
 - Fidelity on-chain (oggi non sul percorso PG) + edge case.
 - GDPR/legale/fiscale (custodia, anti-bagarinaggio, IVA), accessibilità AgID.
@@ -58,7 +58,7 @@
 **E · Stripe (con chiavi)** — `.env`: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (+ `CHECKOUT_SUCCESS_URL`/`CHECKOUT_CANCEL_URL`).
 - [ ] `POST /orders/:id/checkout` → checkoutUrl; webhook → `POST /webhooks/psp` → ordine PAID + biglietti coniati
 
-**F · On-chain (anvil o Base Sepolia)** — `forge script contracts/script/Deploy.s.sol --rpc-url $RPC --private-key $KEY --broadcast`; backend `CHAIN_RPC_URL`/`CHAIN_PRIVATE_KEY`(owner)/`TICKET_ADDRESS`.
+**F · On-chain (anvil o Base Sepolia)** — `./scripts/deploy-base-sepolia.sh` (runbook: `docs/DEPLOY-BASE-SEPOLIA.md`); incolla nel backend il blocco stampato `CHAIN_RPC_URL`/`CHAIN_PRIVATE_KEY`(owner)/`TICKET_ADDRESS`.
 - [ ] paga un ordine → ticket con `txHash`; `cast call <addr> 'ownerOf(uint256)(address)' <id>` = wallet compratore
 
 **G · CI** — `git push` → GitHub Actions: `Contracts (Foundry)` + `Backend (API)` verdi.

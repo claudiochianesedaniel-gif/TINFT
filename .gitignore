@@ -7,6 +7,9 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 
+# indirizzi di deploy locali (anvil/dry-run); per le reti reali committa a mano se vuoi un record
+/deployments/
+
 # build output
 dist/
 .next/
