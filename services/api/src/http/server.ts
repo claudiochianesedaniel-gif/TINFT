@@ -13,6 +13,7 @@ import {PaymentsService} from "../payments/service";
 import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
 import {ViemChain} from "../chain/viem";
+import {openapiSpec, swaggerUiHtml} from "./openapi";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import {setPassword, verifyPassword} from "../auth/password";
 import {signToken, verifyToken} from "../auth/tokens";
@@ -117,6 +118,13 @@ export function buildServer(
     );
     reply.header("content-type", "text/plain; version=0.0.4");
     return lines.join("\n") + "\n";
+  });
+
+  // Documentazione API: spec OpenAPI 3.1 + Swagger UI (asset da CDN).
+  app.get("/openapi.json", async () => openapiSpec);
+  app.get("/docs", async (_req, reply) => {
+    reply.header("content-type", "text/html; charset=utf-8");
+    return swaggerUiHtml;
   });
 
   // Security header di base su ogni risposta (no CSP stretta: le pagine servite usano script inline + Google Fonts).
