@@ -192,6 +192,12 @@ export function buildServer(
     additionalProperties: true,
     properties: {ticketId: STR}
   } as const;
+  const transferIdParam = {
+    type: "object",
+    required: ["transferId"],
+    additionalProperties: true,
+    properties: {transferId: STR}
+  } as const;
   /** Helper: corpo oggetto con additionalProperties lasco e `required` mirato. */
   const body = (properties: Record<string, unknown>, required: string[] = []) =>
     ({type: "object", additionalProperties: true, required, properties}) as const;
@@ -581,6 +587,16 @@ export function buildServer(
       return reply.status(201).send(await payments.createOrderCheckout(req.params.id));
     }
   );
+  // Annulla un ordine PENDING (es. checkout abbandonato): PENDING → CANCELLED. Idempotente.
+  app.post<{Params: {id: string}; Body: Record<string, never>}>(
+    "/orders/:id/cancel",
+    {preHandler: authenticate, schema: {params: idParam}},
+    async (req, reply) => {
+      const order = await ticketing.getOrder(req.params.id);
+      assertSelf(req, order.buyerId);
+      return reply.status(200).send(await ticketing.cancelOrder(req.params.id));
+    }
+  );
   app.get<{Params: {id: string}}>("/orders/:id", {preHandler: authenticate}, async (req) => {
     const order = await ticketing.getOrder(req.params.id);
     assertSelf(req, order.buyerId);
@@ -783,6 +799,45 @@ export function buildServer(
       }
     },
     async () => consoleSvc.platformRevenue()
+  );
+
+  // -------- payout venditore (M7+): incassi P2P da liquidare + liquidazione.
+  // Richiede ruolo PLATFORM (via token) oppure il token admin (x-admin-token).
+  const requirePlatform: preHandlerHookHandler = (req, _reply, done) => {
+    if (req.headers["x-admin-token"] === adminToken) {
+      req.user = {accountId: "admin", role: "PLATFORM"};
+      return done();
+    }
+    try {
+      const payload = verifyToken(authHeaderToken(req));
+      if (payload.role !== "PLATFORM") throw new DomainError("FORBIDDEN", "ruolo non autorizzato", 403);
+      req.user = {accountId: payload.accountId, role: payload.role};
+      done();
+    } catch (err) {
+      done(err as Error);
+    }
+  };
+  app.get<{Querystring: {sellerId?: string}}>(
+    "/platform/payouts",
+    {
+      preHandler: requirePlatform,
+      schema: {querystring: {type: "object", additionalProperties: true, properties: {sellerId: STR}}}
+    },
+    async (req, reply) => reply.send(await ticketing.pendingSellerPayouts(req.query.sellerId))
+  );
+  app.post<{Params: {transferId: string}; Body: Record<string, never>}>(
+    "/payouts/:transferId/settle",
+    {preHandler: requirePlatform, schema: {params: transferIdParam}},
+    async (req, reply) => reply.status(200).send(await ticketing.settleSellerPayout(req.params.transferId))
+  );
+  // Rimborso di un ordine pagato (rimborso/chargeback): revoca i biglietti, storna
+  // commissione e goodwill, marca l'ordine come rimborsato. Idempotente. Azione di
+  // PIATTAFORMA/operatore (storna ricavi TINFT); lato cliente il percorso automatico
+  // è il webhook PSP `payment_refunded`, non una chiamata self.
+  app.post<{Params: {id: string}; Body: Record<string, never>}>(
+    "/orders/:id/refund",
+    {preHandler: requirePlatform, schema: {params: idParam}},
+    async (req, reply) => reply.status(200).send(await ticketing.refundOrder(req.params.id))
   );
 
   // -------- KYC organizzatore (B7): submit (org, autenticato-self) + decision (admin)

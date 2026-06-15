@@ -181,7 +181,8 @@ export class PrismaStore implements Store {
       uses: r.uses ?? undefined,
       used: r.used ?? undefined,
       askPriceCents: r.askPriceCents ?? undefined,
-      market: r.market ?? undefined
+      market: r.market ?? undefined,
+      revoked: r.revoked
     };
   }
 
@@ -198,7 +199,8 @@ export class PrismaStore implements Store {
       royaltyOrganizerCents: r.royaltyOrganizerCents,
       status: r.status,
       ttlSeconds: r.ttlSeconds,
-      createdAt: Math.floor(r.createdAt.getTime() / 1000)
+      createdAt: Math.floor(r.createdAt.getTime() / 1000),
+      payoutSettled: r.payoutSettled
     };
   }
 
@@ -419,7 +421,8 @@ export class PrismaStore implements Store {
       totalCents: r.totalCents,
       status: r.status,
       ticketIds: [],
-      createdAt: Math.floor(r.createdAt.getTime() / 1000)
+      createdAt: Math.floor(r.createdAt.getTime() / 1000),
+      refundedAt: r.refundedAt ?? undefined
     };
   }
 
@@ -447,7 +450,8 @@ export class PrismaStore implements Store {
         feeTotalCents: order.feeTotalCents,
         subtotalCents: order.subtotalCents,
         totalCents: order.totalCents,
-        status: order.status
+        status: order.status,
+        refundedAt: order.refundedAt ?? null
       }
     });
     return order;
@@ -456,7 +460,7 @@ export class PrismaStore implements Store {
   async updateOrder(order: Order): Promise<Order> {
     await this.prisma.order.update({
       where: {id: order.id},
-      data: {tierId: order.tierId ?? null, quantity: order.quantity, status: order.status}
+      data: {tierId: order.tierId ?? null, quantity: order.quantity, status: order.status, refundedAt: order.refundedAt ?? null}
     });
     // l'appartenenza dei biglietti all'ordine viaggia su Ticket.orderId
     if (order.ticketIds.length > 0) {
@@ -519,7 +523,8 @@ export class PrismaStore implements Store {
       uses: t.uses ?? null,
       used: t.used ?? null,
       holderName: t.holderName,
-      txHash: t.txHash ?? null
+      txHash: t.txHash ?? null,
+      revoked: t.revoked ?? false
     };
   }
 
@@ -591,7 +596,8 @@ export class PrismaStore implements Store {
       royaltyTinftCents: x.royaltyTinftCents,
       royaltyOrganizerCents: x.royaltyOrganizerCents,
       status: x.status,
-      ttlSeconds: x.ttlSeconds
+      ttlSeconds: x.ttlSeconds,
+      payoutSettled: x.payoutSettled ?? false
     };
   }
 
@@ -619,7 +625,12 @@ export class PrismaStore implements Store {
   async updateTransfer(transfer: Transfer): Promise<Transfer> {
     await this.prisma.transfer.update({
       where: {id: transfer.id},
-      data: {toId: transfer.toId ?? null, status: transfer.status, priceCents: transfer.priceCents}
+      data: {
+        toId: transfer.toId ?? null,
+        status: transfer.status,
+        priceCents: transfer.priceCents,
+        payoutSettled: transfer.payoutSettled ?? false
+      }
     });
     return transfer;
   }

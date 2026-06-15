@@ -29,7 +29,11 @@ export class FakeProvider implements PaymentProvider {
     } catch {
       throw new DomainError("BAD_WEBHOOK", "payload webhook non valido");
     }
-    if (!obj.id || !obj.providerRef || (obj.type !== "payment_succeeded" && obj.type !== "payment_failed")) {
+    if (
+      !obj.id ||
+      !obj.providerRef ||
+      (obj.type !== "payment_succeeded" && obj.type !== "payment_failed" && obj.type !== "payment_refunded")
+    ) {
       throw new DomainError("BAD_WEBHOOK", "evento webhook incompleto");
     }
     return {id: obj.id, type: obj.type, providerRef: obj.providerRef, orderId: obj.orderId};

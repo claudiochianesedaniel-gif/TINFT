@@ -35,7 +35,7 @@ export interface CheckoutSession {
 /** Evento normalizzato dal webhook del PSP. */
 export interface PspEvent {
   id: string; // id evento PSP (chiave di idempotenza)
-  type: "payment_succeeded" | "payment_failed";
+  type: "payment_succeeded" | "payment_failed" | "payment_refunded";
   providerRef: string; // sessione di checkout a cui si riferisce
   orderId?: string; // riferimento d'ordine letto dai metadati (se presente)
 }

@@ -114,10 +114,23 @@ export class PaymentsService {
     const payment = await this.store.paymentByProviderRef(event.providerRef);
     if (!payment) return {handled: false};
 
+    // Rimborso/chargeback dal PSP: storna l'ordine collegato (revoca biglietti,
+    // ledger e goodwill) tramite ticketing.refundOrder (idempotente).
+    if (event.type === "payment_refunded") {
+      if (payment.orderId) await this.ticketing.refundOrder(payment.orderId);
+      return {handled: true, paymentId: payment.id};
+    }
+
     if (event.type === "payment_failed") {
       if (payment.status === "PENDING") {
         payment.status = "FAILED";
         await this.store.updatePayment(payment);
+      }
+      // pagamento fallito su un ordine ancora in attesa → annulla l'ordine
+      // (cancelOrder è idempotente e lancia solo se PAID, che qui non può essere).
+      if (payment.orderId) {
+        const order = await this.ticketing.getOrder(payment.orderId);
+        if (order.status === "PENDING") await this.ticketing.cancelOrder(payment.orderId);
       }
       return {handled: true, paymentId: payment.id};
     }

@@ -6,7 +6,7 @@
 | Componente | Esito |
 |---|---|
 | Smart contract (Foundry) | ✓ 74/74 (7 fuzz + 2 invarianti) · fmt+build ok |
-| Backend (vitest) | ✓ 121 pass + 3 skip (DB) · tsc pulito |
+| Backend (vitest) | ✓ 131 pass + 3 skip (DB) · tsc pulito |
 | Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
 | App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
 | Frontend (render harness) | ✓ 5/5 (sito, web app, console, registrazione, demo) |
@@ -30,13 +30,14 @@
 - App nativa **Expo React Native** (`apps/mobile`): Validatore (scan QR + NFC Android), Cliente (QR rotante), coda offline + sync — codice reale e buildabile.
 - Hardening API: **validazione schema input** (JSON schema su tutte le route di scrittura → body/param malformati = `400 VALIDATION`, non 500), endpoint `/ready` (readiness non bloccante), logging strutturato (pino) — +13 test.
 - **Affidabilità pagamento→mint**: `payOrder` **riprendibile, idempotente e serializzato** — un ordine *pagato* non va mai perso, evaso due volte, né corrotto da consegne concorrenti. Riprende dai biglietti mancanti se il mint fallisce a metà (`sold` non raddoppia); l'accredito (biglietti+ledger+goodwill+stato PAID) è **atomico** via `store.settleOrder` (transazione + lock di riga `FOR UPDATE` su Postgres); mutex per-ordine in-processo serializza le consegne concorrenti; webhook PSP marcato processato **solo dopo il successo** (la redelivery ritenta invece di scartare). +6 test (incl. concorrenza in-memory e `settleOrder` concorrente verificato su Postgres reale).
+- **Rimborsi & payout venditore**: rimborso di un ordine pagato (storna commissione + goodwill e **revoca i biglietti** → non più validi al varco né rivendibili; via webhook PSP `payment_refunded` o route platform), annullamento dei checkout falliti (`payment_failed` → ordine CANCELLED), e tracciamento dell'**incasso dovuto al venditore** sul secondario (lista payout pendenti + liquidazione). +10 test, verificati anche su Postgres reale.
 
 ### ☐ Da fare (per beta/pilota)
 - SPID reale (OIDC) con aggregatore accreditato — esterno (settimane).
 - **Build + test dell'app su dispositivo reale** (Expo dev build) + tap NFC via HCE Android (opzionale).
 - Wallet custodial reale (ERC-4337) + paymaster + recovery SPID.
 - Deploy contratti su Base Sepolia: tooling **chiavi in mano** pronto e provato su anvil (`scripts/deploy-base-sepolia.sh` + `docs/DEPLOY-BASE-SEPOLIA.md`) — manca solo lanciarlo con una **chiave testnet finanziata**. Audit prima del mainnet.
-- Payout venditori sul secondario (KYC venditore) + rimborsi/chargeback.
+- Payout venditori: **politica** di liquidazione (timing/hold) + **KYC venditore** + bonifici reali. Le meccaniche (registro incasso dovuto, lista pendenti, liquidazione, rimborsi/chargeback con revoca biglietto) sono già fatte.
 - Fidelity on-chain (oggi non sul percorso PG) + edge case.
 - GDPR/legale/fiscale (custodia, anti-bagarinaggio, IVA), accessibilità AgID.
 - Monitoring/alerting esterno (metriche, dashboard) e gestione segreti (secret manager) — l'app è già pronta con logging strutturato e `/ready`.
@@ -50,7 +51,7 @@
 
 **B · Contratti** — `cd contracts && forge test` (74 passed, incl. fuzz+invarianti) · `forge fmt --check`.
 
-**C · Backend** — `cd services/api && pnpm test` (121 passed, +3 skip senza DB) · `pnpm typecheck`.
+**C · Backend** — `cd services/api && pnpm test` (131 passed, +3 skip senza DB) · `pnpm typecheck`.
 
 **D · Postgres** — `docker compose up -d db`; `export DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft`; `pnpm prisma:deploy`; `DATABASE_URL=$DATABASE_URL pnpm dev` (→ store: PostgreSQL); `DATABASE_URL=$DATABASE_URL pnpm test src/repo/prisma-store.it.test.ts`.
 - [ ] i dati restano dopo il riavvio (tabelle Account/Event/Ticket/Order/Payment/Ledger)

@@ -87,6 +87,7 @@ export interface Ticket {
   used?: number; // Fidelity: ingressi consumati
   askPriceCents?: number; // prezzo richiesto sul mercato secondario (status LISTED)
   market?: string; // etichetta mercato, es. "Re-Selling"
+  revoked?: boolean; // biglietto revocato per rimborso/chargeback → non valido, non rivendibile
 }
 
 export interface Tier {
@@ -114,6 +115,7 @@ export interface Order {
   status: OrderStatus;
   ticketIds: string[];
   createdAt: number; // epoch seconds
+  refundedAt?: number; // epoch seconds del rimborso; assente = non rimborsato
 }
 
 /** Ledger di piattaforma (in-memory): ricavi prevendita, royalty e fee d'uscita. */
@@ -157,6 +159,7 @@ export interface Transfer {
   status: TransferStatus;
   ttlSeconds: number;
   createdAt: number; // epoch seconds
+  payoutSettled?: boolean; // true = incasso del venditore già liquidato off-chain
 }
 
 export interface Validation {

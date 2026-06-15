@@ -561,10 +561,56 @@ export class TicketingService {
     return this.store.ordersByBuyer(buyerId);
   }
 
+  /**
+   * Rimborso di un ordine PAGATO (rimborso/chargeback): revoca i biglietti coniati
+   * (non validi, non rivendibili), storna la commissione di prevendita dal ledger e
+   * il goodwill accreditato al compratore, e marca l'ordine come rimborsato.
+   * IDEMPOTENTE: un secondo rimborso sullo stesso ordine è un no-op (nessuno storno doppio).
+   */
+  async refundOrder(orderId: string): Promise<Order> {
+    const order = await this.getOrder(orderId);
+    if (order.status !== "PAID") throw new DomainError("ORDER_NOT_PAID", "ordine non pagato", 409);
+    if (order.refundedAt) return order; // già rimborsato: idempotente
+
+    // revoca i biglietti dell'ordine: non più validi al varco né rivendibili
+    for (const id of order.ticketIds) {
+      const ticket = await this.getTicket(id);
+      ticket.revoked = true;
+      await this.store.updateTicket(ticket);
+    }
+
+    // storno della commissione di prevendita dal ledger di piattaforma
+    await this.store.addToLedger({presaleCommissionCents: -order.feeTotalCents});
+
+    // storno del goodwill accreditato al compratore (mai sotto zero)
+    const buyer = await this.getAccount(order.buyerId);
+    buyer.goodwill = Math.max(0, buyer.goodwill - GOODWILL_PER_TICKET * order.quantity);
+    await this.store.updateAccount(buyer);
+
+    order.refundedAt = this.now();
+    await this.store.updateOrder(order);
+    return order;
+  }
+
+  /**
+   * Annulla un ordine PENDING (es. checkout fallito/abbandonato): PENDING → CANCELLED.
+   * IDEMPOTENTE su un ordine già annullato. Un ordine PAGATO va invece rimborsato
+   * ({@link refundOrder}), non annullato.
+   */
+  async cancelOrder(orderId: string): Promise<Order> {
+    const order = await this.getOrder(orderId);
+    if (order.status === "CANCELLED") return order; // idempotente
+    if (order.status === "PAID") throw new DomainError("ORDER_ALREADY_PAID", "ordine già pagato: usa il rimborso", 409);
+    order.status = "CANCELLED";
+    await this.store.updateOrder(order);
+    return order;
+  }
+
   // -------------------------------------------------- mercato secondario (v2)
   /** Mette in vendita un biglietto ACTIVE rispettando il tetto +5%; solo il proprietario. */
   async listTicket(ticketId: string, ownerId: string, priceCents: number): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
+    if (ticket.revoked) throw new DomainError("TICKET_REVOKED", "biglietto revocato", 409);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non quotabile", 409);
     if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
@@ -778,11 +824,41 @@ export class TicketingService {
     return transfer;
   }
 
+  // -------------------------------------------------- payout venditore (M7+)
+  /**
+   * Incassi da liquidare ai venditori: trasferimenti a pagamento conclusi (PAYMENT/DONE)
+   * non ancora liquidati off-chain. Se `sellerId` è indicato, filtra sul singolo venditore.
+   */
+  async pendingSellerPayouts(
+    sellerId?: string
+  ): Promise<Array<{transferId: string; sellerId: string; ticketId: string; amountCents: number}>> {
+    const transfers = await this.store.listTransfers();
+    return transfers
+      .filter(
+        (t) =>
+          t.mode === "PAYMENT" &&
+          t.status === "DONE" &&
+          !t.payoutSettled &&
+          (sellerId === undefined || t.fromId === sellerId)
+      )
+      .map((t) => ({transferId: t.id, sellerId: t.fromId, ticketId: t.ticketId, amountCents: t.priceCents}));
+  }
+
+  /** Marca l'incasso di un trasferimento come liquidato al venditore. IDEMPOTENTE. */
+  async settleSellerPayout(transferId: string): Promise<Transfer> {
+    const transfer = await this.getTransfer(transferId);
+    if (transfer.payoutSettled) return transfer; // già liquidato: idempotente
+    transfer.payoutSettled = true;
+    await this.store.updateTransfer(transfer);
+    return transfer;
+  }
+
   // ------------------------------------------------------------ validazione
   async validate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
     const ticket = await this.store.getTicket(ticketId);
     let outcome: ValidationOutcome;
     if (!ticket) outcome = "FAKE";
+    else if (ticket.revoked) outcome = "FAKE"; // biglietto revocato (rimborso/chargeback): accesso negato
     else if (scenario === "screenshot") outcome = "SCREENSHOT";
     else if (ticket.status === "LISTED") outcome = "ESCROW"; // in trasferimento → accesso negato
     else if (ticket.status === "USED" || ticket.status === "EXPORTED") outcome = "DUPLICATE";

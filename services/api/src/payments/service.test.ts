@@ -100,4 +100,38 @@ describe("PaymentsService", () => {
     await s.ticketing.payOrder(order.id); // ora è PAID
     await expect(s.payments.createOrderCheckout(order.id)).rejects.toThrowError(/PENDING|attesa/i);
   });
+
+  it("webhook 'payment_refunded' su un ordine pagato lo rimborsa (refundedAt + biglietti revocati)", async () => {
+    const s = await setup();
+    const order = await s.ticketing.createOrder({buyerId: s.buyer.id, eventId: s.event.id, quantity: 2});
+    const {payment, providerRef} = await s.payments.createOrderCheckout(order.id);
+    // paga l'ordine via webhook "succeeded"
+    await s.payments.ingestWebhook(JSON.stringify({id: "evt_ord_paid", type: "payment_succeeded", providerRef, orderId: order.id}));
+    const paid = await s.ticketing.getOrder(order.id);
+    expect(paid.status).toBe("PAID");
+    expect(paid.ticketIds).toHaveLength(2);
+
+    // rimborso via webhook "payment_refunded"
+    const res = await s.payments.ingestWebhook(JSON.stringify({id: "evt_ord_refund", type: "payment_refunded", providerRef, orderId: order.id}));
+    expect(res.handled).toBe(true);
+    expect(res.paymentId).toBe(payment.id);
+    const refunded = await s.ticketing.getOrder(order.id);
+    expect(refunded.refundedAt).toBeDefined();
+    for (const id of refunded.ticketIds) {
+      expect(s.store.tickets.get(id)!.revoked).toBe(true);
+    }
+    // storni: ledger e goodwill azzerati
+    expect((await s.store.getLedger()).presaleCommissionCents).toBe(0);
+    expect(s.store.accounts.get(s.buyer.id)!.goodwill).toBe(0);
+  });
+
+  it("webhook 'payment_failed' su un ordine in attesa annulla l'ordine", async () => {
+    const s = await setup();
+    const order = await s.ticketing.createOrder({buyerId: s.buyer.id, eventId: s.event.id, quantity: 1});
+    const {providerRef} = await s.payments.createOrderCheckout(order.id);
+    await s.payments.ingestWebhook(JSON.stringify({id: "evt_ord_fail", type: "payment_failed", providerRef, orderId: order.id}));
+    const cancelled = await s.ticketing.getOrder(order.id);
+    expect(cancelled.status).toBe("CANCELLED");
+    expect(await s.ticketing.ticketsOf(s.buyer.id)).toHaveLength(0);
+  });
 });

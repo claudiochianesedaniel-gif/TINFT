@@ -209,6 +209,7 @@ model Order {
   subtotalCents          Int
   totalCents             Int
   status                 OrderStatus @default(PENDING)
+  refundedAt             Int? // epoch seconds del rimborso; null = non rimborsato
   createdAt              DateTime    @default(now())
 
   tickets Ticket[]
@@ -239,6 +240,7 @@ model Ticket {
   used               Int? // Fidelity: ingressi consumati
   holderName         String
   txHash             String? // tx di mint on-chain
+  revoked            Boolean      @default(false) // revocato per rimborso/chargeback
   createdAt          DateTime     @default(now())
 
   transfers   Transfer[]
@@ -266,6 +268,7 @@ model Transfer {
   status                TransferStatus
   ttlSeconds            Int            @default(600)
   txHash                String?
+  payoutSettled         Boolean        @default(false) // true = incasso venditore liquidato off-chain
   createdAt             DateTime       @default(now())
 
   @@index([ticketId])
