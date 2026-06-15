@@ -5,7 +5,7 @@
 ## 1 · Stato della verifica
 | Componente | Esito |
 |---|---|
-| Smart contract (Foundry) | ✓ 65/65 · fmt+build ok |
+| Smart contract (Foundry) | ✓ 74/74 (7 fuzz + 2 invarianti) · fmt+build ok |
 | Backend (vitest) | ✓ 121 pass + 3 skip (DB) · tsc pulito |
 | Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
 | App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
@@ -19,7 +19,7 @@
 
 ## 2 · TODO list
 ### ✓ Fatto
-- Smart contract M1–M5 (ERC-721 + 721C, royalty 1% 0,5/0,5, escrow, tetto +5%, max 2/evento via hash CF, export 25%/enforced) — 65 test.
+- Smart contract M1–M5 (ERC-721 + 721C, royalty 1% 0,5/0,5, escrow, tetto +5%, max 2/evento via hash CF, export 25%/enforced) — 74 test, inclusi **fuzz** (royalty/fee/EIP-2981/tetto/anti-bagarino) e **invarianti stateful** (conservazione del valore nello split: 128k chiamate, 0 revert).
 - Backend v2: identità (hash CF) + OTP email; club + dati societari + KYC; eventi + tier; ordini con **prevendita 10%**; mercato secondario; validazione; contenuti; console org + piattaforma.
 - Auth & sessioni: JWT, scrypt, guardie ruolo/proprietà, rate-limit, security headers, body limit.
 - Persistenza: in-memory (snapshot file, default) **e** PostgreSQL relazionale (Prisma) — pagamenti/ledger/registrazioni/webhook su tabelle.
@@ -48,7 +48,7 @@
 - [ ] login demo (password `demo123`): `org@tinft.io` · `cli@tinft.io` · `cli2@tinft.io`
 - [ ] Sito / Web App / Console si caricano (online o demo offline)
 
-**B · Contratti** — `cd contracts && forge test` (65 passed) · `forge fmt --check src test script`.
+**B · Contratti** — `cd contracts && forge test` (74 passed, incl. fuzz+invarianti) · `forge fmt --check`.
 
 **C · Backend** — `cd services/api && pnpm test` (121 passed, +3 skip senza DB) · `pnpm typecheck`.
 
