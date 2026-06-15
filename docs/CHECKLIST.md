@@ -6,7 +6,7 @@
 | Componente | Esito |
 |---|---|
 | Smart contract (Foundry) | ✓ 65/65 · fmt+build ok |
-| Backend (vitest) | ✓ 119 pass + 2 skip (DB) · tsc pulito |
+| Backend (vitest) | ✓ 121 pass + 3 skip (DB) · tsc pulito |
 | Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
 | App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
 | Frontend (render harness) | ✓ 5/5 (sito, web app, console, registrazione, demo) |
@@ -29,7 +29,7 @@
 - Backbone validazione: token QR firmato (rotante ~30s) + `/validate/scan` con i 5 esiti (103 test).
 - App nativa **Expo React Native** (`apps/mobile`): Validatore (scan QR + NFC Android), Cliente (QR rotante), coda offline + sync — codice reale e buildabile.
 - Hardening API: **validazione schema input** (JSON schema su tutte le route di scrittura → body/param malformati = `400 VALIDATION`, non 500), endpoint `/ready` (readiness non bloccante), logging strutturato (pino) — +13 test.
-- **Affidabilità pagamento→mint**: `payOrder` **riprendibile e idempotente** — un ordine *pagato* non va mai perso né evaso due volte anche se il mint on-chain fallisce a metà (riprende dai biglietti mancanti, `sold` non raddoppia, accredito ledger/goodwill una sola volta). Webhook PSP marcato processato **solo dopo il successo**: una failure transitoria viene **ritentata** dalla redelivery invece di essere scartata per dedup. +3 test.
+- **Affidabilità pagamento→mint**: `payOrder` **riprendibile, idempotente e serializzato** — un ordine *pagato* non va mai perso, evaso due volte, né corrotto da consegne concorrenti. Riprende dai biglietti mancanti se il mint fallisce a metà (`sold` non raddoppia); l'accredito (biglietti+ledger+goodwill+stato PAID) è **atomico** via `store.settleOrder` (transazione + lock di riga `FOR UPDATE` su Postgres); mutex per-ordine in-processo serializza le consegne concorrenti; webhook PSP marcato processato **solo dopo il successo** (la redelivery ritenta invece di scartare). +6 test (incl. concorrenza in-memory e `settleOrder` concorrente verificato su Postgres reale).
 
 ### ☐ Da fare (per beta/pilota)
 - SPID reale (OIDC) con aggregatore accreditato — esterno (settimane).
@@ -40,7 +40,7 @@
 - Fidelity on-chain (oggi non sul percorso PG) + edge case.
 - GDPR/legale/fiscale (custodia, anti-bagarinaggio, IVA), accessibilità AgID.
 - Monitoring/alerting esterno (metriche, dashboard) e gestione segreti (secret manager) — l'app è già pronta con logging strutturato e `/ready`.
-- Esattezza assoluta su Postgres sotto crash a metà scrittura: avvolgere accredito+stato ordine in una transazione (`prisma.$transaction`) e serializzare consegne concorrenti dello stesso ordine (lock di riga). Oggi un ordine pagato non va mai perso e l'accredito è esatto in-memory; su Postgres resta una finestra teorica fra due scritture.
+- Scale-out multi-istanza: per serializzare anche il *mint* tra processi diversi serve un lock distribuito (advisory lock Postgres / Redis) all'avvio di `payOrder`. Oggi (singola istanza) il mutex per-ordine serializza tutto; l'accredito è già esatto cross-processo grazie al lock di riga in `settleOrder`.
 
 ## 3 · Checklist di verifica (riproducibile)
 **A · Avvio** — `pnpm install` (root); `cd services/api && pnpm dev` → http://localhost:3001 (store: in-memory).
@@ -50,7 +50,7 @@
 
 **B · Contratti** — `cd contracts && forge test` (65 passed) · `forge fmt --check src test script`.
 
-**C · Backend** — `cd services/api && pnpm test` (119 passed, +2 skip senza DB) · `pnpm typecheck`.
+**C · Backend** — `cd services/api && pnpm test` (121 passed, +3 skip senza DB) · `pnpm typecheck`.
 
 **D · Postgres** — `docker compose up -d db`; `export DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft`; `pnpm prisma:deploy`; `DATABASE_URL=$DATABASE_URL pnpm dev` (→ store: PostgreSQL); `DATABASE_URL=$DATABASE_URL pnpm test src/repo/prisma-store.it.test.ts`.
 - [ ] i dati restano dopo il riavvio (tabelle Account/Event/Ticket/Order/Payment/Ledger)

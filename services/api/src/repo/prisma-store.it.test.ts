@@ -244,4 +244,34 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     expect(await prisma.platformLedger.count()).toBe(1);
     expect((await prisma.processedWebhook.count())).toBeGreaterThanOrEqual(1);
   });
+
+  it("settleOrder CONCORRENTE su PG: il lock di riga (FOR UPDATE) accredita una sola volta", async () => {
+    const ticketing = new TicketingService(store);
+    const org = await ticketing.createAccount({role: "ORGANIZER", nome: "O3", cognome: "X", email: "org3@pg.io"});
+    org.kycStatus = "VERIFIED";
+    await store.updateAccount(org);
+    const event = await ticketing.createEvent({
+      organizerId: org.id, title: "Race", venue: "V", date: "D", priceCents: 1_000, capacity: 10, status: "ON_SALE"
+    });
+    const buyer = await ticketing.createAccount({nome: "R", cognome: "R", email: "race@pg.io", cfHash: "0xpgrace"});
+    const order = await ticketing.createOrder({buyerId: buyer.id, eventId: event.id, quantity: 1});
+    expect(order.feeTotalCents).toBe(100); // prevendita 10% di 1000
+
+    const ledgerBefore = (await store.getLedger()).presaleCommissionCents;
+    const goodwillBefore = (await store.getAccount(buyer.id))!.goodwill;
+
+    // due settle in parallelo sullo stesso ordine (bypassa il mutex di processo):
+    // FOR UPDATE serializza le due transazioni; la seconda trova PAID → no-op.
+    const args = {
+      orderId: order.id, ticketIds: [] as string[],
+      presaleCommissionCents: order.feeTotalCents, buyerId: buyer.id, goodwillDelta: GOODWILL_PER_TICKET
+    };
+    const [a, b] = await Promise.all([store.settleOrder(args), store.settleOrder(args)]);
+    expect(a.status).toBe("PAID");
+    expect(b.status).toBe("PAID");
+    // accredito ESATTAMENTE una volta nonostante le due chiamate concorrenti
+    expect((await store.getLedger()).presaleCommissionCents).toBe(ledgerBefore + 100);
+    expect((await store.getAccount(buyer.id))!.goodwill).toBe(goodwillBefore + GOODWILL_PER_TICKET);
+    expect((await ticketing.getOrder(order.id)).status).toBe("PAID");
+  });
 });

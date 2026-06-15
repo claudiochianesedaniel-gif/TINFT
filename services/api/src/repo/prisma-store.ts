@@ -468,6 +468,39 @@ export class PrismaStore implements Store {
     return order;
   }
 
+  async settleOrder(input: {
+    orderId: string;
+    ticketIds: string[];
+    presaleCommissionCents: number;
+    buyerId: string;
+    goodwillDelta: number;
+  }): Promise<Order> {
+    await this.getLedger(); // garantisce la riga del ledger PRIMA della transazione
+    return this.prisma.$transaction(async (tx) => {
+      // Lock di riga sull'ordine: serializza consegne concorrenti dello stesso ordine
+      // (la 2ª transazione attende il commit della 1ª e poi vede già PAID → no-op).
+      const locked = await tx.$queryRaw<Array<{status: string}>>`
+        SELECT "status" FROM "Order" WHERE "id" = ${input.orderId} FOR UPDATE`;
+      const row = locked[0];
+      if (!row) throw new DomainError("ORDER_NOT_FOUND", "ordine inesistente", 404);
+      if (row.status === "PAID") {
+        const cur = await tx.order.findUniqueOrThrow({where: {id: input.orderId}});
+        return {...this.toOrder(cur), ticketIds: input.ticketIds}; // idempotente
+      }
+      // tutto-o-niente: biglietti + ledger + goodwill + stato nello stesso commit
+      if (input.ticketIds.length > 0) {
+        await tx.ticket.updateMany({where: {id: {in: input.ticketIds}}, data: {orderId: input.orderId}});
+      }
+      await tx.platformLedger.update({
+        where: {id: PrismaStore.LEDGER_ID},
+        data: {presaleCommissionCents: {increment: input.presaleCommissionCents}}
+      });
+      await tx.account.update({where: {id: input.buyerId}, data: {goodwill: {increment: input.goodwillDelta}}});
+      const updated = await tx.order.update({where: {id: input.orderId}, data: {status: "PAID"}});
+      return {...this.toOrder(updated), ticketIds: input.ticketIds};
+    });
+  }
+
   // -------- biglietti ---------------------------------------------------------
   private ticketData(t: Ticket) {
     return {

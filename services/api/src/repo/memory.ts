@@ -182,6 +182,25 @@ export class MemoryStore implements Store {
     return order;
   }
 
+  async settleOrder(input: {
+    orderId: string;
+    ticketIds: string[];
+    presaleCommissionCents: number;
+    buyerId: string;
+    goodwillDelta: number;
+  }): Promise<Order> {
+    const order = this.orders.get(input.orderId);
+    if (!order) throw new Error(`settleOrder: ordine ${input.orderId} inesistente`);
+    if (order.status === "PAID") return order; // idempotente: già evaso
+    // Blocco sincrono: in JS (single-thread, nessun await qui) è atomico.
+    order.ticketIds = input.ticketIds;
+    this.ledger.presaleCommissionCents += input.presaleCommissionCents;
+    const buyer = this.accounts.get(input.buyerId);
+    if (buyer) buyer.goodwill += input.goodwillDelta;
+    order.status = "PAID";
+    return order;
+  }
+
   // -------- biglietti ---------------------------------------------------------
   async getTicket(id: string): Promise<Ticket | undefined> {
     return this.tickets.get(id);

@@ -66,6 +66,30 @@ describe("payOrder — affidabilità (mai perso, mai doppio)", () => {
     expect(w.store.ledger.presaleCommissionCents).toBe(630);
     expect(w.store.accounts.get(w.buyer.id)!.goodwill).toBe(GOODWILL_PER_TICKET * 2);
   });
+
+  it("consegne CONCORRENTI dello stesso ordine: serializzate → niente doppio mint né doppio accredito", async () => {
+    const w = await world(new FlakyChain(99));
+    const order = await w.service.createOrder({buyerId: w.buyer.id, eventId: w.event.id, quantity: 2});
+    // due webhook PSP in parallelo sullo stesso ordine (race)
+    const [a, b] = await Promise.all([w.service.payOrder(order.id), w.service.payOrder(order.id)]);
+    expect(a.status).toBe("PAID");
+    expect(b.status).toBe("PAID");
+    expect(await w.service.ticketsOf(w.buyer.id)).toHaveLength(2); // 2, NON 4
+    expect((await w.service.getEvent(w.event.id)).sold).toBe(2);
+    expect(w.store.ledger.presaleCommissionCents).toBe(630); // accredito una sola volta
+    expect(w.store.accounts.get(w.buyer.id)!.goodwill).toBe(GOODWILL_PER_TICKET * 2);
+  });
+
+  it("settleOrder è idempotente a livello store: due chiamate accreditano una sola volta", async () => {
+    const w = await world(new FlakyChain(99));
+    const order = await w.service.createOrder({buyerId: w.buyer.id, eventId: w.event.id, quantity: 1});
+    const args = {orderId: order.id, ticketIds: [], presaleCommissionCents: 315, buyerId: w.buyer.id, goodwillDelta: GOODWILL_PER_TICKET};
+    await w.store.settleOrder(args);
+    await w.store.settleOrder(args); // 2ª volta: no-op
+    expect((await w.store.getOrder(order.id))!.status).toBe("PAID");
+    expect(w.store.ledger.presaleCommissionCents).toBe(315);
+    expect(w.store.accounts.get(w.buyer.id)!.goodwill).toBe(GOODWILL_PER_TICKET);
+  });
 });
 
 describe("webhook PSP — un ordine pagato non resta mai bloccato", () => {

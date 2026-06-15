@@ -71,6 +71,21 @@ export interface Store {
   ordersByBuyer(buyerId: string): Promise<Order[]>;
   createOrder(order: Order): Promise<Order>;
   updateOrder(order: Order): Promise<Order>;
+  /**
+   * Evade un ordine in modo ATOMICO e idempotente: lega i biglietti all'ordine,
+   * accredita la commissione di prevendita al ledger e il goodwill al compratore e
+   * porta l'ordine a PAID — tutto-o-niente. Se l'ordine è già PAID è un no-op
+   * (ritorna lo stato corrente). Su store relazionali avviene in una transazione
+   * con lock di riga sull'ordine: serializza consegne concorrenti dello stesso
+   * ordine ed elimina la finestra di doppio accredito / crash a metà scrittura.
+   */
+  settleOrder(input: {
+    orderId: string;
+    ticketIds: string[];
+    presaleCommissionCents: number;
+    buyerId: string;
+    goodwillDelta: number;
+  }): Promise<Order>;
 
   // -------- biglietti ---------------------------------------------------------
   getTicket(id: string): Promise<Ticket | undefined>;
