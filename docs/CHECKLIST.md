@@ -6,7 +6,7 @@
 | Componente | Esito |
 |---|---|
 | Smart contract (Foundry) | ✓ 74/74 (7 fuzz + 2 invarianti) · fmt+build ok |
-| Backend (vitest) | ✓ 131 pass + 3 skip (DB) · tsc pulito |
+| Backend (vitest) | ✓ 139 pass + 3 skip (DB) · tsc pulito |
 | Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
 | App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
 | Frontend (render harness) | ✓ 5/5 (sito, web app, console, registrazione, demo) |
@@ -31,6 +31,7 @@
 - Hardening API: **validazione schema input** (JSON schema su tutte le route di scrittura → body/param malformati = `400 VALIDATION`, non 500), endpoint `/ready` (readiness non bloccante), logging strutturato (pino) — +13 test.
 - **Affidabilità pagamento→mint**: `payOrder` **riprendibile, idempotente e serializzato** — un ordine *pagato* non va mai perso, evaso due volte, né corrotto da consegne concorrenti. Riprende dai biglietti mancanti se il mint fallisce a metà (`sold` non raddoppia); l'accredito (biglietti+ledger+goodwill+stato PAID) è **atomico** via `store.settleOrder` (transazione + lock di riga `FOR UPDATE` su Postgres); mutex per-ordine in-processo serializza le consegne concorrenti; webhook PSP marcato processato **solo dopo il successo** (la redelivery ritenta invece di scartare). +6 test (incl. concorrenza in-memory e `settleOrder` concorrente verificato su Postgres reale).
 - **Rimborsi & payout venditore**: rimborso di un ordine pagato (storna commissione + goodwill e **revoca i biglietti** → non più validi al varco né rivendibili; via webhook PSP `payment_refunded` o route platform), annullamento dei checkout falliti (`payment_failed` → ordine CANCELLED), e tracciamento dell'**incasso dovuto al venditore** sul secondario (lista payout pendenti + liquidazione). +10 test, verificati anche su Postgres reale.
+- **Robustezza di produzione**: validazione della configurazione al boot (fail-fast su env incoerenti — Stripe senza webhook secret, config on-chain parziale, indirizzi malformati), **arresto pulito** su SIGTERM/SIGINT (drena le richieste in corso e chiude la connessione DB), endpoint **`/metrics`** (Prometheus) e **request-id** propagato nei log e rimandato al client. +8 test.
 
 ### ☐ Da fare (per beta/pilota)
 - SPID reale (OIDC) con aggregatore accreditato — esterno (settimane).
@@ -40,7 +41,7 @@
 - Payout venditori: **politica** di liquidazione (timing/hold) + **KYC venditore** + bonifici reali. Le meccaniche (registro incasso dovuto, lista pendenti, liquidazione, rimborsi/chargeback con revoca biglietto) sono già fatte.
 - Fidelity on-chain (oggi non sul percorso PG) + edge case.
 - GDPR/legale/fiscale (custodia, anti-bagarinaggio, IVA), accessibilità AgID.
-- Monitoring/alerting esterno (metriche, dashboard) e gestione segreti (secret manager) — l'app è già pronta con logging strutturato e `/ready`.
+- Monitoring/alerting **esterno**: dashboard (Grafana su `/metrics`) + alerting, e **secret manager**. L'app è già pronta: logging strutturato, `/ready`, `/metrics`, request-id, validazione config al boot.
 - Scale-out multi-istanza: per serializzare anche il *mint* tra processi diversi serve un lock distribuito (advisory lock Postgres / Redis) all'avvio di `payOrder`. Oggi (singola istanza) il mutex per-ordine serializza tutto; l'accredito è già esatto cross-processo grazie al lock di riga in `settleOrder`.
 
 ## 3 · Checklist di verifica (riproducibile)
@@ -51,7 +52,7 @@
 
 **B · Contratti** — `cd contracts && forge test` (74 passed, incl. fuzz+invarianti) · `forge fmt --check`.
 
-**C · Backend** — `cd services/api && pnpm test` (131 passed, +3 skip senza DB) · `pnpm typecheck`.
+**C · Backend** — `cd services/api && pnpm test` (139 passed, +3 skip senza DB) · `pnpm typecheck`.
 
 **D · Postgres** — `docker compose up -d db`; `export DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft`; `pnpm prisma:deploy`; `DATABASE_URL=$DATABASE_URL pnpm dev` (→ store: PostgreSQL); `DATABASE_URL=$DATABASE_URL pnpm test src/repo/prisma-store.it.test.ts`.
 - [ ] i dati restano dopo il riavvio (tabelle Account/Event/Ticket/Order/Payment/Ledger)

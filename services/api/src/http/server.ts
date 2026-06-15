@@ -1,3 +1,4 @@
+import {randomUUID} from "node:crypto";
 import Fastify, {type FastifyInstance, type preHandlerHookHandler} from "fastify";
 import fastifyCors from "@fastify/cors";
 import {DomainError} from "../domain/models";
@@ -78,11 +79,45 @@ export function buildServer(
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
   // Logging strutturato (pino, incluso in fastify) in esecuzione normale; silenzioso sotto test.
+  // request-id: riusa l'header `x-request-id` in ingresso (tracciamento end-to-end) o ne genera uno;
+  // viene incluso nei log e rimandato al client (vedi hook onRequest).
   const app = Fastify({
     logger: process.env.VITEST ? false : {level: process.env.LOG_LEVEL ?? "info"},
-    bodyLimit: 262_144
+    bodyLimit: 262_144,
+    requestIdHeader: "x-request-id",
+    genReqId: () => randomUUID()
   }); // body max 256 KB
   app.register(fastifyCors, {origin: true}); // consumo dal frontend (webapp/sito)
+
+  // Correlazione: rimanda l'id di richiesta al client per il troubleshooting.
+  app.addHook("onRequest", async (req, reply) => {
+    reply.header("x-request-id", req.id);
+  });
+
+  // Metriche di base (Prometheus text), senza dipendenze: conteggio richieste per
+  // metodo+stato, esposte su GET /metrics per scraping/monitoring.
+  const httpCounts = new Map<string, number>();
+  app.addHook("onResponse", async (req, reply) => {
+    const key = `${req.method}:${reply.statusCode}`;
+    httpCounts.set(key, (httpCounts.get(key) ?? 0) + 1);
+  });
+  app.get("/metrics", async (_req, reply) => {
+    const lines = [
+      "# HELP tinft_http_requests_total Totale richieste HTTP per metodo e stato.",
+      "# TYPE tinft_http_requests_total counter"
+    ];
+    for (const [k, v] of httpCounts) {
+      const [method, status] = k.split(":");
+      lines.push(`tinft_http_requests_total{method="${method}",status="${status}"} ${v}`);
+    }
+    lines.push(
+      "# HELP tinft_process_uptime_seconds Uptime del processo in secondi.",
+      "# TYPE tinft_process_uptime_seconds gauge",
+      `tinft_process_uptime_seconds ${Math.floor(process.uptime())}`
+    );
+    reply.header("content-type", "text/plain; version=0.0.4");
+    return lines.join("\n") + "\n";
+  });
 
   // Security header di base su ogni risposta (no CSP stretta: le pagine servite usano script inline + Google Fonts).
   app.addHook("onSend", async (_req, reply, payload) => {

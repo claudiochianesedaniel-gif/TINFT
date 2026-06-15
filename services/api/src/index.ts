@@ -5,6 +5,7 @@ import {MemoryStore, type StoreSnapshot} from "./repo/memory";
 import type {Store} from "./repo/store";
 import {TicketingService} from "./services/ticketing";
 import {seedDemo} from "./seed";
+import {validateConfig} from "./config";
 
 // Avvio del backend. DUE modalità di persistenza:
 //   - DATABASE_URL impostata → PostgreSQL via PrismaStore (deploy reale).
@@ -17,6 +18,8 @@ const persistOn = !usePostgres && process.env.PERSIST !== "0";
 const persistFile = process.env.PERSIST_FILE ?? join(process.cwd(), ".tinft-data.json");
 
 async function main(): Promise<void> {
+  validateConfig(); // fail-fast: configurazione incoerente → errore chiaro al boot, non a runtime
+
   // PrismaStore importato in modo lazy: il percorso in-memory (prototipo) non dipende da @prisma/client.
   const store: Store = usePostgres ? new (await import("./repo/prisma-store")).PrismaStore() : new MemoryStore();
 
@@ -53,16 +56,37 @@ async function main(): Promise<void> {
   }
   const saveTimer = persistOn && memStore ? setInterval(save, 3000) : undefined;
   if (saveTimer && typeof saveTimer.unref === "function") saveTimer.unref();
-  for (const sig of ["SIGINT", "SIGTERM"] as const) {
-    process.on(sig, () => {
-      save();
-      if (saveTimer) clearInterval(saveTimer);
-      process.exit(0);
-    });
-  }
 
-  const addr = await buildServer({store}).listen({port, host});
+  const app = buildServer({store});
+  const addr = await app.listen({port, host});
   console.log(`TINFT API in ascolto su ${addr} — Sito: ${addr}/sito.html (store: ${usePostgres ? "PostgreSQL" : "in-memory"})`);
+
+  // Arresto PULITO (SIGINT/SIGTERM): smette di accettare richieste e drena quelle in
+  // corso (app.close), salva lo snapshot e chiude la connessione DB se presente, poi
+  // esce. Idempotente — un secondo segnale non riavvia la procedura.
+  let shuttingDown = false;
+  async function shutdown(sig: string): Promise<void> {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${sig}: arresto in corso…`);
+    if (saveTimer) clearInterval(saveTimer);
+    save();
+    try {
+      await app.close();
+    } catch (err) {
+      console.warn("Chiusura server:", (err as Error).message);
+    }
+    const disconnect = (store as {disconnect?: () => Promise<void>}).disconnect;
+    if (typeof disconnect === "function") {
+      try {
+        await disconnect.call(store);
+      } catch (err) {
+        console.warn("Disconnessione store:", (err as Error).message);
+      }
+    }
+    process.exit(0);
+  }
+  for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => void shutdown(sig));
 }
 
 main().catch((err) => {
