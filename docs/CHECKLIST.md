@@ -6,7 +6,7 @@
 | Componente | Esito |
 |---|---|
 | Smart contract (Foundry) | ✓ 65/65 · fmt+build ok |
-| Backend (vitest) | ✓ 103 pass + 2 skip (DB) · tsc pulito |
+| Backend (vitest) | ✓ 116 pass + 2 skip (DB) · tsc pulito |
 | Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
 | App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
 | Frontend (render harness) | ✓ 5/5 (sito, web app, console, registrazione, demo) |
@@ -28,6 +28,7 @@
 - Frontend v2 (Quicksand/#4472c4): Sito, Web App, Console + launcher; fallback demo offline; un solo server serve API + pagine; seed demo.
 - Backbone validazione: token QR firmato (rotante ~30s) + `/validate/scan` con i 5 esiti (103 test).
 - App nativa **Expo React Native** (`apps/mobile`): Validatore (scan QR + NFC Android), Cliente (QR rotante), coda offline + sync — codice reale e buildabile.
+- Hardening API: **validazione schema input** (JSON schema su tutte le route di scrittura → body/param malformati = `400 VALIDATION`, non 500), endpoint `/ready` (readiness non bloccante), logging strutturato (pino) — +13 test (116 totali).
 
 ### ☐ Da fare (per beta/pilota)
 - SPID reale (OIDC) con aggregatore accreditato — esterno (settimane).
@@ -37,7 +38,7 @@
 - Payout venditori sul secondario (KYC venditore) + rimborsi/chargeback.
 - Fidelity on-chain (oggi non sul percorso PG) + edge case.
 - GDPR/legale/fiscale (custodia, anti-bagarinaggio, IVA), accessibilità AgID.
-- Hardening: validazione schema input (JSON schema), logging/monitoring, gestione segreti.
+- Monitoring/alerting esterno (metriche, dashboard) e gestione segreti (secret manager) — l'app è già pronta con logging strutturato e `/ready`.
 
 ## 3 · Checklist di verifica (riproducibile)
 **A · Avvio** — `pnpm install` (root); `cd services/api && pnpm dev` → http://localhost:3001 (store: in-memory).
@@ -47,7 +48,7 @@
 
 **B · Contratti** — `cd contracts && forge test` (65 passed) · `forge fmt --check src test script`.
 
-**C · Backend** — `cd services/api && pnpm test` (90 passed, +2 skip senza DB) · `pnpm typecheck`.
+**C · Backend** — `cd services/api && pnpm test` (116 passed, +2 skip senza DB) · `pnpm typecheck`.
 
 **D · Postgres** — `docker compose up -d db`; `export DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft`; `pnpm prisma:deploy`; `DATABASE_URL=$DATABASE_URL pnpm dev` (→ store: PostgreSQL); `DATABASE_URL=$DATABASE_URL pnpm test src/repo/prisma-store.it.test.ts`.
 - [ ] i dati restano dopo il riavvio (tabelle Account/Event/Ticket/Order/Payment/Ledger)
