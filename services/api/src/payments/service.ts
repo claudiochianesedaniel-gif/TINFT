@@ -99,8 +99,18 @@ export class PaymentsService {
   async handleWebhook(event: PspEvent): Promise<WebhookResult> {
     // idempotenza: stesso evento PSP già processato → no-op
     if (await this.store.hasProcessedWebhook(event.id)) return {handled: false, deduped: true};
-    await this.store.markProcessedWebhook(event.id);
 
+    // Processa PRIMA, marca come processato DOPO il successo: se il handling lancia
+    // (es. mint on-chain giù) l'evento NON risulta processato e la redelivery del PSP
+    // lo RITENTA — invece di essere scartato per dedup lasciando l'ordine pagato
+    // bloccato per sempre. I handler sono idempotenti (payOrder riprendibile + guardia
+    // pagamento PAID), quindi un ritento dopo un successo parziale non duplica nulla.
+    const result = await this.processWebhook(event);
+    await this.store.markProcessedWebhook(event.id);
+    return result;
+  }
+
+  private async processWebhook(event: PspEvent): Promise<WebhookResult> {
     const payment = await this.store.paymentByProviderRef(event.providerRef);
     if (!payment) return {handled: false};
 
@@ -126,8 +136,6 @@ export class PaymentsService {
       return {handled: true, paymentId: payment.id, ticketId: order.ticketIds[0]};
     }
 
-    payment.status = "PAID";
-
     let ticketId: string | undefined;
     if (payment.kind === "PRIMARY" && payment.eventId) {
       const buyer = await this.store.getAccount(payment.accountId);
@@ -144,6 +152,9 @@ export class PaymentsService {
       payment.ticketMintedId = ticket.id;
       ticketId = ticket.id;
     }
+    // PAID solo DOPO il mint riuscito: se il mint lancia, il pagamento resta PENDING
+    // e la redelivery ritenta (niente pagamento PAID senza biglietto).
+    payment.status = "PAID";
     await this.store.updatePayment(payment);
     return {handled: true, paymentId: payment.id, ticketId};
   }

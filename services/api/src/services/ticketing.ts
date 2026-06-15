@@ -477,32 +477,56 @@ export class TicketingService {
   }
 
   /**
-   * Simula il successo PSP: conia `quantity` biglietti, segna l'ordine PAID,
-   * accredita la commissione al ledger e il goodwill al compratore. Idempotente.
+   * Conferma il pagamento ed *evade* l'ordine: conia i `quantity` biglietti, segna
+   * PAID, accredita la commissione di prevendita (ledger) e il goodwill (compratore).
+   *
+   * RIPRENDIBILE e IDEMPOTENTE — requisito di affidabilità: un ordine PAGATO non
+   * deve MAI andare perso né essere evaso due volte.
+   *  - Se un mint fallisce a metà (es. RPC on-chain giù), i biglietti già coniati
+   *    restano legati all'ordine (persistiti dopo OGNI mint): una nuova chiamata
+   *    (redelivery del webhook PSP o retry) RIPRENDE dai mancanti — niente doppio
+   *    mint, niente `sold` raddoppiato.
+   *  - Finalizzazione "PAID-first": prima si CONSEGNA (stato PAID persistito, con la
+   *    guardia di rientro in testa), poi si accredita. Su una rara failure di
+   *    scrittura DOPO il PAID si preferisce un mancato accredito (recuperabile in
+   *    riconciliazione, nessun danno al cliente) a un doppio accredito.
+   *
+   * Nota prod: per esattezza assoluta sotto crash a metà scrittura, avvolgere
+   * accredito+stato in una transazione store (Prisma `$transaction`) e serializzare
+   * le consegne concorrenti dello stesso ordine (lock di riga).
    */
   async payOrder(orderId: string): Promise<Order> {
     const order = await this.getOrder(orderId);
-    if (order.status === "PAID") return order; // idempotente: nessun doppio mint
+    if (order.status === "PAID") return order; // già evaso: nessun doppio mint/accredito
     if (order.status === "CANCELLED") throw new DomainError("ORDER_CANCELLED", "ordine annullato", 409);
 
-    const ticketIds: string[] = [];
-    for (let i = 0; i < order.quantity; i++) {
+    // Riprendi dai biglietti già coniati per quest'ordine in un tentativo precedente.
+    const ticketIds = [...order.ticketIds];
+    for (let i = ticketIds.length; i < order.quantity; i++) {
       const ticket = await this.purchasePrimary(order.eventId, order.buyerId);
       // l'ordine fissa il prezzo unitario di fascia: il costo base segue il prezzo pagato
       ticket.originalPriceCents = order.unitPriceCents;
       ticket.paidCents = order.unitPriceCents;
       await this.store.updateTicket(ticket);
       ticketIds.push(ticket.id);
+      // Persisti il progresso dopo OGNI mint: se il prossimo fallisce, la ripresa
+      // riparte da qui (in Prisma lega i biglietti all'ordine via Ticket.orderId).
+      order.ticketIds = ticketIds;
+      await this.store.updateOrder(order);
     }
 
+    // Consegna PRIMA (la guardia `status === "PAID"` in testa impedisce di
+    // ri-accreditare a un eventuale retry)...
+    order.ticketIds = ticketIds;
+    order.status = "PAID";
+    await this.store.updateOrder(order);
+
+    // ...poi accredita commissione di prevendita e goodwill (una sola volta).
     await this.store.addToLedger({presaleCommissionCents: order.feeTotalCents});
     const buyer = await this.getAccount(order.buyerId);
     buyer.goodwill += GOODWILL_PER_TICKET * order.quantity;
     await this.store.updateAccount(buyer);
 
-    order.ticketIds = ticketIds;
-    order.status = "PAID";
-    await this.store.updateOrder(order);
     return order;
   }
 
