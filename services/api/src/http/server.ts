@@ -77,7 +77,11 @@ export function buildServer(
   const consoleSvc = new ConsoleService(store);
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
 
-  const app = Fastify({logger: false, bodyLimit: 262_144}); // body max 256 KB
+  // Logging strutturato (pino, incluso in fastify) in esecuzione normale; silenzioso sotto test.
+  const app = Fastify({
+    logger: process.env.VITEST ? false : {level: process.env.LOG_LEVEL ?? "info"},
+    bodyLimit: 262_144
+  }); // body max 256 KB
   app.register(fastifyCors, {origin: true}); // consumo dal frontend (webapp/sito)
 
   // Security header di base su ogni risposta (no CSP stretta: le pagine servite usano script inline + Google Fonts).
@@ -123,6 +127,10 @@ export function buildServer(
   });
 
   app.setErrorHandler((err: Error, _req, reply) => {
+    // Errori di validazione delle JSON schema Fastify → 400 (prima del ramo dominio).
+    if ((err as {validation?: unknown}).validation) {
+      return reply.status(400).send({error: "VALIDATION", message: err.message});
+    }
     if (err instanceof DomainError) {
       return reply.status(err.status).send({error: err.code, message: err.message});
     }
@@ -163,7 +171,44 @@ export function buildServer(
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // JSON schema di validazione (Fastify/Ajv integrato — nessuna dipendenza nuova).
+  // Politica: `additionalProperties: true` (non rifiutiamo campi extra), `required`
+  // solo sui campi che l'handler usa davvero, enum dove l'handler ci fa switch.
+  // Obiettivo: body/param malformati → 400 (gestito da setErrorHandler), non 500.
+  // ---------------------------------------------------------------------------
+  const STR = {type: "string"} as const;
+  const INT_POS = {type: "integer", minimum: 1} as const; // quantità ecc.
+  const INT_NONNEG = {type: "integer", minimum: 0} as const; // prezzi/importi in centesimi
+  const idParam = {
+    type: "object",
+    required: ["id"],
+    additionalProperties: true,
+    properties: {id: STR}
+  } as const;
+  const ticketIdParam = {
+    type: "object",
+    required: ["ticketId"],
+    additionalProperties: true,
+    properties: {ticketId: STR}
+  } as const;
+  /** Helper: corpo oggetto con additionalProperties lasco e `required` mirato. */
+  const body = (properties: Record<string, unknown>, required: string[] = []) =>
+    ({type: "object", additionalProperties: true, required, properties}) as const;
+
   app.get("/health", async () => ({status: "ok"}));
+
+  // Readiness: liveness + dipendenze pronte. Tentativo non bloccante sullo store
+  // (es. Postgres): se fallisce non lancia, riporta lo stato così l'orchestratore decide.
+  app.get("/ready", async () => {
+    let storeOk = true;
+    try {
+      await store.listEvents();
+    } catch {
+      storeOk = false;
+    }
+    return {ready: true, store: storeOk};
+  });
 
   // -------- account
   app.post<{
@@ -176,7 +221,25 @@ export function buildServer(
       walletAddress?: string;
       password?: string;
     };
-  }>("/accounts", async (req, reply) => {
+  }>(
+    "/accounts",
+    {
+      schema: {
+        body: body(
+          {
+            role: {type: "string", enum: ["CLIENTE", "ORGANIZER", "VALIDATOR", "PLATFORM"]},
+            nome: STR,
+            cognome: STR,
+            email: STR,
+            cfHash: STR,
+            walletAddress: STR,
+            password: STR
+          },
+          ["nome", "cognome", "email"]
+        )
+      }
+    },
+    async (req, reply) => {
     const {password, ...rest} = req.body;
     const account = await ticketing.createAccount(rest);
     if (password) {
@@ -203,7 +266,31 @@ export function buildServer(
       phone?: string;
       password?: string;
     };
-  }>("/register", async (req, reply) => {
+  }>(
+    "/register",
+    {
+      schema: {
+        body: body(
+          {
+            nome: STR,
+            cognome: STR,
+            email: STR,
+            cf: STR,
+            dateOfBirth: STR,
+            placeOfBirth: STR,
+            gender: STR,
+            address: STR,
+            city: STR,
+            zip: STR,
+            province: STR,
+            phone: STR,
+            password: STR
+          },
+          ["nome", "cognome", "email", "cf"]
+        )
+      }
+    },
+    async (req, reply) => {
     const b = req.body;
     const id = verifier.verify({cf: b.cf, nome: b.nome, cognome: b.cognome});
     const account = await ticketing.createAccount({
@@ -247,14 +334,46 @@ export function buildServer(
       username?: string;
       password?: string;
     };
-  }>("/auth/register/email", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => reply.status(201).send(await ticketing.startEmailRegistration(req.body)));
+  }>(
+    "/auth/register/email",
+    {
+      preHandler: rateLimit(30, 60_000),
+      schema: {
+        body: body(
+          {
+            nome: STR,
+            cognome: STR,
+            cf: STR,
+            email: STR,
+            dateOfBirth: STR,
+            placeOfBirth: STR,
+            gender: STR,
+            address: STR,
+            city: STR,
+            zip: STR,
+            province: STR,
+            phone: STR,
+            username: STR,
+            password: STR
+          },
+          ["nome", "cognome", "cf", "email"]
+        )
+      }
+    },
+    async (req, reply) => reply.status(201).send(await ticketing.startEmailRegistration(req.body))
+  );
 
-  app.post<{Body: {email: string; code: string}}>("/auth/register/email/verify", async (req, reply) =>
-    reply.status(201).send(await ticketing.verifyEmailRegistration(req.body.email, req.body.code))
+  app.post<{Body: {email: string; code: string}}>(
+    "/auth/register/email/verify",
+    {schema: {body: body({email: STR, code: STR}, ["email", "code"])}},
+    async (req, reply) => reply.status(201).send(await ticketing.verifyEmailRegistration(req.body.email, req.body.code))
   );
 
   // -------- login: email + password → token + account
-  app.post<{Body: {email: string; password: string}}>("/auth/login", {preHandler: rateLimit(30, 60_000)}, async (req, reply) => {
+  app.post<{Body: {email: string; password: string}}>(
+    "/auth/login",
+    {preHandler: rateLimit(30, 60_000), schema: {body: body({email: STR, password: STR}, ["email", "password"])}},
+    async (req, reply) => {
     const account = await ticketing.findAccountByEmail(req.body.email ?? "");
     if (!account || !verifyPassword(account, req.body.password ?? "")) {
       throw new DomainError("BAD_CREDENTIALS", "credenziali non valide", 401);
@@ -274,10 +393,14 @@ export function buildServer(
   });
 
   // -------- identità SPID (M8): verifica → lega hash(CF) al wallet
-  app.post<{Body: {accountId: string; cf: string; salt?: string}}>("/identity/spid/verify", async (req) => {
-    const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});
-    return ticketing.verifyIdentity(req.body.accountId, identity.cfHash);
-  }); // deleteAccount/verifyIdentity restituiscono Promise → Fastify le risolve
+  app.post<{Body: {accountId: string; cf: string; salt?: string}}>(
+    "/identity/spid/verify",
+    {schema: {body: body({accountId: STR, cf: STR, salt: STR}, ["accountId", "cf"])}},
+    async (req) => {
+      const identity = verifier.verify({cf: req.body.cf, salt: req.body.salt});
+      return ticketing.verifyIdentity(req.body.accountId, identity.cfHash);
+    }
+  ); // deleteAccount/verifyIdentity restituiscono Promise → Fastify le risolve
 
   // -------- club & eventi del club (M9)
   app.post<{
@@ -296,10 +419,36 @@ export function buildServer(
       genre?: string;
       color?: string;
     };
-  }>("/clubs", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
-    assertSelf(req, req.body.organizerId);
-    return reply.status(201).send(await ticketing.createClub(req.body));
-  });
+  }>(
+    "/clubs",
+    {
+      preHandler: requireRole("ORGANIZER", "PLATFORM"),
+      schema: {
+        body: body(
+          {
+            organizerId: STR,
+            name: STR,
+            city: STR,
+            fidelityPriceCents: INT_NONNEG,
+            fidelityUses: INT_NONNEG,
+            ragioneSociale: STR,
+            piva: STR,
+            sedeLegale: STR,
+            pec: STR,
+            sdi: STR,
+            iban: STR,
+            genre: STR,
+            color: STR
+          },
+          ["organizerId", "name"]
+        )
+      }
+    },
+    async (req, reply) => {
+      assertSelf(req, req.body.organizerId);
+      return reply.status(201).send(await ticketing.createClub(req.body));
+    }
+  );
   app.get("/clubs", async () => ticketing.listClubs());
   app.get<{Params: {id: string}}>("/clubs/:id", async (req) => ticketing.getClub(req.params.id));
   app.get<{Params: {id: string}}>("/clubs/:id/events", async (req) => {
@@ -309,14 +458,27 @@ export function buildServer(
   app.post<{
     Params: {id: string};
     Body: {organizerId: string; title: string; venue: string; date: string; priceCents: number; capacity: number};
-  }>("/clubs/:id/events", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
-    assertSelf(req, req.body.organizerId);
-    await ticketing.getClub(req.params.id);
-    return reply.status(201).send(await ticketing.createEvent({...req.body, clubId: req.params.id}));
-  });
+  }>(
+    "/clubs/:id/events",
+    {
+      preHandler: requireRole("ORGANIZER", "PLATFORM"),
+      schema: {
+        params: idParam,
+        body: body(
+          {organizerId: STR, title: STR, venue: STR, date: STR, priceCents: INT_NONNEG, capacity: INT_POS},
+          ["organizerId", "title", "venue", "date", "priceCents", "capacity"]
+        )
+      }
+    },
+    async (req, reply) => {
+      assertSelf(req, req.body.organizerId);
+      await ticketing.getClub(req.params.id);
+      return reply.status(201).send(await ticketing.createEvent({...req.body, clubId: req.params.id}));
+    }
+  );
   app.post<{Params: {id: string}; Body: {buyerId: string}}>(
     "/clubs/:id/fidelity",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam, body: body({buyerId: STR}, ["buyerId"])}},
     async (req, reply) => {
       assertSelf(req, req.body.buyerId);
       return reply.status(201).send(await ticketing.purchaseFidelity(req.params.id, req.body.buyerId));
@@ -334,10 +496,30 @@ export function buildServer(
       capacity: number;
       status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
     };
-  }>("/events", {preHandler: requireRole("ORGANIZER", "PLATFORM")}, async (req, reply) => {
-    assertSelf(req, req.body.organizerId);
-    return reply.status(201).send(await ticketing.createEvent(req.body));
-  });
+  }>(
+    "/events",
+    {
+      preHandler: requireRole("ORGANIZER", "PLATFORM"),
+      schema: {
+        body: body(
+          {
+            organizerId: STR,
+            title: STR,
+            venue: STR,
+            date: STR,
+            priceCents: INT_NONNEG,
+            capacity: INT_POS,
+            status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]}
+          },
+          ["organizerId", "title", "venue", "date", "priceCents", "capacity"]
+        )
+      }
+    },
+    async (req, reply) => {
+      assertSelf(req, req.body.organizerId);
+      return reply.status(201).send(await ticketing.createEvent(req.body));
+    }
+  );
   app.get("/events", async () => ticketing.listEvents());
   app.get<{Params: {id: string}}>("/events/:id", async (req) => ticketing.getEvent(req.params.id));
 
@@ -352,7 +534,13 @@ export function buildServer(
   app.get<{Params: {id: string}}>("/events/:id/tiers", async (req) => ticketing.listTiers(req.params.id));
   app.post<{Params: {id: string}; Body: {organizerId: string; name: string; priceCents: number; note?: string}}>(
     "/events/:id/tiers",
-    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    {
+      preHandler: requireRole("ORGANIZER", "PLATFORM"),
+      schema: {
+        params: idParam,
+        body: body({organizerId: STR, name: STR, priceCents: INT_NONNEG, note: STR}, ["organizerId", "name", "priceCents"])
+      }
+    },
     async (req, reply) => {
       assertSelf(req, req.body.organizerId);
       return reply.status(201).send(await ticketing.createTier(req.params.id, req.body));
@@ -362,7 +550,12 @@ export function buildServer(
   // -------- ordini / checkout v2 (commissione 4% + quantità + limite 2)
   app.post<{Body: {buyerId: string; eventId: string; tierId?: string; quantity: number}}>(
     "/orders",
-    {preHandler: authenticate},
+    {
+      preHandler: authenticate,
+      schema: {
+        body: body({buyerId: STR, eventId: STR, tierId: STR, quantity: INT_POS}, ["buyerId", "eventId", "quantity"])
+      }
+    },
     async (req, reply) => {
       assertSelf(req, req.body.buyerId);
       return reply.status(201).send(await ticketing.createOrder(req.body));
@@ -370,7 +563,7 @@ export function buildServer(
   );
   app.post<{Params: {id: string}; Body: Record<string, never>}>(
     "/orders/:id/pay",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam}},
     async (req) => {
       const order = await ticketing.getOrder(req.params.id);
       assertSelf(req, order.buyerId);
@@ -381,7 +574,7 @@ export function buildServer(
   // pagamento; al webhook "succeeded" (/webhooks/psp) l'ordine viene pagato e i biglietti coniati.
   app.post<{Params: {id: string}; Body: Record<string, never>}>(
     "/orders/:id/checkout",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam}},
     async (req, reply) => {
       const order = await ticketing.getOrder(req.params.id);
       assertSelf(req, order.buyerId);
@@ -402,7 +595,7 @@ export function buildServer(
   app.get("/market", async () => ticketing.market());
   app.post<{Params: {ticketId: string}; Body: {buyerId: string}}>(
     "/market/:ticketId/buy",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: ticketIdParam, body: body({buyerId: STR}, ["buyerId"])}},
     async (req) => {
       assertSelf(req, req.body.buyerId);
       return ticketing.buyFromMarket(req.params.ticketId, req.body.buyerId);
@@ -417,7 +610,7 @@ export function buildServer(
 
   app.post<{Params: {id: string}; Body: {ownerId: string; priceCents: number}}>(
     "/tickets/:id/list",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam, body: body({ownerId: STR, priceCents: INT_NONNEG}, ["ownerId", "priceCents"])}},
     async (req, reply) => {
       assertSelf(req, req.body.ownerId);
       return reply.status(201).send(await ticketing.listTicket(req.params.id, req.body.ownerId, req.body.priceCents));
@@ -425,7 +618,7 @@ export function buildServer(
   );
   app.post<{Params: {id: string}; Body: {ownerId: string}}>(
     "/tickets/:id/unlist",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam, body: body({ownerId: STR}, ["ownerId"])}},
     async (req) => {
       assertSelf(req, req.body.ownerId);
       return ticketing.unlistTicket(req.params.id, req.body.ownerId);
@@ -435,15 +628,34 @@ export function buildServer(
   app.post<{
     Params: {id: string};
     Body: {fromId: string; mode: "GIFT" | "PAYMENT"; toId?: string; priceCents?: number; ttlSeconds?: number};
-  }>("/tickets/:id/transfers", {preHandler: authenticate}, async (req, reply) => {
-    const {fromId, ...rest} = req.body;
-    assertSelf(req, fromId);
-    return reply.status(201).send(await ticketing.createTransfer(req.params.id, fromId, rest));
-  });
+  }>(
+    "/tickets/:id/transfers",
+    {
+      preHandler: authenticate,
+      schema: {
+        params: idParam,
+        body: body(
+          {
+            fromId: STR,
+            mode: {type: "string", enum: ["GIFT", "PAYMENT"]},
+            toId: STR,
+            priceCents: INT_NONNEG,
+            ttlSeconds: INT_POS
+          },
+          ["fromId", "mode"]
+        )
+      }
+    },
+    async (req, reply) => {
+      const {fromId, ...rest} = req.body;
+      assertSelf(req, fromId);
+      return reply.status(201).send(await ticketing.createTransfer(req.params.id, fromId, rest));
+    }
+  );
 
   app.post<{Params: {id: string}; Body: {toId: string; holderName?: string}}>(
     "/transfers/:id/accept",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam, body: body({toId: STR, holderName: STR}, ["toId"])}},
     async (req) => {
       assertSelf(req, req.body.toId);
       return ticketing.acceptTransfer(req.params.id, req.body.toId, req.body.holderName);
@@ -451,7 +663,7 @@ export function buildServer(
   );
   app.post<{Params: {id: string}; Body: {byId?: string}}>(
     "/transfers/:id/reclaim",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam, body: body({byId: STR})}},
     async (req) => {
       assertSelf(req, req.body?.byId);
       return ticketing.reclaimTransfer(req.params.id, req.body?.byId);
@@ -460,7 +672,10 @@ export function buildServer(
 
   app.post<{Params: {id: string}; Body: {validatorId?: string; scenario?: "screenshot"}}>(
     "/tickets/:id/validate",
-    {preHandler: authenticate},
+    {
+      preHandler: authenticate,
+      schema: {params: idParam, body: body({validatorId: STR, scenario: {type: "string", enum: ["screenshot"]}})}
+    },
     async (req) => ticketing.validate(req.params.id, req.body?.validatorId, req.body?.scenario)
   );
 
@@ -478,12 +693,15 @@ export function buildServer(
   // tra i 5 (VALID/SCREENSHOT/DUPLICATE/ESCROW/FAKE).
   app.post<{Body: {token: string; validatorId?: string}}>(
     "/validate/scan",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {body: body({token: STR, validatorId: STR}, ["token"])}},
     async (req) => ticketing.scanValidate(req.body?.token, req.body?.validatorId)
   );
   app.post<{Params: {id: string}; Body: {ownerId: string; mode: "FREE" | "ENFORCED"}}>(
     "/tickets/:id/export",
-    {preHandler: authenticate},
+    {
+      preHandler: authenticate,
+      schema: {params: idParam, body: body({ownerId: STR, mode: {type: "string", enum: ["FREE", "ENFORCED"]}}, ["ownerId", "mode"])}
+    },
     async (req) => {
       assertSelf(req, req.body.ownerId);
       return ticketing.exportTicket(req.params.id, req.body.ownerId, req.body.mode);
@@ -537,7 +755,7 @@ export function buildServer(
   );
   app.post<{Params: {id: string}; Body: {organizerId: string}}>(
     "/events/:id/validators",
-    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
     async (req, reply) => {
       assertSelf(req, req.body.organizerId);
       return reply.status(201).send(await ticketing.createValidator(req.params.id, req.body.organizerId));
@@ -570,7 +788,7 @@ export function buildServer(
   // -------- KYC organizzatore (B7): submit (org, autenticato-self) + decision (admin)
   app.post<{Params: {id: string}}>(
     "/organizers/:id/kyc/submit",
-    {preHandler: authenticate},
+    {preHandler: authenticate, schema: {params: idParam}},
     async (req) => {
       assertSelf(req, req.params.id);
       return ticketing.submitKyc(req.params.id);
@@ -578,6 +796,7 @@ export function buildServer(
   );
   app.post<{Params: {id: string}; Body: {decision: "VERIFIED" | "REJECTED"}}>(
     "/organizers/:id/kyc/decision",
+    {schema: {params: idParam, body: body({decision: {type: "string", enum: ["VERIFIED", "REJECTED"]}}, ["decision"])}},
     async (req, reply) => {
       if (req.headers["x-admin-token"] !== adminToken) {
         return reply.status(403).send({error: "FORBIDDEN", message: "richiede token admin"});
@@ -589,7 +808,7 @@ export function buildServer(
   // -------- pubblicazione evento con gate KYC (B7): DRAFT → ON_SALE
   app.post<{Params: {id: string}; Body: {organizerId: string}}>(
     "/events/:id/publish",
-    {preHandler: requireRole("ORGANIZER", "PLATFORM")},
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
     async (req) => {
       assertSelf(req, req.body.organizerId);
       return ticketing.publishEvent(req.params.id, req.body.organizerId);
