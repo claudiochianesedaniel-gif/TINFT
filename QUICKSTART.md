@@ -32,7 +32,7 @@ Le app si **collegano da sole** all'account demo del ruolo scelto; aprendole **s
 
 ## Regole economiche attive
 - **Prevendita 10%** sul primo acquisto → **solo TINFT** (mostrata nel checkout: Prezzo · Commissione di prevendita 10% · Totale).
-- Rivendita: **royalty 1%** (0,5% TINFT + 0,5% organizzatore), **tetto +5%**, **max 2 biglietti/evento** per identità.
+- Rivendita: **royalty 1%** (0,5% TINFT + 0,5% organizzatore), **tetto +10%**, **max 3 biglietti/evento** per identità.
 - Export libero: **fee d'uscita 25%**.
 
 ## Note

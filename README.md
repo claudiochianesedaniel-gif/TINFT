@@ -26,7 +26,7 @@ La cartella [`design_handoff_tinft/`](./design_handoff_tinft/) contiene la spec 
 - Royalty trasferimento **1%** del prezzo originale, a carico del compratore,
   split **0,5% TINFT + 0,5% organizzatore**, *enforced* on-chain.
 - **Escrow** sul P2P a pagamento: lock → pay atomico → reclaim a timeout.
-- Tetto rivendita **+5%** per passaggio; **max 2 biglietti/evento per identità** (`hash(CF)`).
+- Tetto rivendita **+10%** per passaggio; **max 3 biglietti/evento per identità** (`hash(CF)`).
 - **Export** post-evento a scelta: (A) rilascio con fee 25% / (B) enforced con royalty perpetua.
 - Custodia **custodial** (account abstraction): niente seed/gas per l'utente.
 

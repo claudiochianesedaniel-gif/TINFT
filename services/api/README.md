@@ -7,11 +7,11 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
 - **Modello dati**: [`prisma/schema.prisma`](./prisma/schema.prisma) — derivato da
   `docs/SPEC-VERIFICATA.md` §3, con i collegamenti on-chain (tokenId, collezione, txHash).
 - **Regole economiche condivise**: [`src/domain/rules.ts`](./src/domain/rules.ts) — royalty 1%,
-  split 0,5/0,5, tetto +5%, fee 25%, limite 2/evento, in **centesimi interi** per rispecchiare
+  split 0,5/0,5, tetto +10%, fee 25%, limite 3/evento, in **centesimi interi** per rispecchiare
   1:1 la matematica dei contratti (test in `rules.test.ts`). È la sorgente unica che evita
   derive tra on-chain e off-chain.
 - **Servizio applicativo** ([`src/services/ticketing.ts`](./src/services/ticketing.ts)): i flussi
-  dei 4 profili — acquisto primario (limite 2/evento), rivendita (tetto +5%), escrow P2P
+  dei 4 profili — acquisto primario (limite 3/evento), rivendita (tetto +10%), escrow P2P
   (`createTransfer`/`acceptTransfer`/`reclaimTransfer`), validazione (5 esiti, incl. escrow→accesso negato)
   ed export (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
 - **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify, **CORS** abilitato): account,
@@ -37,7 +37,7 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
     e `TICKET_ADDRESS=<indirizzo>`.
 - **Identità SPID (M8, fondamenta)** ([`src/identity`](./src/identity)): `IdentityVerifier`
   (+ `FakeSpid`); `POST /identity/spid/verify` lega `hash(CF)` al wallet (on-chain mai il CF in
-  chiaro) e abilita il limite 2/evento. Adapter OIDC reale via aggregatore come innesto.
+  chiaro) e abilita il limite 3/evento. Adapter OIDC reale via aggregatore come innesto.
 
 ## Comandi
 ```bash

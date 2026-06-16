@@ -10,7 +10,7 @@ Lo script `contracts/script/Deploy.s.sol` distribuisce e **cabla i permessi** di
 - `TinftRoyaltySplit` — incassa la royalty 1% e la divide 0,5% TINFT / 0,5% organizzatore.
 - `TinftTransferValidator` — allowlist operatori (ERC-721C): l'escrow può muovere i token vincolati.
 - `TinftTicket` — l'NFT biglietto (ERC-721 + 721C, EIP-2981, fee d'uscita 25%). **owner = deployer.**
-- `TinftEscrow` — vendita secondaria con tetto +5% e aggiornamento del costo base (R3).
+- `TinftEscrow` — vendita secondaria con tetto +10% e aggiornamento del costo base (R3).
 
 ## Prerequisiti
 - **Foundry** (`forge`, `cast`, `anvil`) e **jq** installati.

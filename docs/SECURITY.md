@@ -9,7 +9,7 @@ Contratti in `contracts/src` (Solidity 0.8.28, OpenZeppelin 5.6.1):
 
 | Contratto | Responsabilità |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; policy di trasferimento (ERC-721C), royalty 1%, anti-bagarinaggio (tetto +5%, limite 2/evento), validazione ed export. |
+| `TinftTicket` | ERC-721 + EIP-2981; policy di trasferimento (ERC-721C), royalty 1%, anti-bagarinaggio (tetto +10%, limite 3/evento), validazione ed export. |
 | `TinftTransferValidator` | Allowlist di operatori; gate di ogni trasferimento di token vincolato. |
 | `TinftRoyaltySplit` | Ripartizione royalty 0,5/0,5 (pull-payment). |
 | `TinftEscrow` | Vendita P2P con escrow (list/pay/reclaim/cancel), Pausable. |
@@ -21,7 +21,7 @@ wallet (account abstraction). I poteri privilegiati sono quindi previsti, ma min
 | Ruolo | Detenuto da | Poteri | Mitigazione |
 |---|---|---|---|
 | `owner` (ticket/validator/escrow) | TINFT | mint, set operatori/identità/treasury/validator, pause | **Ownable2Step** (no perdita per indirizzo errato); **raccomandato multisig + timelock** |
-| sale operator | escrow | `recordSale` (costo base + conteggio 2/evento) | solo contratti TINFT in allowlist |
+| sale operator | escrow | `recordSale` (costo base + conteggio 3/evento) | solo contratti TINFT in allowlist |
 | validator operator | backend validatore | `markUsed` | solo indirizzi in allowlist |
 | identity registrar (owner) | backend (post-SPID) | `setIdentity` (solo `hash(CF)`) | nessun dato personale on-chain |
 
@@ -39,14 +39,14 @@ owner = **multisig** (es. Safe) con **timelock** sulle funzioni amministrative.
   sempre al venditore.
 - **Atomicità della vendita**: `pay` trasferisce token, prezzo e royalty in un'unica tx;
   ogni fallimento fa revert senza stati intermedi.
-- **Anti-bagarinaggio senza bypass**: il conteggio 2/evento non si abbassa al `list`
+- **Anti-bagarinaggio senza bypass**: il conteggio 3/evento non si abbassa al `list`
   → niente trucco list→compra→reclaim; `reclaim`/`cancel` non toccano i conteggi → niente stallo.
 - **Reentrancy**: `nonReentrant` + checks-effects-interactions su `escrow.{list,pay,reclaim,cancel}`,
   `ticket.exportFree`, `split.withdraw`. Test dedicati: venditore malevolo e tesoreria malevola
   non rubano né corrompono lo stato.
 
 ## 4. Assunzioni e decisioni di design (da validare in audit)
-- **Wallet utente registrati**: il limite 2/evento si applica solo a indirizzi con
+- **Wallet utente registrati**: il limite 3/evento si applica solo a indirizzi con
   `identityOf != 0`. I wallet non registrati (es. contratti di sistema, escrow) sono
   esenti: il backend DEVE registrare ogni wallet cliente prima del mint/acquisto.
 - **`hash(CF)` off-chain**: on-chain solo `keccak256(CF + salt)`; il salt e il CF in
@@ -66,7 +66,7 @@ attacco (reentrancy venditore/tesoreria). Coprono le DoD di M1–M5 e l'hardenin
 ## 6. Checklist per l'audit esterno (M10)
 - [ ] Analisi statica: **Slither**, **Aderyn**; valutare **Mythril**/**Halmos**.
 - [ ] Campagne **invariant/fuzz** (Foundry invariant): no-fondi-intrappolati nell'escrow,
-      conservazione dello split, monotònia dei conteggi 2/evento.
+      conservazione dello split, monotònia dei conteggi 3/evento.
 - [ ] Revisione control-flow di `pay` (ordine effetti/interazioni, gestione `msg.value`).
 - [ ] Verifica integrazione **ERC-721C / Transfer Validator** sui marketplace target di Base.
 - [ ] Gestione upgrade/immutabilità: i contratti sono **non-upgradeable**; confermare

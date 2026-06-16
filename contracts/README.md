@@ -22,16 +22,16 @@ In CI vengono ripristinate con `actions/checkout` (`submodules: recursive`).
 
 | Contratto | Ruolo |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (royalty 1%, R1) e `paid` (tetto +5%, R2/R3). Identità `hash(CF)` + limite **2/evento** (R4). Validazione (`markUsed`) ed export: `exportFree` (fee 25% + sgancio) / `exportEnforced` (royalty per sempre) (R5/R6). |
+| `TinftTicket` | ERC-721 + EIP-2981; *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (royalty 1%, R1) e `paid` (tetto +10%, R2/R3). Identità `hash(CF)` + limite **3/evento** (R4). Validazione (`markUsed`) ed export: `exportFree` (fee 25% + sgancio) / `exportEnforced` (royalty per sempre) (R5/R6). |
 | `TinftTransferValidator` | Allowlist di operatori; `validateTransfer` fa revert se il caller non è un modulo TINFT autorizzato. |
 | `TinftRoyaltySplit` | Split royalty **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
-| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock + **tetto +5%**), `pay` (release atomico token+prezzo+royalty, costo base + conteggio 2/evento), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
+| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock + **tetto +10%**), `pay` (release atomico token+prezzo+royalty, costo base + conteggio 3/evento), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
 | `ITransferValidator` | Interfaccia del validator. |
 
 ### Modello di enforcement
 Durante la vita "viva" del biglietto, un trasferimento passa solo se avviato da un
 **operatore in allowlist** (i moduli TINFT di vendita/escrow/regalo). Un trasferimento
-diretto wallet-to-wallet fa **revert** → la royalty 1% e il tetto +5% restano enforced
+diretto wallet-to-wallet fa **revert** → la royalty 1% e il tetto +10% restano enforced
 sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 (`policyBound=false`) e diventerà liberamente trasferibile.
 
@@ -53,8 +53,8 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 - ✅ sicurezza: reentrancy del venditore non ruba né blocca (`test_ReentrantSellerCannotExploit`)
 
 ### Definition of Done — M4 (coperta dai test)
-- ✅ rifiuto prezzo di rivendita oltre `paid·1,05` (`test_ListAboveCapReverts`, `test_CapFollowsCostBasisAfterSale`)
-- ✅ rifiuto del 3º biglietto stesso evento/identità, primario e secondario (`test_MintThirdForSameEventReverts`, `test_BuyingThirdForSameEventReverts`)
+- ✅ rifiuto prezzo di rivendita oltre `paid·1,10` (`test_ListAboveCapReverts`, `test_CapFollowsCostBasisAfterSale`)
+- ✅ rifiuto del 4º biglietto stesso evento/identità, primario e secondario (`test_MintFourthForSameEventReverts`, `test_BuyingFourthForSameEventReverts`)
 - ✅ niente bypass `list→compra→reclaim` e nessun blocco di `reclaim` (`test_ListDoesNotEnableBypass_AndReclaimNeverStuck`)
 - ✅ il conteggio si sposta da venditore a compratore alla vendita (`test_SaleMovesCountBetweenIdentities`)
 
