@@ -67,6 +67,12 @@
         <input id="explorer" value="https://sepolia.basescan.org" />
       </div>
     </div>
+    <div style="margin-top:12px">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="useStripe" style="width:auto" />
+        Paga con <b>Stripe (test mode)</b> invece del provider integrato — richiede backend online + chiavi Stripe test (carta <code>4242 4242 4242 4242</code>)
+      </label>
+    </div>
     <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
       <button id="run">▶ Esegui tutto il flusso</button>
       <button id="reset" class="ghost">Reset</button>
@@ -194,10 +200,25 @@ async function runAll() {
     const order = await jf("POST","/orders",{buyerId:buyer.id,eventId:ev.id,quantity:1}, buyTok);
     setStep("order","ok", `tot ${(order.totalCents/100).toFixed(2)}€ (prevendita ${(order.feeTotalCents/100).toFixed(2)}€)`);
 
-    // 6) pay → mint
-    setStep("pay","", "minting on-chain… (attendi il receipt)");
-    const paid = await jf("POST",`/orders/${order.id}/pay`,{}, buyTok);
-    setStep("pay","ok", paid.status);
+    // 6) pay → mint (provider integrato oppure Stripe Checkout in test mode)
+    if ($("useStripe").checked) {
+      setStep("pay","", "apro Stripe Checkout (test)…");
+      const co = await jf("POST",`/orders/${order.id}/checkout`,{}, buyTok);
+      if (co.checkoutUrl) window.open(co.checkoutUrl, "_blank");
+      setStep("pay","", "paga su Stripe (carta 4242 4242 4242 4242); attendo il webhook…");
+      let ord = order;
+      for (let i = 0; i < 60 && ord.status !== "PAID"; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const r = await fetch(api()+`/orders/${order.id}`, {headers:{authorization:"Bearer "+buyTok}});
+        if (r.ok) ord = await r.json();
+      }
+      if (ord.status !== "PAID") throw new Error("pagamento Stripe non completato (timeout). Backend online + webhook Stripe su /webhooks/psp configurato?");
+      log("ordine PAID via webhook Stripe"); setStep("pay","ok","PAID via Stripe");
+    } else {
+      setStep("pay","", "minting on-chain… (attendi il receipt)");
+      const paid = await jf("POST",`/orders/${order.id}/pay`,{}, buyTok);
+      setStep("pay","ok", paid.status);
+    }
 
     // 7) ticket
     const tickets = await jf("GET",`/accounts/${buyer.id}/tickets`, null, buyTok);
