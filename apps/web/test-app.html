@@ -74,6 +74,25 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>Registrazione reale (email + OTP)</h2>
+    <div class="row">
+      <div><label>Email (riceverà il codice)</label><input id="regEmail" placeholder="tua@email.it" /></div>
+      <div><label>Nome</label><input id="regNome" value="Mario" /></div>
+    </div>
+    <div class="row">
+      <div><label>Codice fiscale</label><input id="regCf" value="RSSMRA85T10A562S" /></div>
+      <div><label>Password</label><input id="regPass" value="test1234" /></div>
+    </div>
+    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button id="regSend" class="ghost">1) Invia codice OTP</button>
+      <input id="regCode" placeholder="codice 6 cifre" style="max-width:150px" />
+      <button id="regVerify" class="ghost">2) Verifica &amp; accedi</button>
+      <span class="muted" id="regMsg"></span>
+    </div>
+    <div class="muted" style="margin-top:8px">Con <b>RESEND_API_KEY</b> configurata il codice arriva via <b>email reale</b>; senza, è mostrato qui (modalità dev). L'account verificato può essere usato come compratore nel flusso sotto.</div>
+  </div>
+
   <div class="grid2">
     <div class="card">
       <h2>Passi</h2>
@@ -154,12 +173,18 @@ async function runAll() {
     const valTok = (await jf("POST","/auth/login",{email:valEmail,password:"1234"})).token;
     setStep("validator","ok");
 
-    // 3) buyer (with optional wallet)
-    const buyEmail = `buyer-${rnd()}@test.io`;
+    // 3) buyer: usa l'account registrato via OTP se presente, altrimenti compratore rapido
     const wallet = $("wallet").value.trim();
-    const buyer = await jf("POST","/accounts",Object.assign({nome:"Bob",cognome:"Test",email:buyEmail,role:"CLIENTE",password:"1234",cfHash:"id-"+rnd()}, wallet?{walletAddress:wallet}:{}));
-    const buyTok = (await jf("POST","/auth/login",{email:buyEmail,password:"1234"})).token;
-    setStep("buyer","ok", buyer.id + (wallet?` · ${wallet.slice(0,8)}…`:" · (owner)"));
+    let buyer, buyTok;
+    if (registered) {
+      buyer = {id: registered.id}; buyTok = registered.token;
+      setStep("buyer","ok", `${registered.email} (registrato via OTP) · mint all'owner`);
+    } else {
+      const buyEmail = `buyer-${rnd()}@test.io`;
+      buyer = await jf("POST","/accounts",Object.assign({nome:"Bob",cognome:"Test",email:buyEmail,role:"CLIENTE",password:"1234",cfHash:"id-"+rnd()}, wallet?{walletAddress:wallet}:{}));
+      buyTok = (await jf("POST","/auth/login",{email:buyEmail,password:"1234"})).token;
+      setStep("buyer","ok", buyer.id + (wallet?` · ${wallet.slice(0,8)}…`:" · (owner)"));
+    }
 
     // 4) event
     const ev = await jf("POST","/events",{organizerId:org.id,title:"Notte Test",venue:"Hangar",date:"30 GIU",priceCents:5000,capacity:10}, orgTok);
@@ -199,7 +224,7 @@ async function runAll() {
     $("result").innerHTML = `
       <div class="kv"><b>Pagamento</b><span>✅ ordine ${order.id} → <b>${paid.status}</b> · totale ${(order.totalCents/100).toFixed(2)}€</span></div>
       <div class="kv"><b>NFT coniato</b><span>✅ tokenId <b>${t.tokenId}</b> · biglietto ${t.id} (${t.status})</span></div>
-      <div class="kv"><b>Wallet titolare</b><span>${wallet||"(owner del contratto)"}</span></div>
+      <div class="kv"><b>Wallet titolare</b><span>${registered ? "(owner — account registrato senza wallet)" : (wallet||"(owner del contratto)")}</span></div>
       <div class="kv"><b>Tx mint</b><span>${txLink?`<a href="${txLink}" target="_blank">${t.txHash.slice(0,18)}…</a>`:"—"}</span></div>
       <div class="kv"><b>NFT su Basescan</b><span><a href="${tokenLink}" target="_blank">vedi token #${t.tokenId}</a></span></div>
       <div class="kv"><b>Validazione</b><span>✅ ${scan1.outcome} → ${scan2.outcome} (anti-screenshot/duplicato)</span></div>
@@ -213,6 +238,29 @@ async function runAll() {
 }
 $("run").onclick = runAll;
 $("reset").onclick = ()=>{ $("log").textContent=""; $("result").innerHTML='<span class="muted">Premi “Esegui tutto il flusso”.</span>'; renderSteps(); };
+
+// --- Registrazione reale (email + OTP) ---
+let registered = null;
+$("regSend").onclick = async () => {
+  $("regMsg").textContent = "invio…";
+  try {
+    const email = $("regEmail").value.trim();
+    if (!email) throw new Error("inserisci un'email");
+    const r = await jf("POST","/auth/register/email",{nome:$("regNome").value||"Mario",cognome:"Test",cf:($("regCf").value||"RSSMRA85T10A562S").trim(),email,password:$("regPass").value||"test1234"});
+    if (r.devCode){ $("regCode").value=r.devCode; $("regMsg").innerHTML=`codice (dev): <b>${r.devCode}</b> → premi “Verifica”`; }
+    else { $("regMsg").textContent="📧 email inviata: controlla la posta e inserisci il codice"; }
+  } catch(e){ $("regMsg").textContent="errore: "+e.message; }
+};
+$("regVerify").onclick = async () => {
+  $("regMsg").textContent = "verifico…";
+  try {
+    const email = $("regEmail").value.trim();
+    const acc = await jf("POST","/auth/register/email/verify",{email,code:$("regCode").value.trim()});
+    const token = (await jf("POST","/auth/login",{email,password:$("regPass").value||"test1234"})).token;
+    registered = {id:acc.id, email, token};
+    $("regMsg").innerHTML=`✅ registrato e loggato: <b>${email}</b> (${acc.id}). Sarà il compratore nel flusso qui sotto.`;
+  } catch(e){ $("regMsg").textContent="errore: "+e.message; }
+};
 
 // health hint
 fetch(api()+"/ready").then(r=>{$("health").textContent = r.ok?"● backend online":"● backend non pronto";$("health").style.color=r.ok?"var(--ok)":"var(--err)";}).catch(()=>{$("health").textContent="● backend non raggiungibile (avvia l'API o imposta API base)";$("health").style.color="var(--err)";});
