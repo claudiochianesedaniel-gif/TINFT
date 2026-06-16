@@ -58,13 +58,19 @@ docker run -p 3001:3001 \
 > Su Base Sepolia la `CHAIN_PRIVATE_KEY` è una chiave usa-e-getta: tienila solo nei
 > **secret** dell'host, mai nel repo. Per la mainnet servirà un secret manager / multisig.
 
-## Pagamenti con Stripe (modalità test, opzionale)
-Per usare Stripe vero in **test mode** al posto del provider integrato:
-```bash
-export STRIPE_SECRET_KEY=sk_test_...
-export STRIPE_WEBHOOK_SECRET=whsec_...
-```
-(usare carte di test Stripe; nessun denaro reale). Il flusso ordine→checkout→webhook→mint resta lo stesso.
+## Pagamenti con Stripe (modalità TEST)
+Nella test-app spunta **“Paga con Stripe (test mode)”**: l'ordine usa `/orders/:id/checkout`
+(apre Stripe Checkout), e al pagamento Stripe chiama il webhook `/webhooks/psp` che paga
+l'ordine e **conia l'NFT**. Carta di test: `4242 4242 4242 4242`, scadenza futura, CVC qualsiasi.
+
+Richiede il **backend online** (Stripe deve raggiungere il webhook) + queste env (chiavi **Test**):
+1. Stripe → **Developers → API keys** (toggle **Test mode**): copia `STRIPE_SECRET_KEY` (`sk_test_…`).
+2. Stripe → **Developers → Webhooks → Add endpoint**: URL `https://<host>/webhooks/psp`,
+   eventi `checkout.session.completed` e `payment_intent.succeeded`; copia il **Signing secret** (`whsec_…`) → `STRIPE_WEBHOOK_SECRET`.
+3. Imposta `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` come secret dell'host (su Render: sono già nel blueprint, `sync:false`).
+
+I redirect post-pagamento puntano da soli alla test-app (su Render via `RENDER_EXTERNAL_URL`);
+puoi forzarli con `CHECKOUT_SUCCESS_URL` / `CHECKOUT_CANCEL_URL`. Nessun denaro reale in test mode.
 
 ## NFC (mobile) — nota
 La validazione provata qui è via **token rotante** (lo stesso dato che l'NFC/QR trasporta). L'NFC

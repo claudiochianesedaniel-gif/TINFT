@@ -26,3 +26,13 @@ services:
         sync: false # = il tuo Alchemy Base Sepolia
       - key: CHAIN_PRIVATE_KEY
         sync: false # = chiave OWNER del contratto (deployer)
+      # --- Email reale (registrazione OTP via Resend) ---
+      - key: RESEND_API_KEY
+        sync: false # re_... (da resend.com → API Keys)
+      - key: EMAIL_FROM
+        value: "onboarding@resend.dev"
+      # --- Pagamenti Stripe (TEST mode, opzionale) ---
+      - key: STRIPE_SECRET_KEY
+        sync: false # sk_test_... (Stripe → Developers → API keys, modalità Test)
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # whsec_... (Stripe → Webhooks → endpoint https://<host>/webhooks/psp)

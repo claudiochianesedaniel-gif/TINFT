@@ -20,6 +20,9 @@ export class StripeProvider implements PaymentProvider {
   }
 
   async createCheckout(intent: CheckoutIntent): Promise<CheckoutSession> {
+    // Base pubblica per i redirect post-pagamento: Render la espone in RENDER_EXTERNAL_URL
+    // (o PUBLIC_URL impostata a mano); in locale si ripiega sui default localhost.
+    const base = process.env.PUBLIC_URL ?? process.env.RENDER_EXTERNAL_URL;
     const session = await this.stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [
@@ -32,8 +35,14 @@ export class StripeProvider implements PaymentProvider {
           }
         }
       ],
-      success_url: this.urls.success ?? process.env.CHECKOUT_SUCCESS_URL ?? "http://localhost:8080/checkout/ok",
-      cancel_url: this.urls.cancel ?? process.env.CHECKOUT_CANCEL_URL ?? "http://localhost:8080/checkout/ko",
+      success_url:
+        this.urls.success ??
+        process.env.CHECKOUT_SUCCESS_URL ??
+        (base ? `${base}/test-app.html?paid=1` : "http://localhost:8080/checkout/ok"),
+      cancel_url:
+        this.urls.cancel ??
+        process.env.CHECKOUT_CANCEL_URL ??
+        (base ? `${base}/test-app.html?cancel=1` : "http://localhost:8080/checkout/ko"),
       // metadati portati fino al webhook: orderId è il riferimento che lega la sessione all'ordine v2
       metadata: {kind: intent.kind, accountId: intent.accountId, eventId: intent.eventId ?? "", orderId: intent.orderId ?? ""},
       // anche il PaymentIntent porta i metadati: così payment_intent.succeeded espone l'orderId
