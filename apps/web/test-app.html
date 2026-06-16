@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Test App (struttura end-to-end)</title>
+<style>
+  :root { --bg:#0b0d12; --card:#151926; --ink:#e8ecf5; --mut:#93a0b8; --acc:#5b8cff; --ok:#27c093; --err:#ff5d6c; --line:#243049; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:18px 20px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; }
+  .tag { font-size:12px; color:var(--mut); border:1px solid var(--line); border-radius:999px; padding:2px 10px; }
+  main { max-width:1000px; margin:0 auto; padding:20px; display:grid; gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .card h2 { font-size:14px; margin:0 0 12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
+  label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
+  input { width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line); background:#0e1320; color:var(--ink); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:11px 16px; font-weight:600; background:var(--acc); color:#fff; }
+  button.ghost { background:transparent; border:1px solid var(--line); color:var(--ink); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .steps { display:grid; gap:10px; }
+  .step { display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#0e1320; }
+  .dot { width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-size:13px; background:#222b41; color:var(--mut); }
+  .step.ok .dot { background:rgba(39,192,147,.15); color:var(--ok); }
+  .step.err .dot { background:rgba(255,93,108,.15); color:var(--err); }
+  .step small { color:var(--mut); display:block; }
+  .pill { font-size:12px; color:var(--mut); }
+  a { color:var(--acc); }
+  pre { background:#0a0e18; border:1px solid var(--line); border-radius:10px; padding:12px; overflow:auto; max-height:320px; font-size:12.5px; color:#cdd6ee; }
+  .result { display:grid; gap:6px; }
+  .kv { display:grid; grid-template-columns:160px 1fr; gap:8px; font-size:13px; }
+  .kv b { color:var(--mut); font-weight:600; }
+  .muted { color:var(--mut); font-size:12px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:720px){ .row,.grid2{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎟️ TINFT · Test App</h1>
+  <span class="tag">struttura end-to-end</span>
+  <span class="tag">pagamento → mint NFT → validazione</span>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Configurazione</h2>
+    <div class="row">
+      <div>
+        <label>API base (backend)</label>
+        <input id="apiBase" placeholder="https://..." />
+      </div>
+      <div>
+        <label>Wallet destinatario NFT (opzionale, es. la tua MetaMask)</label>
+        <input id="wallet" placeholder="0x... (vuoto = conia all'owner)" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Indirizzo contratto TinftTicket (per i link Basescan)</label>
+        <input id="ticketAddr" value="0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37" />
+      </div>
+      <div>
+        <label>Explorer base</label>
+        <input id="explorer" value="https://sepolia.basescan.org" />
+      </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="run">▶ Esegui tutto il flusso</button>
+      <button id="reset" class="ghost">Reset</button>
+      <span class="muted" id="health"></span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Passi</h2>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="card">
+      <h2>Risultato</h2>
+      <div class="result" id="result"><span class="muted">Premi “Esegui tutto il flusso”.</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Log (risposte API grezze)</h2>
+    <pre id="log"></pre>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = () => $("apiBase").value.replace(/\/$/, "");
+$("apiBase").value = location.origin; // di default same-origin (servito dal backend)
+
+const STEPS = [
+  ["health", "Backend raggiungibile (/ready)"],
+  ["org", "Crea organizzatore + login"],
+  ["validator", "Crea validatore + login"],
+  ["buyer", "Crea compratore + login (con wallet)"],
+  ["event", "Crea evento in vendita"],
+  ["order", "Crea ordine (prezzo + prevendita 10%)"],
+  ["pay", "Paga ordine → MINT NFT on-chain"],
+  ["ticket", "Leggi biglietto + tokenId/txHash"],
+  ["token", "Genera token d'accesso (QR/NFC)"],
+  ["scan1", "Validazione al varco → VALID"],
+  ["scan2", "Ri-scansione → DUPLICATE"],
+];
+function renderSteps(state={}) {
+  $("steps").innerHTML = STEPS.map(([k,label],i)=>{
+    const s = state[k] || "";
+    return `<div class="step ${s}"><div class="dot">${s==="ok"?"✓":s==="err"?"✗":i+1}</div>
+      <div>${label}<small id="st-${k}"></small></div><div class="pill" id="pill-${k}"></div></div>`;
+  }).join("");
+}
+renderSteps();
+const log = (x)=>{ $("log").textContent += (typeof x==="string"?x:JSON.stringify(x,null,2))+"\n"; $("log").scrollTop=$("log").scrollHeight; };
+const setStep = (k,s,info)=>{ const el=$("st-"+k); const st=el&&el.closest(".step"); if(st){st.classList.remove("ok","err"); if(s)st.classList.add(s); const dot=st.querySelector(".dot"); if(dot)dot.textContent = s==="ok"?"✓":s==="err"?"✗":dot.textContent;} if(info&&el)el.textContent=info; };
+
+async function jf(method, path, body, token) {
+  const r = await fetch(api()+path, {
+    method,
+    headers: Object.assign({"content-type":"application/json"}, token?{authorization:"Bearer "+token}:{}),
+    body: body?JSON.stringify(body):undefined
+  });
+  let data; try { data = await r.json(); } catch { data = {}; }
+  log(`${method} ${path} → ${r.status}`); log(data);
+  if (!r.ok) throw new Error((data&&(data.message||data.error))||(`HTTP ${r.status}`));
+  return data;
+}
+const rnd = ()=>Math.random().toString(36).slice(2,8);
+
+async function runAll() {
+  $("run").disabled = true; $("log").textContent=""; $("result").innerHTML="";
+  renderSteps();
+  const out = {};
+  try {
+    // 0) health
+    try { await jf("GET","/ready"); } catch { await jf("GET","/metrics"); }
+    setStep("health","ok");
+
+    // 1) organizer
+    const orgEmail = `org-${rnd()}@test.io`;
+    const org = await jf("POST","/accounts",{nome:"Org",cognome:"Test",email:orgEmail,role:"ORGANIZER",password:"1234"});
+    const orgTok = (await jf("POST","/auth/login",{email:orgEmail,password:"1234"})).token;
+    setStep("org","ok", org.id);
+
+    // 2) validator
+    const valEmail = `val-${rnd()}@test.io`;
+    await jf("POST","/accounts",{nome:"Gate",cognome:"Test",email:valEmail,role:"VALIDATOR",password:"1234"});
+    const valTok = (await jf("POST","/auth/login",{email:valEmail,password:"1234"})).token;
+    setStep("validator","ok");
+
+    // 3) buyer (with optional wallet)
+    const buyEmail = `buyer-${rnd()}@test.io`;
+    const wallet = $("wallet").value.trim();
+    const buyer = await jf("POST","/accounts",Object.assign({nome:"Bob",cognome:"Test",email:buyEmail,role:"CLIENTE",password:"1234",cfHash:"id-"+rnd()}, wallet?{walletAddress:wallet}:{}));
+    const buyTok = (await jf("POST","/auth/login",{email:buyEmail,password:"1234"})).token;
+    setStep("buyer","ok", buyer.id + (wallet?` · ${wallet.slice(0,8)}…`:" · (owner)"));
+
+    // 4) event
+    const ev = await jf("POST","/events",{organizerId:org.id,title:"Notte Test",venue:"Hangar",date:"30 GIU",priceCents:5000,capacity:10}, orgTok);
+    setStep("event","ok", ev.id);
+
+    // 5) order
+    const order = await jf("POST","/orders",{buyerId:buyer.id,eventId:ev.id,quantity:1}, buyTok);
+    setStep("order","ok", `tot ${(order.totalCents/100).toFixed(2)}€ (prevendita ${(order.feeTotalCents/100).toFixed(2)}€)`);
+
+    // 6) pay → mint
+    setStep("pay","", "minting on-chain… (attendi il receipt)");
+    const paid = await jf("POST",`/orders/${order.id}/pay`,{}, buyTok);
+    setStep("pay","ok", paid.status);
+
+    // 7) ticket
+    const tickets = await jf("GET",`/accounts/${buyer.id}/tickets`, null, buyTok);
+    const t = tickets[0];
+    setStep("ticket","ok", `tokenId ${t.tokenId}`);
+
+    // 8) access token
+    const tok = await jf("GET",`/tickets/${t.id}/access-token`, null, buyTok);
+    setStep("token","ok", `ruota ogni ${tok.rotateSeconds}s`);
+
+    // 9) scan VALID
+    const scan1 = await jf("POST","/validate/scan",{token:tok.token}, valTok);
+    setStep("scan1", scan1.outcome==="VALID"?"ok":"err", scan1.outcome);
+
+    // 10) rescan DUPLICATE (token fresco dello stesso biglietto già usato)
+    const tok2 = (await jf("GET",`/tickets/${t.id}/access-token`, null, buyTok)).token;
+    const scan2 = await jf("POST","/validate/scan",{token:tok2}, valTok);
+    setStep("scan2", scan2.outcome==="DUPLICATE"?"ok":"err", scan2.outcome);
+
+    // result panel
+    const expl = $("explorer").value.replace(/\/$/,""); const addr=$("ticketAddr").value.trim();
+    const txLink = t.txHash? `${expl}/tx/${t.txHash}` : null;
+    const tokenLink = `${expl}/token/${addr}?a=${t.tokenId}`;
+    $("result").innerHTML = `
+      <div class="kv"><b>Pagamento</b><span>✅ ordine ${order.id} → <b>${paid.status}</b> · totale ${(order.totalCents/100).toFixed(2)}€</span></div>
+      <div class="kv"><b>NFT coniato</b><span>✅ tokenId <b>${t.tokenId}</b> · biglietto ${t.id} (${t.status})</span></div>
+      <div class="kv"><b>Wallet titolare</b><span>${wallet||"(owner del contratto)"}</span></div>
+      <div class="kv"><b>Tx mint</b><span>${txLink?`<a href="${txLink}" target="_blank">${t.txHash.slice(0,18)}…</a>`:"—"}</span></div>
+      <div class="kv"><b>NFT su Basescan</b><span><a href="${tokenLink}" target="_blank">vedi token #${t.tokenId}</a></span></div>
+      <div class="kv"><b>Validazione</b><span>✅ ${scan1.outcome} → ${scan2.outcome} (anti-screenshot/duplicato)</span></div>
+      <div class="muted">Pagamento (provider di test) → mint reale su Base Sepolia → validazione token rotante (il trasporto NFC/QR porta proprio questo token).</div>`;
+  } catch (e) {
+    log("ERRORE: "+e.message);
+    $("result").innerHTML = `<div class="kv"><b style="color:var(--err)">Errore</b><span>${e.message}</span></div><div class="muted">Controlla il log qui sotto. Se vedi “modalità demo”, l'API base non è raggiungibile.</div>`;
+  } finally {
+    $("run").disabled = false;
+  }
+}
+$("run").onclick = runAll;
+$("reset").onclick = ()=>{ $("log").textContent=""; $("result").innerHTML='<span class="muted">Premi “Esegui tutto il flusso”.</span>'; renderSteps(); };
+
+// health hint
+fetch(api()+"/ready").then(r=>{$("health").textContent = r.ok?"● backend online":"● backend non pronto";$("health").style.color=r.ok?"var(--ok)":"var(--err)";}).catch(()=>{$("health").textContent="● backend non raggiungibile (avvia l'API o imposta API base)";$("health").style.color="var(--err)";});
+</script>
+</body>
+</html>
