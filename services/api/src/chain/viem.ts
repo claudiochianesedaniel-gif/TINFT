@@ -1,4 +1,4 @@
-import {createPublicClient, createWalletClient, getAddress, http, parseEventLogs} from "viem";
+import {createPublicClient, createWalletClient, getAddress, http, keccak256, parseEventLogs, toBytes} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import {base, baseSepolia, foundry} from "viem/chains";
 import type {Chain} from "viem";
@@ -69,7 +69,7 @@ export class ViemChain implements ChainPort {
     const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
 
     const to = getAddress((params.to ?? this.account.address) as string);
-    const eventId = BigInt(this.referenceToOnchainId(params.reference));
+    const eventId = referenceToOnchainEventId(params.reference);
     const price = BigInt(params.priceCents);
 
     const txHash = await wallet.writeContract({
@@ -85,10 +85,14 @@ export class ViemChain implements ChainPort {
     return {tokenId: Number(first.args.tokenId), txHash};
   }
 
-  /** Mappa stabile reference(off-chain)→uint on-chain (placeholder; in prod: registro eventi). */
-  private referenceToOnchainId(reference: string): number {
-    let h = 0;
-    for (let i = 0; i < reference.length; i++) h = (h * 31 + reference.charCodeAt(i)) >>> 0;
-    return h % 1_000_000;
-  }
+}
+
+/**
+ * Mappa stabile e deterministica reference(off-chain) → eventId uint256 on-chain.
+ * Usa keccak256 dell'identificativo evento: deterministica (ricostruibile off-chain)
+ * e di fatto priva di collisioni, a differenza del vecchio hash troncato a 1e6 (che
+ * poteva mappare eventi diversi sullo stesso eventId, falsando il tetto 3/evento on-chain).
+ */
+export function referenceToOnchainEventId(reference: string): bigint {
+  return BigInt(keccak256(toBytes(reference)));
 }
