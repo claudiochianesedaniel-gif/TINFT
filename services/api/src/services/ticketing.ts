@@ -33,8 +33,11 @@ import {hashPassword} from "../auth/password";
 import {verifyAccessToken} from "../access/access-token";
 import type {ChainPort} from "../chain/port";
 import {FakeChain} from "../chain/fake";
+import {DevEmailSender, type EmailSender} from "../notifications/email";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
+/** Scadenza del codice OTP di registrazione: 10 minuti. */
+const OTP_TTL_SECONDS = 600;
 
 /**
  * Servizio applicativo TINFT: orchestra i flussi dei 4 profili applicando le
@@ -47,7 +50,8 @@ export class TicketingService {
     private readonly store: Store,
     private readonly now: () => number = nowSeconds,
     private readonly verifier: IdentityVerifier = new FakeSpid(),
-    private readonly chain: ChainPort = new FakeChain()
+    private readonly chain: ChainPort = new FakeChain(),
+    private readonly email: EmailSender = new DevEmailSender()
   ) {}
 
   // -------------------------------------------------------------- account
@@ -119,7 +123,7 @@ export class TicketingService {
     phone?: string;
     username?: string;
     password?: string;
-  }): Promise<{email: string; devCode: string}> {
+  }): Promise<{email: string; devCode?: string}> {
     if (!input.email?.trim()) throw new DomainError("INVALID_EMAIL", "email obbligatoria");
     const code = String(Math.floor(100000 + Math.random() * 900000));
     await this.store.setPendingRegistration({
@@ -140,13 +144,20 @@ export class TicketingService {
       passwordHash: input.password ? hashPassword(input.password) : undefined,
       createdAt: this.now()
     });
-    return {email: input.email, devCode: code};
+    // invio reale del codice (Resend) o no-op dev; il devCode è esposto solo nel fallback dev.
+    await this.email.sendOtp(input.email, code);
+    return {email: input.email, devCode: this.email.exposesDevCode ? code : undefined};
   }
 
   /** Verifica l'OTP: se corretto crea un account CLIENTE verificato (hash CF) e ripulisce il pending. */
   async verifyEmailRegistration(email: string, code: string): Promise<Account> {
     const pending = await this.store.getPendingRegistration(email);
-    if (!pending || pending.code !== code) throw new DomainError("BAD_CODE", "codice errato o scaduto", 400);
+    if (!pending) throw new DomainError("BAD_CODE", "codice errato o scaduto", 400);
+    if (this.now() - pending.createdAt > OTP_TTL_SECONDS) {
+      await this.store.deletePendingRegistration(email); // codice scaduto: consuma il pending
+      throw new DomainError("CODE_EXPIRED", "codice scaduto: richiedine uno nuovo", 400);
+    }
+    if (pending.code !== code) throw new DomainError("BAD_CODE", "codice errato o scaduto", 400);
     const identity = this.verifier.verify({cf: pending.cf, nome: pending.nome, cognome: pending.cognome});
     const account = await this.createAccount({
       role: "CLIENTE",

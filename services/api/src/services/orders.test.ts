@@ -172,12 +172,12 @@ describe("Registrazione email + OTP (v2)", () => {
     expect(devCode).toMatch(/^\d{6}$/);
     await expect(s.service.verifyEmailRegistration("mb@e.it", "000000")).rejects.toThrowError(/codice/);
 
-    const account = await s.service.verifyEmailRegistration("mb@e.it", devCode);
+    const account = await s.service.verifyEmailRegistration("mb@e.it", devCode!);
     expect(account.role).toBe("CLIENTE");
     expect(account.verified).toBe(true);
     expect(account.cfHash).toMatch(/^0x/);
     expect(account.email).toBe("mb@e.it");
     // pending consumato: non riutilizzabile
-    await expect(s.service.verifyEmailRegistration("mb@e.it", devCode)).rejects.toThrowError(/codice/);
+    await expect(s.service.verifyEmailRegistration("mb@e.it", devCode!)).rejects.toThrowError(/codice/);
   });
 });

@@ -14,6 +14,7 @@ import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
 import {ViemChain} from "../chain/viem";
 import {openapiSpec, swaggerUiHtml} from "./openapi";
+import {emailSenderFromEnv} from "../notifications/email";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import {setPassword, verifyPassword} from "../auth/password";
 import {signToken, verifyToken} from "../auth/tokens";
@@ -74,7 +75,7 @@ export function buildServer(
   const verifier = opts.verifier ?? new FakeSpid();
   // Stessa istanza `chain` passata a ticketing e payments: l'acquisto primario/ordini
   // conia via TicketingService, il flusso PSP via PaymentsService (entrambi on-chain con ViemChain).
-  const ticketing = new TicketingService(store, undefined, verifier, chain);
+  const ticketing = new TicketingService(store, undefined, verifier, chain, emailSenderFromEnv());
   const content = new ContentService(store);
   const consoleSvc = new ConsoleService(store);
   const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
@@ -414,7 +415,7 @@ export function buildServer(
 
   app.post<{Body: {email: string; code: string}}>(
     "/auth/register/email/verify",
-    {schema: {body: body({email: STR, code: STR}, ["email", "code"])}},
+    {preHandler: rateLimit(10, 60_000), schema: {body: body({email: STR, code: STR}, ["email", "code"])}},
     async (req, reply) => reply.status(201).send(await ticketing.verifyEmailRegistration(req.body.email, req.body.code))
   );
 

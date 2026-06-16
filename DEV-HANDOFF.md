@@ -32,7 +32,7 @@ Per chi continua lo sviluppo. Riepilogo di ciò che è **fatto e verificato** e 
 3. **Backend — regola P.IVA/fatturazione OBBLIGATORIA** alla creazione account **ORGANIZER** (richiesta prodotto): oggi non imposta P.IVA. Intervenire in `services/ticketing.ts` `createAccount`/`createClub` + schema in `http/server.ts` (richiedere `piva`, `ragioneSociale`, `iban`).
 4. **Wiring superfici web/app all'API reale**: oggi `apps/web/*` e `tinft-demo.html` funzionano in **mock offline**. Collegare a `services/api` (login, ordini, mercato, biglietti, console) mantenendo **sito↔app speculari** (la validazione resta solo-app).
 5. **Pagamenti reali**: chiavi Stripe live + 3DS + **fatturazione IVA**/ricevute; **payout venditore** reale (KYC venditore, timing/hold, bonifici); rimborsi/chargeback con **riconciliazione** contabile.
-6. **Notifiche reali**: invio email/SMS per OTP (oggi `devCode` mostrato). 
+6. **Notifiche reali**: ✓ FATTO l'OTP di registrazione via **Resend** (`src/notifications/email.ts`, interfaccia `EmailSender`, fallback `devCode` senza chiave, scadenza 10 min + rate-limit). Restano le email di **evento/promemoria** (Fase 4) ed eventuale **SMS**.
 7. **On-chain**: eseguire deploy su **Base Sepolia** (serve chiave testnet finanziata) → **audit** → mainnet; sostituire `referenceToOnchainId` (placeholder in `src/chain/viem.ts`) con un **registro eventi** on-chain reale.
 8. **Fidelity on-chain** + edge case (oggi non sul percorso PG).
 9. **Infra/Ops**: hosting + DB gestito; **secret manager**; **monitoring/alerting** (Grafana su `/metrics`); backup/restore DB; CI/CD di deploy; **lock distribuito** (advisory lock/Redis) per serializzare il mint in scale-out multi-istanza.

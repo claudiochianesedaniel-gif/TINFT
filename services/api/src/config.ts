@@ -31,6 +31,14 @@ export function checkConfig(env: Env = process.env): ConfigIssue[] {
     });
   }
 
+  // Email OTP (Resend): senza un mittente verificato si ripiega sul dominio di prova.
+  if (env.RESEND_API_KEY && !env.EMAIL_FROM) {
+    issues.push({
+      level: "warn",
+      message: "RESEND_API_KEY presente ma EMAIL_FROM mancante: uso il mittente di prova onboarding@resend.dev."
+    });
+  }
+
   // On-chain: le tre variabili vanno insieme o nessuna (altrimenti niente mint reale o crash).
   const chain = [env.CHAIN_RPC_URL, env.CHAIN_PRIVATE_KEY, env.TICKET_ADDRESS];
   if (chain.some(Boolean) && !chain.every(Boolean)) {
