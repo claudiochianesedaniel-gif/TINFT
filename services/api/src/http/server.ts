@@ -12,7 +12,7 @@ import {StripeProvider} from "../payments/stripe";
 import {PaymentsService} from "../payments/service";
 import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
-import {ViemChain} from "../chain/viem";
+import {ViemChain, viemChainForId} from "../chain/viem";
 import {openapiSpec, swaggerUiHtml} from "./openapi";
 import {emailSenderFromEnv} from "../notifications/email";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
@@ -46,10 +46,14 @@ function chainFromEnv(): ChainPort | undefined {
   const privateKey = process.env.CHAIN_PRIVATE_KEY;
   const ticketAddress = process.env.TICKET_ADDRESS;
   if (rpcUrl && privateKey && ticketAddress) {
+    // CHAIN_ID seleziona la rete viem (84532=Base Sepolia, 8453=Base, 31337=anvil).
+    // Senza CHAIN_ID l'adapter ripiega su foundry (anvil), come in passato.
+    const chainId = process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined;
     return new ViemChain({
       rpcUrl,
       privateKey: privateKey as `0x${string}`,
-      ticketAddress: ticketAddress as `0x${string}`
+      ticketAddress: ticketAddress as `0x${string}`,
+      chain: viemChainForId(chainId)
     });
   }
   return undefined;

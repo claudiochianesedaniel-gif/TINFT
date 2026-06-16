@@ -1,6 +1,6 @@
 import {createPublicClient, createWalletClient, getAddress, http, parseEventLogs} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
-import {foundry} from "viem/chains";
+import {base, baseSepolia, foundry} from "viem/chains";
 import type {Chain} from "viem";
 import {DomainError} from "../domain/models";
 import type {ChainPort, MintParams, MintResult} from "./port";
@@ -29,6 +29,20 @@ export const TINFT_TICKET_ABI = [
     ]
   }
 ] as const;
+
+/** Mappa un chain id al `Chain` di viem usato dall'adapter (per firmare con il chainId giusto). */
+export function viemChainForId(id?: number): Chain | undefined {
+  switch (id) {
+    case base.id:
+      return base; // 8453
+    case baseSepolia.id:
+      return baseSepolia; // 84532
+    case foundry.id:
+      return foundry; // 31337 (anvil)
+    default:
+      return undefined; // ViemChain ripiega su foundry
+  }
+}
 
 export interface ViemChainConfig {
   rpcUrl: string;
