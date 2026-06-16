@@ -32,10 +32,31 @@ Per vedere l'NFT nella tua MetaMask, incolla il tuo indirizzo nel campo *Wallet 
 > La `CHAIN_PRIVATE_KEY` è la chiave **owner** dei contratti (il deployer). Su Base Sepolia è una
 > chiave usa-e-getta: tienila fuori dal repo. Senza di essa il backend usa il mint *fake*.
 
-## Per testare da telefono (e in vista dell'NFC)
-Il telefono non raggiunge `localhost`: serve il backend **online**. Passi:
-1. Pubblica `services/api` su un host Node (Render/Railway/Fly/…); imposta le stesse env (`CHAIN_*`, `TICKET_ADDRESS`, `CHAIN_ID`) come **secret**.
-2. Apri `https://<tuo-host>/test-app.html` dal telefono (oppure apri la pagina e imposta *API base* sull'URL dell'host).
+## Mettere online il backend (per testare da telefono e in vista dell'NFC)
+Il telefono non raggiunge `localhost`: serve il backend **online**. Il repo include un
+`Dockerfile` portabile e un `render.yaml` (Blueprint) pronti.
+
+### Opzione A — Render (Blueprint, la più semplice)
+1. https://dashboard.render.com → **New → Blueprint** → collega il repo GitHub `tinft`.
+2. Render legge `render.yaml` e crea il servizio `tinft-api`. Inserisci i **segreti**:
+   - `CHAIN_RPC_URL` = il tuo Alchemy Base Sepolia
+   - `CHAIN_PRIVATE_KEY` = chiave **owner** del contratto (deployer)
+3. **Deploy**. Apri `https://<tuo-servizio>.onrender.com/test-app.html` (anche dal telefono).
+
+### Opzione B — Docker (qualsiasi host / VPS)
+```bash
+docker build -t tinft-api .
+docker run -p 3001:3001 \
+  -e CHAIN_RPC_URL="https://base-sepolia.g.alchemy.com/v2/<API_KEY>" \
+  -e CHAIN_PRIVATE_KEY="0x<chiave OWNER>" \
+  -e TICKET_ADDRESS="0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37" \
+  -e CHAIN_ID=84532 -e SEED_DEMO=1 \
+  tinft-api
+# → http://<host>:3001/test-app.html
+```
+
+> Su Base Sepolia la `CHAIN_PRIVATE_KEY` è una chiave usa-e-getta: tienila solo nei
+> **secret** dell'host, mai nel repo. Per la mainnet servirà un secret manager / multisig.
 
 ## Pagamenti con Stripe (modalità test, opzionale)
 Per usare Stripe vero in **test mode** al posto del provider integrato:
