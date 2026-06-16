@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TINFT · Demo</title>
+<!-- Unico external consentito: Google Fonts (Quicksand). Tutto il resto è inline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Design tokens (v2, dark) ===== */
+  :root{
+    --bg:#0a0a0a; --surf:#131313; --surf2:#1c1c1c; --bd:#2a2a2a;
+    --tx:#e8e6e0; --mut:#8a8682; --faint:#5a5754;
+    --blue:#4472c4; --blue2:#6f9eff; --green:#00cc88; --orange:#ff9900;
+    --radius:13px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--tx);
+    font-family:'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-weight:500; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue2); text-decoration:none;}
+  h1,h2,h3,h4{font-weight:700; margin:0 0 .4em; letter-spacing:-.01em;}
+  h1{font-size:26px;} h2{font-size:21px;} h3{font-size:17px;} h4{font-size:15px;}
+  p{margin:0 0 .8em;}
+
+  .wrap{max-width:1040px; margin:0 auto; padding:0 20px;}
+
+  /* ===== Top nav (sticky) ===== */
+  .nav{
+    position:sticky; top:0; z-index:40;
+    background:rgba(10,10,10,.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--bd);
+  }
+  .nav-in{display:flex; align-items:center; gap:14px; height:62px;}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; cursor:pointer; user-select:none;}
+  .brand .dot{width:11px; height:11px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--blue2));}
+  .brand small{color:var(--mut); font-weight:500; font-size:11px; letter-spacing:.12em; text-transform:uppercase;}
+  .nav-spacer{flex:1;}
+  .nav-role{font-size:12px; color:var(--mut); display:flex; align-items:center; gap:8px;}
+  .role-pill{
+    font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
+    padding:4px 10px; border-radius:999px; border:1px solid var(--bd); color:var(--tx); background:var(--surf2);
+  }
+  .role-pill.cliente{color:var(--blue2); border-color:rgba(111,158,255,.4);}
+  .role-pill.organizzatore{color:var(--green); border-color:rgba(0,204,136,.4);}
+  .role-pill.validatore{color:var(--orange); border-color:rgba(255,153,0,.4);}
+
+  /* ===== Labels ===== */
+  .label{
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--mut); font-weight:600; display:block; margin-bottom:6px;
+  }
+
+  /* ===== Buttons ===== */
+  .btn{
+    font-family:inherit; font-weight:600; font-size:14px;
+    padding:11px 18px; border-radius:var(--radius); border:1px solid transparent;
+    cursor:pointer; transition:.15s ease; display:inline-flex; align-items:center; gap:8px;
+    line-height:1;
+  }
+  .btn.primary{ background:linear-gradient(135deg,var(--blue),var(--blue2)); color:#fff; }
+  .btn.primary:hover{ filter:brightness(1.08); }
+  .btn.ghost{ background:transparent; color:var(--tx); border:1px solid var(--bd); }
+  .btn.ghost:hover{ border-color:var(--blue); color:var(--blue2); }
+  .btn.sm{ padding:8px 13px; font-size:13px; border-radius:10px; }
+  .btn.block{ width:100%; justify-content:center; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; filter:none !important; }
+
+  /* ===== Inputs ===== */
+  input, select, textarea{
+    font-family:inherit; font-size:14px; font-weight:500;
+    background:var(--surf2); color:var(--tx);
+    border:1px solid var(--bd); border-radius:10px; padding:10px 12px; width:100%;
+    transition:.15s ease; outline:none;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--blue); }
+  input::placeholder{ color:var(--faint); }
+  select{ appearance:none; cursor:pointer; }
+  .field{ margin-bottom:13px; }
+  .field .err{ color:#ff6b6b; font-size:12px; margin-top:5px; display:block; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+  @media(max-width:560px){ .grid2{ grid-template-columns:1fr; } }
+
+  /* ===== Cards ===== */
+  .card{
+    background:var(--surf); border:1px solid var(--bd); border-radius:var(--radius);
+    padding:20px;
+  }
+  .card + .card{ margin-top:16px; }
+  .cards-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+  .stat .n{ font-size:30px; font-weight:700; letter-spacing:-.02em; }
+  .stat .n.green{ color:var(--green); } .stat .n.blue{ color:var(--blue2); } .stat .n.orange{ color:var(--orange); }
+  .muted{ color:var(--mut); }
+  .faint{ color:var(--faint); }
+  .green-t{ color:var(--green); } .blue-t{ color:var(--blue2); } .orange-t{ color:var(--orange); }
+  .pill{
+    display:inline-block; font-size:11px; font-weight:600; letter-spacing:.04em;
+    padding:3px 9px; border-radius:999px; background:var(--surf2); border:1px solid var(--bd); color:var(--mut);
+  }
+  .divider{ height:1px; background:var(--bd); border:0; margin:16px 0; }
+  .row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .kv{ display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:14px; }
+  .kv .k{ color:var(--mut); }
+  .kv .v{ font-weight:600; }
+  .note{
+    background:var(--surf2); border:1px solid var(--bd); border-left:3px solid var(--blue);
+    border-radius:10px; padding:12px 14px; font-size:13px; color:var(--mut);
+  }
+  .note.warn{ border-left-color:var(--orange); }
+  .note.ok{ border-left-color:var(--green); }
+
+  /* ===== Hero (logged-out) ===== */
+  .hero{ padding:70px 0 40px; }
+  .hero h1{ font-size:42px; line-height:1.1; max-width:620px; }
+  .hero p.lead{ font-size:17px; color:var(--mut); max-width:600px; }
+  .feat-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; margin-top:34px; }
+  .feat h4{ display:flex; align-items:center; gap:8px; }
+  .feat .ic{ width:28px;height:28px;border-radius:8px; display:inline-flex;align-items:center;justify-content:center;
+    background:var(--surf2); border:1px solid var(--bd); font-size:15px; }
+
+  /* ===== Sub-nav (tabs) ===== */
+  .subnav{ display:flex; gap:6px; flex-wrap:wrap; margin:22px 0 24px; border-bottom:1px solid var(--bd); padding-bottom:0; }
+  .tab{
+    font-family:inherit; font-weight:600; font-size:14px; cursor:pointer;
+    background:transparent; border:0; color:var(--mut); padding:10px 14px;
+    border-bottom:2px solid transparent; margin-bottom:-1px; transition:.15s;
+  }
+  .tab:hover{ color:var(--tx); }
+  .tab.active{ color:var(--blue2); border-bottom-color:var(--blue2); }
+
+  .area-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding-top:26px; flex-wrap:wrap; }
+
+  /* ===== Modal ===== */
+  .overlay{
+    position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.7);
+    display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto;
+  }
+  .modal{
+    background:var(--surf); border:1px solid var(--bd); border-radius:var(--radius);
+    width:100%; max-width:480px; padding:24px;
+  }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .x{ background:none; border:0; color:var(--mut); font-size:22px; cursor:pointer; line-height:1; }
+  .seg{ display:flex; background:var(--surf2); border:1px solid var(--bd); border-radius:11px; padding:4px; gap:4px; }
+  .seg button{
+    flex:1; font-family:inherit; font-weight:600; font-size:13px; cursor:pointer;
+    background:transparent; border:0; color:var(--mut); padding:8px; border-radius:8px; transition:.15s;
+  }
+  .seg button.on{ background:linear-gradient(135deg,var(--blue),var(--blue2)); color:#fff; }
+  .seg.roles button.on{ background:var(--surf); border:1px solid var(--blue); color:var(--blue2); }
+
+  /* ===== QR ===== */
+  .qr-box{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .qr{
+    width:230px; height:230px; background:#fff; border-radius:12px; padding:10px;
+    display:grid; gap:0; box-shadow:0 0 0 1px var(--bd);
+  }
+  .qr i{ display:block; }
+  .qr i.on{ background:#0a0a0a; }
+  .qr i.off{ background:#fff; }
+  .countdown{ font-size:13px; color:var(--mut); }
+  .countdown b{ color:var(--blue2); }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:var(--surf2); border:1px solid var(--bd); border-left:3px solid var(--green);
+    padding:12px 18px; border-radius:11px; font-size:14px; z-index:200; max-width:90vw;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+  }
+  .toast.err{ border-left-color:#ff6b6b; }
+
+  /* ===== Footer ===== */
+  .footer{ border-top:1px solid var(--bd); margin-top:50px; padding:24px 0 40px; color:var(--mut); font-size:13px; }
+  .footer .parity{ background:var(--surf); border:1px solid var(--bd); border-radius:11px; padding:14px 16px; margin-bottom:16px; }
+  .footer .parity b{ color:var(--tx); }
+
+  .empty{ color:var(--mut); padding:30px; text-align:center; border:1px dashed var(--bd); border-radius:var(--radius); }
+  .clickable{ cursor:pointer; }
+  .clickable:hover{ border-color:var(--blue); }
+</style>
+</head>
+<body>
+  <!-- App container: ricostruito interamente da render() -->
+  <div id="app"></div>
+  <!-- Slot per modale/toast -->
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   TINFT — Demo single-file (NFT ticketing)
+   - Vanilla JS, nessun framework, nessuna chiamata di rete.
+   - Pattern: state object + render() che ricostruisce #app.
+   - Dati mock in memoria. Money in centesimi.
+   ========================================================================= */
+
+/* ---------- Util ---------- */
+// escape HTML per testo utente
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// formato euro da centesimi -> €X,XX
+function eur(cents){
+  var v = (cents/100);
+  return '€' + v.toLocaleString('it-IT',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function uid(p){ return (p||'id') + '_' + Math.random().toString(36).slice(2,9); }
+
+/* ---------- Costanti economiche (NON inventare numeri diversi) ---------- */
+var RULES = {
+  PREVENDITA: 0.10,     // 10% sul PRIMO acquisto, solo TINFT, a carico del compratore
+  ROYALTY: 0.01,        // 1% sul secondario (0,5% TINFT + 0,5% organizzatore) sul prezzo originale
+  ROYALTY_TINFT: 0.005,
+  ROYALTY_ORG: 0.005,
+  RESALE_CAP: 0.10,     // tetto rivendita +10% sul prezzo pagato
+  MAX_PER_EVENT: 3,     // max 3 biglietti/evento per identità
+  EXPORT_FEE: 0.25      // export libero fee 25%
+};
+
+/* =========================================================================
+   SEED DATA (in-memory)
+   ========================================================================= */
+var DB = {
+  accounts: {
+    'org@tinft.io': {
+      role:'organizzatore', email:'org@tinft.io',
+      ragioneSociale:'Astra S.r.l.', piva:'01234567890',
+      iban:'IT60X0542811101000000123456', sede:'Via Roma 1, Milano',
+      pec:'astra@pec.it', sdi:'ABCDEF1', telefono:'+39 02 1234567',
+      clubId:'club_astra'
+    },
+    'cli@tinft.io': {
+      role:'cliente', email:'cli@tinft.io',
+      nome:'Marco', cognome:'Bianchi', cf:'BNCMRC90A01F205X',
+      nascita:'1990-01-01', telefono:'+39 333 1112223',
+      indirizzo:'Via Verdi 22, Milano', punti:120
+    },
+    'val@tinft.io': {
+      role:'validatore', email:'val@tinft.io',
+      nome:'Luca', cognome:'Verdi',
+      gates:['gate_main','gate_vip']
+    }
+  },
+
+  clubs: {
+    club_astra:{
+      id:'club_astra', nome:'Astra', citta:'Milano', owner:'org@tinft.io',
+      ragioneSociale:'Astra S.r.l.', piva:'01234567890',
+      sede:'Via Roma 1, Milano', pec:'astra@pec.it', sdi:'ABCDEF1',
+      iban:'IT60X0542811101000000123456',
+      prezzoFidelity:2500, ingressiFidelity:30
+    }
+  },
+
+  events: {
+    ev_notte4:{ id:'ev_notte4', clubId:'club_astra', titolo:'Notte Elettronica · Vol.4',
+      venue:'Astra Club, Milano', data:'2026-07-18', prezzo:3150, capienza:50 },
+    ev_techno:{ id:'ev_techno', clubId:'club_astra', titolo:'Techno Underground',
+      venue:'Astra Club, Milano', data:'2026-08-02', prezzo:2800, capienza:40 },
+    ev_summer:{ id:'ev_summer', clubId:'club_astra', titolo:'Summer Rooftop Opening',
+      venue:'Astra Terrace, Milano', data:'2026-06-28', prezzo:4500, capienza:60 }
+  },
+
+  gates: {
+    gate_main:{ id:'gate_main', nome:'Ingresso Principale', eventId:'ev_notte4' },
+    gate_vip:{ id:'gate_vip', nome:'Varco VIP', eventId:'ev_notte4' }
+  },
+
+  // biglietti posseduti (NFT nominativi)
+  tickets: [
+    { id:'tk_seed1', eventId:'ev_notte4', owner:'cli@tinft.io', holderName:'Marco Bianchi',
+      tier:'Standard', seat:'GA-014', pricePaid:3150, primary:true, listed:false }
+  ],
+
+  // listing attivi sul mercato secondario
+  listings: [
+    { id:'ls_seed1', ticketId:'tk_ext1', eventId:'ev_techno', seller:'anna@mail.it',
+      sellerName:'Anna Rossi', price:2900, originalPrice:2800 }
+  ]
+};
+
+// metriche vendite mock per gli incassi organizzatore
+var SALES_PRIMARY_CENTS = 31500;  // valore lordo biglietti venduti primario (mock cumulato)
+var SALES_VALIDATED = 18;         // biglietti validati (mock)
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+var state = {
+  session:null,          // {role, email}
+  view:'home',           // 'home' | 'area'
+  tab:null,              // tab attiva nell'area
+  // modale auth
+  authOpen:false, authMode:'login', authRole:'cliente',
+  // ticket aperto (QR)
+  openTicketId:null,
+  // form errors (transienti)
+  errors:{}
+};
+
+// QR rotante
+var qrTimer=null, qrCountdown=12, qrToken='';
+
+/* =========================================================================
+   HELPERS dominio
+   ========================================================================= */
+function curAccount(){ return state.session ? DB.accounts[state.session.email] : null; }
+function eventById(id){ return DB.events[id]; }
+function clubById(id){ return DB.clubs[id]; }
+function ticketsOf(email){ return DB.tickets.filter(function(t){ return t.owner===email; }); }
+function countOwnedForEvent(email, eventId){
+  return DB.tickets.filter(function(t){ return t.owner===email && t.eventId===eventId; }).length;
+}
+function eventsForOrg(email){
+  var acc = DB.accounts[email];
+  if(!acc || !acc.clubId) return [];
+  return Object.values(DB.events).filter(function(e){ return e.clubId===acc.clubId; });
+}
+
+/* =========================================================================
+   TOAST
+   ========================================================================= */
+function toast(msg, isErr){
+  var root = document.getElementById('toast-root');
+  root.innerHTML = '<div class="toast '+(isErr?'err':'')+'">'+esc(msg)+'</div>';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ root.innerHTML=''; }, 3200);
+}
+
+/* =========================================================================
+   AUTH MODAL
+   ========================================================================= */
+function openAuth(mode, role){
+  state.authOpen=true;
+  state.authMode = mode || 'login';
+  state.authRole = role || 'cliente';
+  state.errors={};
+  renderModal();
+}
+function closeAuth(){ state.authOpen=false; renderModal(); }
+function setAuthMode(m){ state.authMode=m; state.errors={}; renderModal(); }
+function setAuthRole(r){ state.authRole=r; state.errors={}; renderModal(); }
+
+// validazione P.IVA (11 cifre)
+function isPivaValid(v){ return /^\d{11}$/.test((v||'').trim()); }
+
+// abilita/disabilita submit organizzatore in tempo reale
+function checkOrgRegister(){
+  var rs = (document.getElementById('reg-rs')||{}).value || '';
+  var piva = (document.getElementById('reg-piva')||{}).value || '';
+  var iban = (document.getElementById('reg-iban')||{}).value || '';
+  var pivaErr = document.getElementById('reg-piva-err');
+  var ok = rs.trim() && piva.trim() && iban.trim() && isPivaValid(piva);
+  var btn = document.getElementById('reg-submit');
+  if(btn) btn.disabled = !ok;
+  // mostra errore P.IVA inline solo se inserita ma non valida
+  if(pivaErr){
+    pivaErr.textContent = (piva.trim() && !isPivaValid(piva)) ? 'La Partita IVA deve avere 11 cifre.' : '';
+  }
+}
+
+function renderModal(){
+  var root = document.getElementById('modal-root');
+  if(!state.authOpen){ root.innerHTML=''; return; }
+
+  var role = state.authRole, mode = state.authMode;
+  var roleBtn = function(r,label){
+    return '<button class="'+(role===r?'on':'')+'" onclick="setAuthRole(\''+r+'\')">'+label+'</button>';
+  };
+  var modeBtn = function(m,label){
+    return '<button class="'+(mode===m?'on':'')+'" onclick="setAuthMode(\''+m+'\')">'+label+'</button>';
+  };
+
+  var body='';
+  if(mode==='login'){
+    body =
+      '<div class="field"><span class="label">Email</span>'+
+        '<input id="li-email" type="email" placeholder="es. cli@tinft.io" value=""></div>'+
+      '<div class="field"><span class="label">Password</span>'+
+        '<input id="li-pass" type="password" placeholder="demo123"></div>'+
+      '<div class="note" style="margin-bottom:14px">Demo: la password non è verificata davvero — usa <b>demo123</b>. '+
+        'Account: <b>cli@tinft.io</b>, <b>org@tinft.io</b>, <b>val@tinft.io</b>.</div>'+
+      '<button class="btn primary block" onclick="doLogin()">Accedi</button>';
+  } else {
+    // REGISTER per ruolo
+    if(role==='cliente'){
+      body =
+        '<div class="grid2">'+
+          fieldHTML('reg-nome','Nome','text','Marco')+
+          fieldHTML('reg-cognome','Cognome','text','Bianchi')+
+        '</div>'+
+        fieldHTML('reg-cf','Codice Fiscale','text','BNCMRC90A01F205X')+
+        '<div class="grid2">'+
+          fieldHTML('reg-nascita','Data di nascita','date','')+
+          fieldHTML('reg-tel','Telefono','text','+39 333 ...')+
+        '</div>'+
+        fieldHTML('reg-email','Email','email','tu@email.it')+
+        fieldHTML('reg-ind','Indirizzo','text','Via ..., Città')+
+        '<button class="btn primary block" onclick="doRegisterCliente()">Registrati</button>';
+    } else if(role==='organizzatore'){
+      body =
+        '<div class="note warn" style="margin-bottom:14px">Dati fiscali/fatturazione <b>obbligatori</b>. '+
+          'Senza Partita IVA non è possibile creare l’account organizzatore.</div>'+
+        fieldHTML('reg-rs','Ragione sociale','text','Astra S.r.l.','checkOrgRegister()')+
+        '<div class="field"><span class="label">Partita IVA *</span>'+
+          '<input id="reg-piva" type="text" placeholder="11 cifre" oninput="checkOrgRegister()">'+
+          '<span class="err" id="reg-piva-err"></span></div>'+
+        fieldHTML('reg-sede','Sede legale','text','Via ..., Città')+
+        '<div class="grid2">'+
+          fieldHTML('reg-pec','PEC','email','azienda@pec.it')+
+          fieldHTML('reg-sdi','Codice SDI','text','XXXXXXX')+
+        '</div>'+
+        fieldHTML('reg-iban','IBAN *','text','IT60 ...','checkOrgRegister()')+
+        '<div class="grid2">'+
+          fieldHTML('reg-email','Email','email','azienda@email.it')+
+          fieldHTML('reg-tel','Telefono','text','+39 02 ...')+
+        '</div>'+
+        '<button class="btn primary block" id="reg-submit" disabled onclick="doRegisterOrg()">Registrati</button>'+
+        '<p class="muted" style="font-size:12px;margin-top:8px">Il pulsante si abilita con <b>Ragione sociale + Partita IVA (11 cifre) + IBAN</b>.</p>';
+    } else {
+      body =
+        '<div class="note" style="margin-bottom:14px">I validatori sono di norma creati da un organizzatore. '+
+          'La <b>scansione avviene solo nell’app TINFT</b>.</div>'+
+        '<div class="grid2">'+
+          fieldHTML('reg-nome','Nome','text','Luca')+
+          fieldHTML('reg-cognome','Cognome','text','Verdi')+
+        '</div>'+
+        fieldHTML('reg-email','Email','email','validatore@email.it')+
+        '<button class="btn primary block" onclick="doRegisterValidatore()">Registrati</button>';
+    }
+  }
+
+  root.innerHTML =
+    '<div class="overlay" onclick="if(event.target===this)closeAuth()">'+
+      '<div class="modal">'+
+        '<div class="modal-head">'+
+          '<h3 style="margin:0">'+(mode==='login'?'Accedi':'Registrati')+'</h3>'+
+          '<button class="x" onclick="closeAuth()">&times;</button>'+
+        '</div>'+
+        '<div class="seg" style="margin-bottom:12px">'+
+          modeBtn('login','Accedi')+modeBtn('register','Registrati')+
+        '</div>'+
+        '<span class="label">Ruolo</span>'+
+        '<div class="seg roles" style="margin-bottom:18px">'+
+          roleBtn('cliente','Cliente')+roleBtn('organizzatore','Organizzatore')+roleBtn('validatore','Validatore')+
+        '</div>'+
+        body+
+      '</div>'+
+    '</div>';
+
+  if(mode==='register' && role==='organizzatore'){ checkOrgRegister(); }
+}
+
+function fieldHTML(id,label,type,ph,oninput){
+  return '<div class="field"><span class="label">'+esc(label)+'</span>'+
+    '<input id="'+id+'" type="'+type+'" placeholder="'+esc(ph||'')+'"'+
+    (oninput?(' oninput="'+oninput+'"'):'')+'></div>';
+}
+
+/* ---------- Auth actions ---------- */
+function startSession(email){
+  var acc = DB.accounts[email];
+  state.session = { role:acc.role, email:email };
+  state.view='area';
+  state.tab = defaultTab(acc.role);
+  state.openTicketId=null;
+  closeAuth();
+  render();
+}
+function defaultTab(role){
+  if(role==='cliente') return 'biglietti';
+  if(role==='organizzatore') return 'dashboard';
+  return 'validazione';
+}
+
+function doLogin(){
+  var email = (document.getElementById('li-email').value||'').trim().toLowerCase();
+  if(!email){ toast('Inserisci un’email.', true); return; }
+  if(!DB.accounts[email]){
+    toast('Nessun account demo per questa email. Prova cli@/org@/val@tinft.io', true);
+    return;
+  }
+  // demo: password non verificata davvero
+  startSession(email);
+  toast('Bentornato, accesso effettuato.');
+}
+
+function doRegisterCliente(){
+  var v = function(id){ return (document.getElementById(id).value||'').trim(); };
+  var email = v('reg-email').toLowerCase();
+  if(!v('reg-nome')||!v('reg-cognome')||!email){ toast('Compila almeno Nome, Cognome ed Email.', true); return; }
+  DB.accounts[email] = {
+    role:'cliente', email:email, nome:v('reg-nome'), cognome:v('reg-cognome'),
+    cf:v('reg-cf'), nascita:v('reg-nascita'), telefono:v('reg-tel'),
+    indirizzo:v('reg-ind'), punti:0
+  };
+  startSession(email);
+  toast('Account creato. Benvenuto su TINFT.');
+}
+
+function doRegisterOrg(){
+  var v = function(id){ return (document.getElementById(id).value||'').trim(); };
+  var rs=v('reg-rs'), piva=v('reg-piva'), iban=v('reg-iban');
+  if(!rs||!piva||!iban){ toast('Ragione sociale, Partita IVA e IBAN sono obbligatori.', true); return; }
+  if(!isPivaValid(piva)){ toast('Partita IVA non valida (11 cifre).', true); return; }
+  var email = v('reg-email').toLowerCase() || ('org_'+uid()+'@tinft.io');
+  var clubId = uid('club');
+  DB.accounts[email] = {
+    role:'organizzatore', email:email, ragioneSociale:rs, piva:piva, iban:iban,
+    sede:v('reg-sede'), pec:v('reg-pec'), sdi:v('reg-sdi'), telefono:v('reg-tel'),
+    clubId:clubId
+  };
+  // crea un club base associato (con dati fiscali)
+  DB.clubs[clubId] = {
+    id:clubId, nome:rs.replace(/\s*S\.?r\.?l\.?.*/i,'').trim()||rs, citta:'—', owner:email,
+    ragioneSociale:rs, piva:piva, sede:v('reg-sede'), pec:v('reg-pec'), sdi:v('reg-sdi'),
+    iban:iban, prezzoFidelity:0, ingressiFidelity:0
+  };
+  startSession(email);
+  toast('Account organizzatore creato.');
+}
+
+function doRegisterValidatore(){
+  var v = function(id){ return (document.getElementById(id).value||'').trim(); };
+  var email = v('reg-email').toLowerCase();
+  if(!v('reg-nome')||!email){ toast('Compila almeno Nome ed Email.', true); return; }
+  DB.accounts[email] = {
+    role:'validatore', email:email, nome:v('reg-nome'), cognome:v('reg-cognome'),
+    gates:['gate_main']
+  };
+  startSession(email);
+  toast('Account validatore creato.');
+}
+
+function logout(){
+  stopQr();
+  state.session=null; state.view='home'; state.tab=null; state.openTicketId=null;
+  render();
+  toast('Disconnesso.');
+}
+
+/* =========================================================================
+   CLIENTE — azioni
+   ========================================================================= */
+function buyPrimary(eventId){
+  var ev = eventById(eventId);
+  var email = state.session.email;
+  if(countOwnedForEvent(email, eventId) >= RULES.MAX_PER_EVENT){
+    toast('Limite raggiunto: max '+RULES.MAX_PER_EVENT+' biglietti per evento per identità.', true);
+    return;
+  }
+  var acc = curAccount();
+  var holder = ((acc.nome||'')+' '+(acc.cognome||'')).trim() || acc.email;
+  DB.tickets.push({
+    id:uid('tk'), eventId:eventId, owner:email, holderName:holder,
+    tier:'Standard', seat:'GA-'+Math.floor(100+Math.random()*800),
+    pricePaid:ev.prezzo, primary:true, listed:false
+  });
+  SALES_PRIMARY_CENTS += ev.prezzo;
+  var fee = Math.round(ev.prezzo*RULES.PREVENDITA);
+  toast('Acquistato! '+eur(ev.prezzo)+' + prevendita '+eur(fee)+' = '+eur(ev.prezzo+fee));
+  render();
+}
+
+function listOnMarket(ticketId){
+  var inp = document.getElementById('list-price-'+ticketId);
+  var euros = parseFloat((inp.value||'').replace(',','.'));
+  if(isNaN(euros) || euros<=0){ toast('Inserisci un prezzo valido.', true); return; }
+  var price = Math.round(euros*100);
+  var tk = DB.tickets.find(function(t){ return t.id===ticketId; });
+  var cap = Math.round(tk.pricePaid*(1+RULES.RESALE_CAP));
+  if(price > cap){
+    toast('Prezzo oltre il tetto: max +10% del pagato = '+eur(cap)+'.', true);
+    return;
+  }
+  var acc = curAccount();
+  DB.listings.push({
+    id:uid('ls'), ticketId:tk.id, eventId:tk.eventId, seller:acc.email,
+    sellerName:((acc.nome||'')+' '+(acc.cognome||'')).trim()||acc.email,
+    price:price, originalPrice:tk.pricePaid
+  });
+  tk.listed = true;
+  toast('Biglietto in vendita a '+eur(price)+' (royalty 1% all’acquisto).');
+  render();
+}
+
+function cancelListing(listingId){
+  var ls = DB.listings.find(function(l){ return l.id===listingId; });
+  if(ls){
+    var tk = DB.tickets.find(function(t){ return t.id===ls.ticketId; });
+    if(tk) tk.listed=false;
+    DB.listings = DB.listings.filter(function(l){ return l.id!==listingId; });
+    toast('Annuncio rimosso.');
+    render();
+  }
+}
+
+function buyFromMarket(listingId){
+  var ls = DB.listings.find(function(l){ return l.id===listingId; });
+  if(!ls) return;
+  var email = state.session.email;
+  if(ls.seller===email){ toast('Non puoi comprare un tuo annuncio.', true); return; }
+  if(countOwnedForEvent(email, ls.eventId) >= RULES.MAX_PER_EVENT){
+    toast('Limite raggiunto: max '+RULES.MAX_PER_EVENT+' biglietti per evento per identità.', true);
+    return;
+  }
+  var acc = curAccount();
+  var holder = ((acc.nome||'')+' '+(acc.cognome||'')).trim() || acc.email;
+  var royalty = Math.round(ls.originalPrice*RULES.ROYALTY);
+  // se il biglietto esiste già (rivendita interna), trasferiscilo; altrimenti crealo (venditore esterno)
+  var tk = DB.tickets.find(function(t){ return t.id===ls.ticketId; });
+  if(tk){
+    tk.owner = email; tk.holderName = holder; tk.listed=false; tk.primary=false; tk.pricePaid=ls.price;
+  } else {
+    DB.tickets.push({
+      id:uid('tk'), eventId:ls.eventId, owner:email, holderName:holder,
+      tier:'Standard', seat:'GA-'+Math.floor(100+Math.random()*800),
+      pricePaid:ls.price, primary:false, listed:false
+    });
+  }
+  DB.listings = DB.listings.filter(function(l){ return l.id!==listingId; });
+  toast('Comprato dal mercato! '+eur(ls.price)+' + royalty 1% '+eur(royalty)+' = '+eur(ls.price+royalty));
+  render();
+}
+
+/* =========================================================================
+   ORGANIZZATORE — azioni
+   ========================================================================= */
+function checkCreaClub(){
+  var rs=(document.getElementById('cc-rs')||{}).value||'';
+  var piva=(document.getElementById('cc-piva')||{}).value||'';
+  var iban=(document.getElementById('cc-iban')||{}).value||'';
+  var ok = rs.trim() && piva.trim() && iban.trim() && isPivaValid(piva);
+  var btn=document.getElementById('cc-submit');
+  if(btn) btn.disabled=!ok;
+  var pe=document.getElementById('cc-piva-err');
+  if(pe) pe.textContent = (piva.trim() && !isPivaValid(piva)) ? 'La Partita IVA deve avere 11 cifre.' : '';
+}
+
+function creaClub(){
+  var v=function(id){ return (document.getElementById(id).value||'').trim(); };
+  var rs=v('cc-rs'), piva=v('cc-piva'), iban=v('cc-iban');
+  if(!rs||!piva||!iban || !isPivaValid(piva)){ toast('Servono Ragione sociale, P.IVA (11 cifre) e IBAN.', true); return; }
+  var acc=curAccount();
+  var id=uid('club');
+  DB.clubs[id] = {
+    id:id, nome:v('cc-nome')||rs, citta:v('cc-citta')||'—', owner:acc.email,
+    ragioneSociale:rs, piva:piva, sede:v('cc-sede'), pec:v('cc-pec'), sdi:v('cc-sdi'),
+    iban:iban,
+    prezzoFidelity: v('cc-pfid')? Math.round(parseFloat(v('cc-pfid').replace(',','.'))*100):0,
+    ingressiFidelity: v('cc-ifid')? parseInt(v('cc-ifid'),10):0
+  };
+  // l'organizzatore usa l'ultimo club creato come attivo
+  acc.clubId = id;
+  toast('Club "'+ (v('cc-nome')||rs) +'" creato.');
+  render();
+}
+
+function creaEvento(){
+  var v=function(id){ return (document.getElementById(id).value||'').trim(); };
+  var acc=curAccount();
+  if(!acc.clubId){ toast('Crea prima un Club.', true); return; }
+  var titolo=v('ce-titolo'), venue=v('ce-venue'), data=v('ce-data');
+  var prezzo=parseFloat((v('ce-prezzo')||'').replace(',','.'));
+  var cap=parseInt(v('ce-cap'),10);
+  if(!titolo||!venue||!data||isNaN(prezzo)||isNaN(cap)){ toast('Compila tutti i campi evento.', true); return; }
+  var id=uid('ev');
+  DB.events[id] = { id:id, clubId:acc.clubId, titolo:titolo, venue:venue,
+    data:data, prezzo:Math.round(prezzo*100), capienza:cap };
+  toast('Evento "'+titolo+'" creato.');
+  render();
+}
+
+/* =========================================================================
+   QR ROTANTE (cliente)
+   ========================================================================= */
+function startQr(ticketId){
+  state.openTicketId = ticketId;
+  qrCountdown = 12;
+  rotateQrToken();
+  stopQr();
+  qrTimer = setInterval(function(){
+    qrCountdown--;
+    if(qrCountdown<=0){ qrCountdown=12; rotateQrToken(); }
+    updateQrUI();
+  }, 1000);
+  render();
+}
+function stopQr(){ if(qrTimer){ clearInterval(qrTimer); qrTimer=null; } }
+function closeTicket(){ stopQr(); state.openTicketId=null; render(); }
+
+function rotateQrToken(){
+  // token rotante deterministico per la cella, cambia ogni 12s
+  qrToken = state.openTicketId + ':' + Date.now() + ':' + Math.random().toString(36).slice(2);
+}
+
+// hash deterministico -> griglia 25x25
+function qrGrid(token){
+  var N=25, cells=[];
+  // PRNG seedato dal token (stringa)
+  var seed=2166136261;
+  for(var i=0;i<token.length;i++){ seed^=token.charCodeAt(i); seed=Math.imul(seed,16777619); }
+  function rnd(){ seed^=seed<<13; seed^=seed>>>17; seed^=seed<<5; return ((seed>>>0)/4294967295); }
+  for(var r=0;r<N;r++){
+    for(var c=0;c<N;c++){
+      // finder pattern negli angoli (estetica "QR")
+      var finder = (r<7&&c<7) || (r<7&&c>=N-7) || (r>=N-7&&c<7);
+      var on;
+      if(finder){
+        var rr = r<7? r : r-(N-7);
+        var cc = c<7? c : (c>=N-7? c-(N-7): c);
+        on = (rr===0||rr===6||cc===0||cc===6) || (rr>=2&&rr<=4&&cc>=2&&cc<=4);
+      } else {
+        on = rnd() > 0.5;
+      }
+      cells.push(on);
+    }
+  }
+  return {N:N, cells:cells};
+}
+
+function qrHTML(){
+  var g = qrGrid(qrToken);
+  var html='';
+  for(var i=0;i<g.cells.length;i++){ html += '<i class="'+(g.cells[i]?'on':'off')+'"></i>'; }
+  return '<div class="qr" id="qr-render" style="grid-template-columns:repeat('+g.N+',1fr)">'+html+'</div>';
+}
+
+function updateQrUI(){
+  var cd = document.getElementById('qr-countdown');
+  if(cd) cd.innerHTML = 'si rinnova tra <b>'+qrCountdown+'s</b>';
+  var holder = document.getElementById('qr-render');
+  if(holder){
+    var g=qrGrid(qrToken), html='';
+    for(var i=0;i<g.cells.length;i++){ html+='<i class="'+(g.cells[i]?'on':'off')+'"></i>'; }
+    holder.innerHTML=html;
+  }
+}
+
+/* =========================================================================
+   RENDER — HOME (logged-out)
+   ========================================================================= */
+function viewHome(){
+  return ''+
+  '<section class="hero wrap">'+
+    '<span class="pill" style="margin-bottom:14px">Biglietteria NFT · anti-bagarinaggio</span>'+
+    '<h1>Biglietti nominativi su blockchain. Niente frodi, niente secondario gonfiato.</h1>'+
+    '<p class="lead">TINFT emette biglietti come NFT nominativi con QR rotante anti-screenshot, '+
+      'mercato secondario controllato (tetto +10%) e validazione sicura in app. '+
+      'Accedi per provare le tre aree: Cliente, Organizzatore, Validatore.</p>'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">'+
+      '<button class="btn primary" onclick="openAuth(\'register\',\'cliente\')">Registrati</button>'+
+      '<button class="btn ghost" onclick="openAuth(\'login\',\'cliente\')">Accedi alla tua area</button>'+
+    '</div>'+
+
+    '<div class="feat-grid">'+
+      featCard('🎫','QR rotante','Codice rigenerato ogni 12s: lo screenshot non vale.')+
+      featCard('🔁','Mercato +10%','Rivendita con tetto +10% sul pagato e royalty 1%.')+
+      featCard('🏷️','Prevendita 10%','Fee TINFT al primo acquisto, a carico del compratore.')+
+      featCard('🛡️','Validazione in app','La scansione avviene solo nell’app nativa.')+
+    '</div>'+
+  '</section>';
+}
+function featCard(ic,title,txt){
+  return '<div class="card feat"><h4><span class="ic">'+ic+'</span>'+esc(title)+'</h4>'+
+    '<p class="muted" style="margin:0">'+esc(txt)+'</p></div>';
+}
+
+/* =========================================================================
+   RENDER — AREA dispatcher
+   ========================================================================= */
+function viewArea(){
+  var role = state.session.role;
+  var tabs, content;
+  if(role==='cliente'){
+    tabs = [['biglietti','I miei biglietti'],['acquista','Acquista'],['mercato','Mercato'],['profilo','Profilo']];
+    content = clienteTab();
+  } else if(role==='organizzatore'){
+    tabs = [['dashboard','Dashboard'],['clubeventi','Club & Eventi'],['incassi','Incassi'],['accessi','Accessi / Varchi']];
+    content = orgTab();
+  } else {
+    tabs = [['validazione','Validazione']];
+    content = validatoreTab();
+  }
+  var tabsHTML = tabs.map(function(t){
+    return '<button class="tab '+(state.tab===t[0]?'active':'')+'" onclick="goTab(\''+t[0]+'\')">'+esc(t[1])+'</button>';
+  }).join('');
+
+  var acc = curAccount();
+  var name = role==='organizzatore' ? acc.ragioneSociale : ((acc.nome||'')+' '+(acc.cognome||'')).trim() || acc.email;
+
+  return '<div class="wrap">'+
+    '<div class="area-head">'+
+      '<div><span class="label">Mia area</span><h1 style="margin:0">'+esc(name)+'</h1></div>'+
+    '</div>'+
+    '<div class="subnav">'+tabsHTML+'</div>'+
+    content+
+  '</div>';
+}
+function goTab(t){ state.tab=t; if(t!=='biglietti'){ closeTicket(); } render(); }
+
+/* ---------- CLIENTE tabs ---------- */
+function clienteTab(){
+  if(state.tab==='biglietti') return cliBiglietti();
+  if(state.tab==='acquista')  return cliAcquista();
+  if(state.tab==='mercato')   return cliMercato();
+  if(state.tab==='profilo')   return cliProfilo();
+  return '';
+}
+
+function cliBiglietti(){
+  var email = state.session.email;
+  var mine = ticketsOf(email);
+
+  // pannello QR se un ticket è aperto
+  if(state.openTicketId){
+    var tk = DB.tickets.find(function(t){ return t.id===state.openTicketId; });
+    if(tk){
+      var ev = eventById(tk.eventId);
+      return '<div class="card">'+
+        '<div class="row" style="margin-bottom:14px">'+
+          '<div><span class="label">Biglietto NFT · nominativo</span>'+
+            '<h3 style="margin:0">'+esc(ev.titolo)+'</h3></div>'+
+          '<button class="btn ghost sm" onclick="closeTicket()">← Indietro</button>'+
+        '</div>'+
+        '<div class="qr-box">'+
+          qrHTML()+
+          '<div class="countdown" id="qr-countdown">si rinnova tra <b>'+qrCountdown+'s</b></div>'+
+          '<div class="note ok" style="max-width:340px;text-align:center">Codice <b>rotante anti-screenshot</b>: '+
+            'cambia ogni 12 secondi. Intestato a <b>'+esc(tk.holderName)+'</b>.</div>'+
+        '</div>'+
+        '<hr class="divider">'+
+        '<div class="kv"><span class="k">Data</span><span class="v">'+esc(ev.data)+'</span></div>'+
+        '<div class="kv"><span class="k">Venue</span><span class="v">'+esc(ev.venue)+'</span></div>'+
+        '<div class="kv"><span class="k">Posto / Tier</span><span class="v">'+esc(tk.seat)+' · '+esc(tk.tier)+'</span></div>'+
+        '<div class="kv"><span class="k">Pagato</span><span class="v">'+eur(tk.pricePaid)+'</span></div>'+
+      '</div>';
+    }
+  }
+
+  if(mine.length===0){
+    return '<div class="empty">Non hai ancora biglietti. Vai su <b>Acquista</b> o <b>Mercato</b>.</div>';
+  }
+  var cards = mine.map(function(tk){
+    var ev = eventById(tk.eventId);
+    return '<div class="card clickable" onclick="startQr(\''+tk.id+'\')">'+
+      '<div class="row" style="margin-bottom:10px">'+
+        '<span class="pill">'+esc(tk.tier)+'</span>'+
+        (tk.listed?'<span class="pill" style="color:var(--orange);border-color:rgba(255,153,0,.4)">In vendita</span>':'<span class="pill" style="color:var(--green);border-color:rgba(0,204,136,.4)">Valido</span>')+
+      '</div>'+
+      '<h3 style="margin:0 0 6px">'+esc(ev.titolo)+'</h3>'+
+      '<p class="muted" style="margin:0 0 4px">'+esc(ev.data)+' · '+esc(ev.venue)+'</p>'+
+      '<p class="muted" style="margin:0 0 12px;font-size:13px">Posto '+esc(tk.seat)+' · '+esc(tk.holderName)+'</p>'+
+      '<button class="btn primary sm" onclick="event.stopPropagation();startQr(\''+tk.id+'\')">Mostra QR rotante</button>'+
+    '</div>';
+  }).join('');
+  return '<div class="cards-grid">'+cards+'</div>';
+}
+
+function cliAcquista(){
+  var email = state.session.email;
+  var cards = Object.values(DB.events).map(function(ev){
+    var fee = Math.round(ev.prezzo*RULES.PREVENDITA);
+    var tot = ev.prezzo + fee;
+    var owned = countOwnedForEvent(email, ev.id);
+    var blocked = owned >= RULES.MAX_PER_EVENT;
+    return '<div class="card">'+
+      '<h3 style="margin:0 0 4px">'+esc(ev.titolo)+'</h3>'+
+      '<p class="muted" style="margin:0 0 12px">'+esc(ev.data)+' · '+esc(ev.venue)+'</p>'+
+      '<div class="kv"><span class="k">Prezzo</span><span class="v">'+eur(ev.prezzo)+'</span></div>'+
+      '<div class="kv"><span class="k">Prevendita 10% (TINFT)</span><span class="v">'+eur(fee)+'</span></div>'+
+      '<div class="kv" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:8px"><span class="k">Totale</span><span class="v blue-t">'+eur(tot)+'</span></div>'+
+      '<p class="faint" style="font-size:12px;margin:6px 0 12px">Prevendita 10% (TINFT, a carico del compratore) al primo acquisto.</p>'+
+      (blocked
+        ? '<button class="btn ghost sm block" disabled>Limite '+RULES.MAX_PER_EVENT+'/evento raggiunto</button>'
+        : '<button class="btn primary sm block" onclick="buyPrimary(\''+ev.id+'\')">Compra ('+eur(tot)+')</button>')+
+      (owned>0?'<p class="faint" style="font-size:12px;margin:8px 0 0">Possiedi '+owned+'/'+RULES.MAX_PER_EVENT+' per questo evento.</p>':'')+
+    '</div>';
+  }).join('');
+  return '<div class="cards-grid">'+cards+'</div>';
+}
+
+function cliMercato(){
+  var email = state.session.email;
+  // listing altrui
+  var others = DB.listings.filter(function(l){ return l.seller!==email; });
+  var mineList = DB.listings.filter(function(l){ return l.seller===email; });
+
+  var listingCards = others.length ? others.map(function(ls){
+    var ev = eventById(ls.eventId);
+    var roy = Math.round(ls.originalPrice*RULES.ROYALTY);
+    var tot = ls.price + roy;
+    return '<div class="card">'+
+      '<h3 style="margin:0 0 4px">'+esc(ev.titolo)+'</h3>'+
+      '<p class="muted" style="margin:0 0 12px">Venditore: '+esc(ls.sellerName)+' · '+esc(ev.data)+'</p>'+
+      '<div class="kv"><span class="k">Prezzo</span><span class="v">'+eur(ls.price)+'</span></div>'+
+      '<div class="kv"><span class="k">Royalty 1% (0,5% TINFT · 0,5% org.)</span><span class="v">'+eur(roy)+'</span></div>'+
+      '<div class="kv" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:8px"><span class="k">Totale</span><span class="v blue-t">'+eur(tot)+'</span></div>'+
+      '<button class="btn primary sm block" style="margin-top:10px" onclick="buyFromMarket(\''+ls.id+'\')">Compra ('+eur(tot)+')</button>'+
+    '</div>';
+  }).join('') : '<div class="empty">Nessun annuncio attivo da altri venditori.</div>';
+
+  // metti in vendita un mio biglietto (non già listato)
+  var sellable = ticketsOf(email).filter(function(t){ return !t.listed; });
+  var sellHTML;
+  if(sellable.length){
+    sellHTML = sellable.map(function(tk){
+      var ev = eventById(tk.eventId);
+      var cap = Math.round(tk.pricePaid*(1+RULES.RESALE_CAP));
+      return '<div class="card" style="margin-bottom:12px">'+
+        '<div class="row" style="flex-wrap:wrap;gap:12px">'+
+          '<div><h4 style="margin:0">'+esc(ev.titolo)+'</h4>'+
+            '<p class="muted" style="margin:2px 0 0;font-size:13px">Pagato '+eur(tk.pricePaid)+' · tetto rivendita '+eur(cap)+' (+10%)</p></div>'+
+        '</div>'+
+        '<div class="row" style="margin-top:10px;gap:10px">'+
+          '<div style="flex:1"><span class="label">Prezzo (€)</span>'+
+            '<input id="list-price-'+tk.id+'" type="text" placeholder="es. '+(cap/100).toFixed(2)+'"></div>'+
+          '<button class="btn primary sm" style="align-self:flex-end" onclick="listOnMarket(\''+tk.id+'\')">Metti in vendita</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  } else {
+    sellHTML = '<div class="empty">Non hai biglietti disponibili da rivendere.</div>';
+  }
+
+  var mineHTML = mineList.length ? ('<h3 style="margin:24px 0 12px">I miei annunci</h3>'+
+    mineList.map(function(ls){
+      var ev=eventById(ls.eventId);
+      return '<div class="card" style="margin-bottom:12px"><div class="row">'+
+        '<div><h4 style="margin:0">'+esc(ev.titolo)+'</h4><p class="muted" style="margin:2px 0 0;font-size:13px">In vendita a '+eur(ls.price)+'</p></div>'+
+        '<button class="btn ghost sm" onclick="cancelListing(\''+ls.id+'\')">Annulla</button>'+
+      '</div></div>';
+    }).join('')) : '';
+
+  return ''+
+    '<div class="note" style="margin-bottom:18px">Mercato secondario controllato: '+
+      '<b>royalty 1%</b> (0,5% TINFT + 0,5% organizzatore) sul prezzo originale; '+
+      '<b>tetto rivendita +10%</b> sul prezzo pagato. Export libero con fee 25%.</div>'+
+    '<h3 style="margin:0 0 12px">Annunci attivi</h3>'+
+    '<div class="cards-grid">'+listingCards+'</div>'+
+    '<hr class="divider" style="margin:26px 0">'+
+    '<h3 style="margin:0 0 12px">Vendi un tuo biglietto</h3>'+
+    sellHTML+
+    mineHTML;
+}
+
+function cliProfilo(){
+  var acc = curAccount();
+  return '<div class="card" style="max-width:560px">'+
+    '<span class="label">Dati cliente</span>'+
+    '<div class="kv"><span class="k">Nome</span><span class="v">'+esc((acc.nome||'')+' '+(acc.cognome||''))+'</span></div>'+
+    '<div class="kv"><span class="k">Codice Fiscale</span><span class="v">'+esc(acc.cf||'—')+'</span></div>'+
+    '<div class="kv"><span class="k">Data di nascita</span><span class="v">'+esc(acc.nascita||'—')+'</span></div>'+
+    '<div class="kv"><span class="k">Email</span><span class="v">'+esc(acc.email)+'</span></div>'+
+    '<div class="kv"><span class="k">Telefono</span><span class="v">'+esc(acc.telefono||'—')+'</span></div>'+
+    '<div class="kv"><span class="k">Indirizzo</span><span class="v">'+esc(acc.indirizzo||'—')+'</span></div>'+
+    '<hr class="divider">'+
+    '<div class="row"><span class="label" style="margin:0">Punti goodwill</span>'+
+      '<span class="n green" style="font-size:26px;font-weight:700">'+ (acc.punti||0) +'</span></div>'+
+  '</div>';
+}
+
+/* ---------- ORGANIZZATORE tabs ---------- */
+function orgTab(){
+  if(state.tab==='dashboard')  return orgDashboard();
+  if(state.tab==='clubeventi') return orgClubEventi();
+  if(state.tab==='incassi')    return orgIncassi();
+  if(state.tab==='accessi')    return orgAccessi();
+  return '';
+}
+
+function orgDashboard(){
+  var evs = eventsForOrg(state.session.email);
+  var venduti = DB.tickets.filter(function(t){
+    return evs.some(function(e){ return e.id===t.eventId; });
+  }).length;
+  return '<div class="stat-grid">'+
+    statCard('Eventi', evs.length, '')+
+    statCard('Biglietti venduti', venduti, 'blue')+
+    statCard('Incassi lordi', eur(SALES_PRIMARY_CENTS), 'green')+
+    statCard('Validati', SALES_VALIDATED, 'orange')+
+  '</div>'+
+  '<div class="note" style="margin-top:18px">I dati sono di esempio (mock). '+
+    'Le validazioni avvengono nell’app TINFT.</div>';
+}
+function statCard(label,val,color){
+  return '<div class="card stat"><span class="label">'+esc(label)+'</span>'+
+    '<div class="n '+(color||'')+'">'+esc(val)+'</div></div>';
+}
+
+function orgClubEventi(){
+  var acc = curAccount();
+  var myClubs = Object.values(DB.clubs).filter(function(c){ return c.owner===acc.email; });
+
+  var clubsHTML = myClubs.map(function(c){
+    return '<div class="card">'+
+      '<div class="row" style="margin-bottom:8px"><h3 style="margin:0">'+esc(c.nome)+'</h3>'+
+        '<span class="pill">'+esc(c.citta)+'</span></div>'+
+      '<span class="label">Dati di fatturazione</span>'+
+      '<div class="kv"><span class="k">Ragione sociale</span><span class="v">'+esc(c.ragioneSociale)+'</span></div>'+
+      '<div class="kv"><span class="k">Partita IVA</span><span class="v">'+esc(c.piva)+'</span></div>'+
+      '<div class="kv"><span class="k">Sede legale</span><span class="v">'+esc(c.sede||'—')+'</span></div>'+
+      '<div class="kv"><span class="k">PEC</span><span class="v">'+esc(c.pec||'—')+'</span></div>'+
+      '<div class="kv"><span class="k">Codice SDI</span><span class="v">'+esc(c.sdi||'—')+'</span></div>'+
+      '<div class="kv"><span class="k">IBAN</span><span class="v">'+esc(c.iban)+'</span></div>'+
+      (c.prezzoFidelity||c.ingressiFidelity?
+        '<div class="kv"><span class="k">Fidelity</span><span class="v">'+eur(c.prezzoFidelity||0)+' · '+(c.ingressiFidelity||0)+' ingressi</span></div>':'')+
+    '</div>';
+  }).join('') || '<div class="empty">Nessun club. Creane uno qui sotto.</div>';
+
+  // form Crea Club (TUTTI i campi fiscali)
+  var creaClub = '<div class="card">'+
+    '<h3 style="margin:0 0 14px">Crea Club</h3>'+
+    '<div class="grid2">'+
+      fieldHTML('cc-nome','Nome club','text','Astra')+
+      fieldHTML('cc-citta','Città','text','Milano')+
+    '</div>'+
+    fieldHTML('cc-rs','Ragione sociale *','text','Astra S.r.l.','checkCreaClub()')+
+    '<div class="field"><span class="label">Partita IVA *</span>'+
+      '<input id="cc-piva" type="text" placeholder="11 cifre" oninput="checkCreaClub()">'+
+      '<span class="err" id="cc-piva-err"></span></div>'+
+    fieldHTML('cc-sede','Sede legale','text','Via ..., Città')+
+    '<div class="grid2">'+
+      fieldHTML('cc-pec','PEC','email','azienda@pec.it')+
+      fieldHTML('cc-sdi','Codice SDI','text','XXXXXXX')+
+    '</div>'+
+    fieldHTML('cc-iban','IBAN *','text','IT60 ...','checkCreaClub()')+
+    '<div class="grid2">'+
+      fieldHTML('cc-pfid','Prezzo Fidelity (€) — opz.','text','25,00')+
+      fieldHTML('cc-ifid','Ingressi Fidelity — opz.','text','30')+
+    '</div>'+
+    '<button class="btn primary block" id="cc-submit" disabled onclick="creaClub()">Crea Club</button>'+
+    '<p class="muted" style="font-size:12px;margin-top:8px">Si abilita con <b>Ragione sociale + P.IVA (11 cifre) + IBAN</b>.</p>'+
+  '</div>';
+
+  // form Crea evento
+  var evs = eventsForOrg(acc.email);
+  var evList = evs.length ? evs.map(function(e){
+    return '<div class="card" style="margin-bottom:10px"><div class="row">'+
+      '<div><h4 style="margin:0">'+esc(e.titolo)+'</h4>'+
+        '<p class="muted" style="margin:2px 0 0;font-size:13px">'+esc(e.data)+' · '+esc(e.venue)+' · cap. '+e.capienza+'</p></div>'+
+      '<span class="v" style="font-weight:700">'+eur(e.prezzo)+'</span>'+
+    '</div></div>';
+  }).join('') : '<div class="empty">Nessun evento.</div>';
+
+  var creaEv = '<div class="card">'+
+    '<h3 style="margin:0 0 14px">Crea evento</h3>'+
+    fieldHTML('ce-titolo','Titolo','text','Notte Elettronica · Vol.5')+
+    '<div class="grid2">'+
+      fieldHTML('ce-venue','Venue','text','Astra Club, Milano')+
+      fieldHTML('ce-data','Data','date','')+
+    '</div>'+
+    '<div class="grid2">'+
+      fieldHTML('ce-prezzo','Prezzo (€)','text','31,50')+
+      fieldHTML('ce-cap','Capienza','text','50')+
+    '</div>'+
+    '<button class="btn primary block" onclick="creaEvento()">Crea evento</button>'+
+  '</div>';
+
+  return ''+
+    '<h3 style="margin:0 0 12px">I tuoi club</h3>'+ clubsHTML +
+    '<div class="grid2" style="margin-top:18px;align-items:start">'+ creaClub + creaEv +'</div>'+
+    '<h3 style="margin:24px 0 12px">Eventi del club</h3>'+ evList;
+}
+
+function orgIncassi(){
+  var lordo = SALES_PRIMARY_CENTS;
+  var commPrevendita = Math.round(lordo*RULES.PREVENDITA);    // 10% TINFT (a carico compratore, ma mostrato)
+  var royaltyOrg = Math.round(lordo*RULES.ROYALTY_ORG);       // 0,5% organizzatore sul secondario (mock su lordo)
+  var netto = lordo - 0; // l'organizzatore incassa il prezzo biglietto; prevendita è del compratore->TINFT
+  return '<div class="card" style="max-width:600px">'+
+    '<span class="label">Riepilogo incassi (mock)</span>'+
+    '<div class="kv"><span class="k">Lordo biglietti</span><span class="v">'+eur(lordo)+'</span></div>'+
+    '<div class="kv"><span class="k">Commissioni prevendita 10% (TINFT, a carico compratore)</span><span class="v faint">'+eur(commPrevendita)+'</span></div>'+
+    '<div class="kv"><span class="k">Royalty organizzatore 0,5% (secondario)</span><span class="v green-t">+'+eur(royaltyOrg)+'</span></div>'+
+    '<hr class="divider">'+
+    '<div class="kv"><span class="k" style="font-weight:700;color:var(--tx)">Netto stimato organizzatore</span><span class="v green-t" style="font-size:18px">'+eur(netto+royaltyOrg)+'</span></div>'+
+    '<p class="faint" style="font-size:12px;margin-top:10px">La prevendita 10% è una fee TINFT a carico del compratore e non incide sul netto organizzatore. '+
+      'Sul secondario l’organizzatore riceve lo 0,5% (royalty 1% = 0,5% TINFT + 0,5% organizzatore).</p>'+
+  '</div>';
+}
+
+function orgAccessi(){
+  var evs = eventsForOrg(state.session.email);
+  var gates = Object.values(DB.gates);
+  var rows = gates.map(function(g){
+    var ev = eventById(g.eventId);
+    return '<div class="card" style="margin-bottom:10px"><div class="row">'+
+      '<div><h4 style="margin:0">'+esc(g.nome)+'</h4>'+
+        '<p class="muted" style="margin:2px 0 0;font-size:13px">Evento: '+esc(ev?ev.titolo:'—')+'</p></div>'+
+      '<span class="pill">read-only</span>'+
+    '</div></div>';
+  }).join('') || '<div class="empty">Nessun varco configurato.</div>';
+
+  var evRows = evs.map(function(e){
+    return '<div class="kv"><span class="k">'+esc(e.titolo)+'</span><span class="v">'+esc(e.data)+'</span></div>';
+  }).join('');
+
+  return ''+
+    '<div class="note warn" style="margin-bottom:18px">Le validazioni si effettuano nell’<b>app TINFT</b> (regola solo-app). '+
+      'Qui i varchi sono in sola lettura.</div>'+
+    '<h3 style="margin:0 0 12px">Varchi</h3>'+ rows +
+    '<div class="card" style="margin-top:8px"><span class="label">Eventi collegati</span>'+ (evRows||'<p class="muted" style="margin:0">Nessuno</p>') +'</div>';
+}
+
+/* ---------- VALIDATORE ---------- */
+function validatoreTab(){
+  var acc = curAccount();
+  var gates = (acc.gates||[]).map(function(gid){ return DB.gates[gid]; }).filter(Boolean);
+  var rows = gates.length ? gates.map(function(g){
+    var ev = eventById(g.eventId);
+    return '<div class="card" style="margin-bottom:10px"><div class="row">'+
+      '<div><h4 style="margin:0">'+esc(g.nome)+'</h4>'+
+        '<p class="muted" style="margin:2px 0 0;font-size:13px">'+esc(ev?ev.titolo:'—')+' · '+esc(ev?ev.data:'')+'</p></div>'+
+      '<span class="pill" style="color:var(--orange);border-color:rgba(255,153,0,.4)">assegnato</span>'+
+    '</div></div>';
+  }).join('') : '<div class="empty">Nessun varco assegnato.</div>';
+
+  return ''+
+    '<div class="card" style="text-align:center;border-color:rgba(255,153,0,.4)">'+
+      '<div style="font-size:40px;margin-bottom:8px">🛡️</div>'+
+      '<h2 style="margin:0 0 8px" class="orange-t">Validazione disponibile solo nell’app TINFT</h2>'+
+      '<p class="muted" style="max-width:480px;margin:0 auto 16px">Per sicurezza anti-frode, la scansione dei biglietti '+
+        '(QR rotante e lettura NFC nativa) avviene <b>esclusivamente</b> nell’app mobile TINFT. '+
+        'Nel web puoi solo consultare i varchi a te assegnati.</p>'+
+      '<button class="btn primary" disabled>Scansiona (solo in app)</button>'+
+    '</div>'+
+    '<h3 style="margin:24px 0 12px">Eventi / varchi assegnati</h3>'+ rows;
+}
+
+/* =========================================================================
+   RENDER ROOT
+   ========================================================================= */
+function navHTML(){
+  var right;
+  if(state.session){
+    var acc = curAccount();
+    var role = state.session.role;
+    var name = role==='organizzatore' ? acc.ragioneSociale : ((acc.nome||'')+' '+(acc.cognome||'')).trim()||acc.email;
+    right =
+      '<div class="nav-role">'+
+        '<span class="role-pill '+role+'">'+role+'</span>'+
+        '<span class="muted">'+esc(name)+'</span>'+
+      '</div>'+
+      '<button class="btn ghost sm" onclick="goArea()">Mia area</button>'+
+      '<button class="btn ghost sm" onclick="logout()">Esci</button>';
+  } else {
+    right = '<button class="btn primary sm" onclick="openAuth(\'login\',\'cliente\')">Accedi / Registrati</button>';
+  }
+  return '<div class="nav"><div class="wrap nav-in">'+
+    '<div class="brand" onclick="goHome()"><span class="dot"></span>TINFT <small>ticketing</small></div>'+
+    '<div class="nav-spacer"></div>'+ right +
+  '</div></div>';
+}
+function goHome(){ if(state.session){ state.view='area'; } else { state.view='home'; } closeTicket(); render(); }
+function goArea(){ if(state.session){ state.view='area'; if(!state.tab) state.tab=defaultTab(state.session.role); } render(); }
+
+function footerHTML(){
+  return '<div class="footer"><div class="wrap">'+
+    '<div class="parity">📱💻 <b>Sito e app sono speculari</b>: tutte le funzioni coesistono su entrambi. '+
+      'Solo la <b>VALIDAZIONE</b> è esclusiva dell’app.</div>'+
+    'TINFT · demo dimostrativa con dati di esempio. Nessuna transazione reale.'+
+  '</div></div>';
+}
+
+function render(){
+  var app = document.getElementById('app');
+  var main = (state.session && state.view==='area') ? viewArea() : viewHome();
+  app.innerHTML = navHTML() + main + footerHTML();
+  renderModal();
+}
+
+/* avvio */
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · WebApp</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#06070c" />
+<link rel="stylesheet" href="tinft.css" />
+<script src="i18n.js"></script>
+<style>
+  :root{
+    --bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.13 0.013 265);
+    --border:oklch(0.26 0.02 265);--txt:oklch(0.96 0.005 262);--mut:oklch(0.62 0.02 265);
+    --acc:oklch(0.62 0.17 264);--acc2:oklch(0.5 0.15 264);
+    --ok:oklch(0.74 0.16 158);--warn:oklch(0.8 0.13 70);--err:oklch(0.72 0.13 25);--plat:oklch(0.6 0.16 300);--gold:oklch(0.8 0.13 75);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;min-height:100vh;background:var(--bg);color:var(--txt);
+    font-family:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  h1,h2,h3{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600;letter-spacing:-.01em}
+  .kicker{font-family:ui-monospace,'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
+  code{font-family:ui-monospace,monospace;color:oklch(0.82 0.08 264);font-size:11px}
+  /* sidebar */
+  .sidebar{width:240px;flex-shrink:0;background:var(--surf2);border-right:1px solid var(--border);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;gap:10px;align-items:center;margin-bottom:18px;padding:0 4px}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:16px}
+  .brand b{font-family:'Space Grotesk';font-size:15px}.brand div{font-size:10px;color:var(--mut)}
+  .seg b{display:block;margin:6px 4px}
+  .role{display:flex;gap:9px;align-items:center;padding:9px 11px;border-radius:10px;font-size:13px;color:var(--mut);cursor:pointer;border:1px solid transparent}
+  .role .ic{width:22px;height:22px;border-radius:7px;background:var(--surf);display:flex;align-items:center;justify-content:center;font-size:12px}
+  .role.on{color:#fff;background:linear-gradient(135deg,oklch(0.28 0.1 264),oklch(0.18 0.06 264));border-color:oklch(0.45 0.12 264)}
+  .nav{margin-top:14px;display:flex;flex-direction:column;gap:3px}
+  .navi{padding:9px 12px;border-radius:9px;font-size:13px;color:var(--mut);cursor:pointer}
+  .navi.on{color:#fff;background:var(--surf)}
+  .navi:hover{color:var(--txt)}
+  .side-foot{margin-top:auto;font-size:10px;color:var(--mut);line-height:1.6;padding:8px 4px}
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:14px;background:linear-gradient(180deg,oklch(0.12 0.02 285),transparent)}
+  .topbar h1{font-size:20px}.topbar .sub{font-size:12px;color:var(--mut);margin-top:2px}
+  .content{padding:24px 28px;overflow:auto;flex:1}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:20px}
+  .tile{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+  .tile .v{font-family:'Space Grotesk';font-weight:700;font-size:25px;margin-top:5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--mut);font-size:12px}
+  .price{font-family:'Space Grotesk';font-weight:600}
+  .art{height:74px;border-radius:12px;margin-bottom:12px;position:relative;overflow:hidden}
+  .badge{position:absolute;top:8px;left:8px;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.1em;background:rgba(0,0,0,.45);padding:3px 8px;border-radius:99px}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:11px;padding:10px 14px;font-size:13px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));transition:transform .05s}
+  button:active{transform:scale(.98)}button:disabled{opacity:.45;cursor:not-allowed}
+  button.ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border)}
+  button.sm{padding:7px 11px;font-size:12px}
+  .input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--txt);font-size:13px;margin-top:6px}
+  label{font-size:11px;color:var(--mut)}
+  .pill{display:inline-block;font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid var(--border);color:var(--mut)}
+  .pill.ok{color:var(--ok);border-color:oklch(0.4 0.1 158);background:oklch(0.17 0.04 158)}
+  .pill.warn{color:var(--warn);border-color:oklch(0.45 0.1 70);background:oklch(0.2 0.05 70)}
+  .pill.gold{color:var(--gold);border-color:oklch(0.5 0.12 75);background:oklch(0.2 0.05 75)}
+  .pill.plat{color:var(--plat);border-color:oklch(0.4 0.1 300);background:oklch(0.18 0.05 300)}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .crumb{font-size:12px;color:var(--mut);margin-bottom:8px;cursor:pointer}
+  .qr{display:grid;grid-template-columns:repeat(17,9px);grid-template-rows:repeat(17,9px);background:#fff;padding:10px;border-radius:10px;width:max-content}
+  .qr i{width:9px;height:9px}
+  .scanres{border-radius:16px;padding:22px;text-align:center}
+  .scanic{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 10px;border:3px solid}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--surf);border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:50;max-width:90vw}
+  .toast.err{border-color:oklch(0.5 0.12 25);color:oklch(0.85 0.08 25)}
+  .listrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+  .listrow:last-child{border-bottom:none}
+  .bar{height:6px;border-radius:99px;background:var(--surf2);overflow:hidden;margin-top:7px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  @media(max-width:720px){.sidebar{display:none}}
+</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">◆</div><div><b>TINFT</b><div>WebApp</div></div></div>
+    <div class="seg"><b class="kicker">Profilo</b>
+      <div class="role on" data-r="organizzatore"><span class="ic">⬢</span> <span data-i18n="p_org">Organizzatore</span></div>
+      <div class="role" data-r="cliente"><span class="ic">◆</span> <span data-i18n="p_cli">Cliente</span></div>
+      <div class="role" data-r="validatore"><span class="ic">✓</span> <span data-i18n="p_val">Validatore</span></div>
+    </div>
+    <div class="lang" style="margin:6px 4px;width:max-content"><button data-l="it" onclick="setLang('it')">IT</button><button data-l="en" onclick="setLang('en')">EN</button></div>
+    <div class="nav" id="nav"></div>
+    <div class="side-foot">Demo autonoma · regole reali (royalty 1% 0,5/0,5 · tetto +10% · 3/evento · fee 25%). Logica = <code>rules.ts</code> + contratti M1–M5.</div>
+  </aside>
+  <main class="main">
+    <div class="topbar"><div><h1 id="ttl">—</h1><div class="sub" id="sub">—</div></div><div id="topright"></div></div>
+    <div class="content" id="content"></div>
+  </main>
+  <div id="toast"></div>
+<script>
+"use strict";
+var BPS=10000,ROYALTY_BPS=100,RESALE_CAP_BPS=11000,EXIT_FEE_BPS=2500,PRIMARY_FEE_BPS=500,MAX_PER_EVENT=3;
+var royalty=function(o){return Math.floor(o*ROYALTY_BPS/BPS)};
+var splitRoyalty=function(o){var r=royalty(o),t=Math.floor(r/2);return{tinft:t,org:r-t,tot:r}};
+var resaleCap=function(p){return Math.floor(p*RESALE_CAP_BPS/BPS)};
+var exitFee=function(o){return Math.floor(o*EXIT_FEE_BPS/BPS)};
+var primaryFee=function(p){return Math.floor(p*PRIMARY_FEE_BPS/BPS)};
+var eur=function(c){return '€ '+(c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})};
+var ART=['linear-gradient(135deg,oklch(0.45 0.17 264),oklch(0.28 0.1 285))','linear-gradient(135deg,oklch(0.45 0.13 200),oklch(0.28 0.09 235))','linear-gradient(135deg,oklch(0.46 0.12 75),oklch(0.3 0.08 50))','linear-gradient(135deg,oklch(0.45 0.13 320),oklch(0.3 0.09 350))'];
+
+// i18n opzionale: se i18n.js non è presente (file aperto da solo) usa un fallback IT, così NON si rompe nulla.
+if(typeof window.t!=='function'){
+  var _D={
+    it:{p_org:"Organizzatore",p_cli:"Cliente",p_val:"Validatore",n_dash:"Dashboard",n_club:"Club & Eventi",n_esplora:"Esplora",n_biglietti:"I miei biglietti",n_scan:"Scansione",n_accessi:"Accessi",b_buy:"Acquista",b_soldout:"Esaurito",b_limit:"Limite 3",b_checkin:"Check-in",b_sell:"Vendi",b_gift:"Regala",b_pay:"Compratore paga",b_cancel:"Annulla",b_exp_free:"Esporta (fee 25%)",b_exp_enf:"Esporta enforced",b_newclub:"Crea club",b_newevent:"Crea evento",b_enter:"Entra nel club →",b_scan:"Scansiona prossimo ospite",ti_dash:"Dashboard",su_dash:"Panoramica di tutti i club",ti_club:"Club & Eventi",su_club:"Crea club ed eventi",ti_cd:"Club",su_cd:"Gestisci eventi del club",ti_esp:"Esplora",su_esp:"Club ed eventi disponibili",ti_big:"I miei biglietti",su_big:"Wallet e azioni",ti_scan:"Scansione",su_scan:"Controllo accessi al varco",ti_acc:"Accessi",su_acc:"Riepilogo validazioni",tr_rev:"Ricavi piattaforma",tr_wallet:"Wallet",tr_tickets:"biglietti",tr_acc:"accessi",tr_gate:"Varco",h_recent:"Eventi recenti",h_holders:"Holder & community",h_clubevents:"Eventi del club",h_upcoming:"Prossimi eventi",h_clubs:"Club",k_news:"Novità",k_sales7:"Vendite · 7 giorni",k_incassi:"Incassi",k_scan:"Scansione varco",k_lastentries:"Ultimi accessi",tl_revtot:"Ricavi totali",tl_comm5:"Commissioni 5%",tl_roy:"Royalty 1% (0,5/0,5)",tl_exitfee:"Fee export 25%",tl_validated:"Accessi validati",tl_clubs:"Club",tl_events:"Eventi",tl_sold:"Biglietti venduti",tl_gross:"Incasso lordo",tl_royo:"Royalty P2P (org 0,5%)",tl_tickets:"Biglietti",tl_active:"Attivi",tl_collect:"Collectible",tl_fid:"Fidelity",tl_venduti:"Venduti",tl_incasso:"Incasso",tl_activetk:"Biglietti attivi",tl_used:"Usati/collectible",m_allclubs:"← Tutti i club",m_buyfid:"Acquista Fidelity",m_fidclub:"FIDELITY DEL CLUB",m_vetrina:"IN VETRINA",m_backtk:"← Torna ai biglietti"},
+    en:{p_org:"Organizer",p_cli:"Customer",p_val:"Validator",n_dash:"Dashboard",n_club:"Clubs & Events",n_esplora:"Explore",n_biglietti:"My tickets",n_scan:"Scan",n_accessi:"Entries",b_buy:"Buy",b_soldout:"Sold out",b_limit:"Limit 3",b_checkin:"Check-in",b_sell:"Sell",b_gift:"Gift",b_pay:"Buyer pays",b_cancel:"Cancel",b_exp_free:"Export (25% fee)",b_exp_enf:"Export enforced",b_newclub:"Create club",b_newevent:"Create event",b_enter:"Enter club →",b_scan:"Scan next guest",ti_dash:"Dashboard",su_dash:"Overview of all clubs",ti_club:"Clubs & Events",su_club:"Create clubs and events",ti_cd:"Club",su_cd:"Manage club events",ti_esp:"Explore",su_esp:"Available clubs and events",ti_big:"My tickets",su_big:"Wallet and actions",ti_scan:"Scan",su_scan:"Gate access control",ti_acc:"Entries",su_acc:"Validation summary",tr_rev:"Platform revenue",tr_wallet:"Wallet",tr_tickets:"tickets",tr_acc:"entries",tr_gate:"Gate",h_recent:"Recent events",h_holders:"Holders & community",h_clubevents:"Club events",h_upcoming:"Upcoming events",h_clubs:"Clubs",k_news:"What's new",k_sales7:"Sales · 7 days",k_incassi:"Revenue",k_scan:"Gate scan",k_lastentries:"Last entries",tl_revtot:"Total revenue",tl_comm5:"5% commissions",tl_roy:"Royalty 1% (0.5/0.5)",tl_exitfee:"Export fee 25%",tl_validated:"Validated entries",tl_clubs:"Clubs",tl_events:"Events",tl_sold:"Tickets sold",tl_gross:"Gross revenue",tl_royo:"P2P royalty (org 0.5%)",tl_tickets:"Tickets",tl_active:"Active",tl_collect:"Collectible",tl_fid:"Fidelity",tl_venduti:"Sold",tl_incasso:"Revenue",tl_activetk:"Active tickets",tl_used:"Used/collectible",m_allclubs:"← All clubs",m_buyfid:"Buy Fidelity",m_fidclub:"CLUB FIDELITY",m_vetrina:"FEATURED",m_backtk:"← Back to tickets"}
+  };
+  try{window.tinftLang=localStorage.getItem("tinft_lang")||"it"}catch(e){window.tinftLang="it"}
+  window.t=function(k){var d=_D[window.tinftLang]||_D.it;return k in d?d[k]:(_D.it[k]||k)};
+  window.setLang=function(l){window.tinftLang=_D[l]?l:"it";try{localStorage.setItem("tinft_lang",window.tinftLang)}catch(e){}if(typeof window.onLangChange==="function")window.onLangChange()};
+  window.applyI18n=function(){document.documentElement.lang=window.tinftLang;document.querySelectorAll("[data-i18n]").forEach(function(el){el.textContent=window.t(el.getAttribute("data-i18n"))});document.querySelectorAll(".lang button[data-l]").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-l")===window.tinftLang)})};
+}
+var idSeq=100; function uid(p){return p+(++idSeq)}
+var state={
+  role:'organizzatore', page:'dash', clubId:null,
+  clubs:[
+    {id:'c1',name:'Club Astra',city:'Milano',fidelityPrice:12000,fidelityUses:5},
+    {id:'c2',name:'Magazzino Generali',city:'Milano',fidelityPrice:9000,fidelityUses:4}
+  ],
+  events:[
+    {id:'e1',clubId:'c1',title:'Notte Elettronica · Vol.4',date:'21 GIU',price:3150,capacity:500,sold:312,art:0},
+    {id:'e2',clubId:'c1',title:'Blue Room · Jazz',date:'03 LUG',price:2400,capacity:200,sold:36,art:1},
+    {id:'e3',clubId:'c2',title:'Opening Night',date:'28 GIU',price:2800,capacity:300,sold:120,art:3}
+  ],
+  tokenSeq:2,
+  tickets:[
+    {id:'t1',tokenId:1,kind:'event',clubId:'c1',eventId:'e1',title:'Notte Elettronica · Vol.4',sub:'Club Astra · 21 GIU',originalPrice:3150,paid:3150,status:'attivo',exportMode:'none',holder:'Marco Bianchi'},
+    {id:'t2',tokenId:2,kind:'fidelity',clubId:'c1',title:'Fidelity · Club Astra',sub:'5 ingressi sul club',originalPrice:12000,paid:12000,status:'attivo',exportMode:'none',holder:'Marco Bianchi',uses:5,used:1}
+  ],
+  held:{'idMarco|e1':1}, ledger:{prim:757,royT:0,royO:0,exit:0}, aggr:{accessi:0},
+  scan:null, checkin:null, valLog:[], offline:false
+};
+var NEWS=[
+  {t:'Nuovo club: Magazzino Generali',d:'Opening Night il 28 GIU — biglietti aperti.'},
+  {t:'Vol.4 quasi sold out',d:'Notte Elettronica · Vol.4 — ultimi posti.'},
+  {t:'Fidelity Club Astra',d:'Carnet 5 ingressi valido su tutti gli eventi del club.'}
+];
+var HOLDERS=[{n:'Marco Bianchi',c:'Milano',t:2},{n:'Giulia Verdi',c:'Milano',t:3},{n:'Sara Conti',c:'Torino',t:5},{n:'Luca Rossi',c:'Monza',t:1}];
+
+var $=function(i){return document.getElementById(i)};
+function toast(m,e){var t=$('toast');t.innerHTML='<div class="toast'+(e?' err':'')+'">'+m+'</div>';clearTimeout(window.__t);window.__t=setTimeout(function(){t.innerHTML=''},2800)}
+function club(id){return state.clubs.find(function(c){return c.id===id})}
+function clubEvents(id){return state.events.filter(function(e){return e.clubId===id})}
+function ev(id){return state.events.find(function(e){return e.id===id})}
+function heldKey(eventId){return 'idMarco|'+eventId}
+function heldFor(eventId){return state.held[heldKey(eventId)]||0}
+function myTickets(){return state.tickets} // demo: un solo cliente
+function activeScannable(){return state.tickets.filter(function(t){return t.status==='attivo'})}
+
+// ---- ORGANIZZATORE
+function createClub(){
+  var n=$('f_cname').value.trim(), c=$('f_ccity').value.trim();
+  var fp=Math.round(parseFloat(($('f_cfp').value||'0').replace(',','.'))*100)||0, fu=parseInt($('f_cfu').value||'0',10)||0;
+  if(!n){toast('Nome club obbligatorio',true);return}
+  state.clubs.push({id:uid('c'),name:n,city:c||'—',fidelityPrice:fp,fidelityUses:fu});
+  toast('Club creato: '+n); render();
+}
+function createEvent(){
+  var cid=state.clubId; if(!cid)return;
+  var t=$('f_etitle').value.trim(), d=$('f_edate').value.trim();
+  var p=Math.round(parseFloat(($('f_eprice').value||'0').replace(',','.'))*100)||0, cap=parseInt($('f_ecap').value||'0',10)||0;
+  if(!t||p<=0||cap<=0){toast('Compila titolo, prezzo e capienza',true);return}
+  state.events.push({id:uid('e'),clubId:cid,title:t,date:d||'—',price:p,capacity:cap,sold:0,art:state.events.length%4});
+  toast('Evento creato: '+t); render();
+}
+
+// ---- CLIENTE
+function buyEvent(eventId){
+  var e=ev(eventId); if(!e)return;
+  if(e.sold>=e.capacity){toast('Evento esaurito',true);return}
+  if(heldFor(eventId)>=MAX_PER_EVENT){toast('Limite raggiunto · max 3 per evento',true);return}
+  state.tokenSeq++; var cl=club(e.clubId);
+  state.tickets.unshift({id:'t'+state.tokenSeq,tokenId:state.tokenSeq,kind:'event',clubId:e.clubId,eventId:eventId,title:e.title,sub:(cl?cl.name:'')+' · '+e.date,originalPrice:e.price,paid:e.price,status:'attivo',exportMode:'none',holder:'Marco Bianchi'});
+  state.held[heldKey(eventId)]=heldFor(eventId)+1; e.sold++; state.ledger.prim+=primaryFee(e.price);
+  toast('Biglietto coniato · tokenId #'+state.tokenSeq+' · commissione 5% '+eur(primaryFee(e.price))); render();
+}
+function buyFidelity(clubId){
+  var c=club(clubId); if(!c||c.fidelityUses<=0){toast('Questo club non ha un Fidelity',true);return}
+  state.tokenSeq++;
+  state.tickets.unshift({id:'t'+state.tokenSeq,tokenId:state.tokenSeq,kind:'fidelity',clubId:clubId,title:'Fidelity · '+c.name,sub:c.fidelityUses+' ingressi sul club',originalPrice:c.fidelityPrice,paid:c.fidelityPrice,status:'attivo',exportMode:'none',holder:'Marco Bianchi',uses:c.fidelityUses,used:0});
+  state.ledger.prim+=primaryFee(c.fidelityPrice);
+  toast('Fidelity '+c.name+' acquistata · '+c.fidelityUses+' ingressi'); render();
+}
+function sell(id){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;
+  var cap=resaleCap(t.paid);var raw=prompt('Prezzo di rivendita (€). Tetto +10% = '+eur(cap),(cap/100).toFixed(2));if(raw===null)return;
+  var price=Math.round(parseFloat(String(raw).replace(',','.'))*100);
+  if(!(price>0)){toast('Prezzo non valido',true);return}
+  if(price>cap){toast('Prezzo oltre il tetto +10% ('+eur(cap)+')',true);return}
+  t.status='vendita';t.salePrice=price;t.expiresAt=Date.now()+90000;toast('In escrow a '+eur(price)+' · scade tra 90s');render();}
+function payMarket(id){var t=state.tickets.find(function(x){return x.id===id});if(!t||t.status!=='vendita')return;
+  var s=splitRoyalty(t.originalPrice);state.ledger.royT+=s.tinft;state.ledger.royO+=s.org;
+  if(t.kind==='event')state.held[heldKey(t.eventId)]=Math.max(0,heldFor(t.eventId)-1);
+  state.tickets=state.tickets.filter(function(x){return x.id!==id});
+  toast('Compratore ha pagato '+eur(t.salePrice)+' · royalty 1% '+eur(s.tot)+' ('+eur(s.tinft)+' TINFT + '+eur(s.org)+' org)');render();}
+function cancelSale(id){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;t.status='attivo';t.salePrice=null;t.expiresAt=null;toast('Vendita annullata');render();}
+function gift(id){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;var n=prompt('Regala a:','Giulia Verdi');if(n===null)return;
+  if(t.kind==='event')state.held[heldKey(t.eventId)]=Math.max(0,heldFor(t.eventId)-1);
+  state.tickets=state.tickets.filter(function(x){return x.id!==id});toast('Regalato a '+(n||'un amico')+' · gratuito');render();}
+function exportT(id,mode){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;
+  if(t.status!=='usato'){toast('Esportabile solo a evento concluso',true);return}
+  if(mode==='free'){var f=exitFee(t.originalPrice);state.ledger.exit+=f;t.exportMode='free';t.status='exported';toast('Rilasciato · fee 25% '+eur(f))}
+  else{t.exportMode='enforced';t.status='exported';toast('Esportato enforced · royalty per sempre')}render();}
+function openCheckin(id){state.checkin=id;render()}
+
+// ---- VALIDATORE
+function doScan(scn){
+  var hhmm=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  if(scn){state.scan={outcome:scn};state.valLog.unshift({outcome:scn,holder:'—',meta:'',time:hhmm});render();return}
+  var t=activeScannable()[0]; if(!t){state.scan={outcome:'fake'};state.valLog.unshift({outcome:'fake',holder:'—',meta:'nessun biglietto',time:hhmm});render();return}
+  state.aggr.accessi++; var meta;
+  if(t.kind==='fidelity'){t.used=(t.used||0)+1;if(t.used>=t.uses)t.status='usato';meta=t.title+' · ingresso '+t.used+'/'+t.uses}
+  else{t.status='usato';meta=t.title}
+  state.scan={outcome:'valid',holder:t.holder,meta:meta};
+  state.valLog.unshift({outcome:'valid',holder:t.holder,meta:meta,time:hhmm});
+  toast('Accesso valido · '+t.holder);render();
+}
+
+// QR rotante
+function qrCells(seed){var x=(seed*2654435761)%4294967296,o='';function rnd(){x=(x*1103515245+12345)&0x7fffffff;return(x>>8)/0x7fffff}
+  for(var r=0;r<17;r++)for(var c=0;c<17;c++){var fin=(r<5&&c<5)||(r<5&&c>11)||(r>11&&c<5);var on=fin?(r%4===0||c%4===0||(r>1&&r<4&&c>1&&c<4)):rnd()>0.5;o+='<i style="background:'+(on?'#0a0c12':'#fff')+'"></i>'}return o}
+
+// ---------- VIEWS ----------
+function tileH(k,v){return '<div class="tile"><div class="kicker">'+k+'</div><div class="v">'+v+'</div></div>'}
+function ledgerTiles(){var L=state.ledger,tot=L.prim+L.royT+L.royO+L.exit;
+  return '<div class="tiles">'+tileH(window.t('tl_revtot'),eur(tot))+tileH(window.t('tl_comm5'),eur(L.prim))+tileH(window.t('tl_roy'),eur(L.royT+L.royO))+tileH(window.t('tl_exitfee'),eur(L.exit))+tileH(window.t('tl_validated'),state.aggr.accessi)+'</div>'}
+
+function orgDash(){
+  var sold=state.events.reduce(function(a,e){return a+e.sold},0);
+  var gross=state.events.reduce(function(a,e){return a+e.sold*e.price},0);
+  var h='<div class="tiles">'+tileH(window.t('tl_clubs'),state.clubs.length)+tileH(window.t('tl_events'),state.events.length)+tileH(window.t('tl_sold'),sold.toLocaleString('it-IT'))+tileH(window.t('tl_gross'),eur(gross))+tileH(window.t('tl_royo'),eur(state.ledger.royO))+'</div>';
+  h+='<h3 style="margin:6px 0 12px">'+window.t('h_recent')+'</h3><div class="card">';
+  h+=state.events.slice(0,6).map(function(e){var c=club(e.clubId);var pct=Math.min(100,Math.round(e.sold/e.capacity*100));
+    return '<div class="listrow"><div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+(c?c.name:'')+' · '+e.date+'</div></div>'+
+      '<div style="text-align:right;min-width:130px"><div class="muted">'+e.sold+' / '+e.capacity+'</div><div class="bar"><i style="width:'+pct+'%"></i></div></div></div>'}).join('');
+  h+='</div>';
+  var bars=[46,62,38,72,55,84,68];
+  h+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:18px"><div class="card" style="flex:1;min-width:280px"><div class="kicker">'+window.t('k_sales7')+'</div><div style="display:flex;align-items:flex-end;gap:8px;height:120px;margin-top:14px">'+bars.map(function(b){return '<div style="flex:1;background:linear-gradient(180deg,var(--acc),var(--acc2));border-radius:6px 6px 0 0;height:'+b+'%"></div>'}).join('')+'</div></div>'+
+    '<div class="card" style="width:300px"><div class="kicker">'+window.t('k_incassi')+'</div>'+
+    '<div class="listrow"><span class="muted">'+window.t('tl_comm5')+'</span><span class="price">'+eur(state.ledger.prim)+'</span></div>'+
+    '<div class="listrow"><span class="muted">'+window.t('tl_royo')+'</span><span class="price">'+eur(state.ledger.royO)+'</span></div>'+
+    '<div class="listrow"><span class="muted">'+window.t('tl_exitfee')+'</span><span class="price">'+eur(state.ledger.exit)+'</span></div>'+
+    '<div class="listrow"><span class="muted">'+window.t('tl_validated')+'</span><span class="price">'+state.aggr.accessi+'</span></div></div></div>';
+  h+='<h3 style="margin:18px 0 12px">'+window.t('h_holders')+'</h3><div class="card">'+HOLDERS.map(function(o){return '<div class="listrow"><div><div style="font-weight:600">'+o.n+'</div><div class="muted">'+o.c+'</div></div><span class="pill">'+o.t+' '+window.t('tr_tickets')+'</span></div>'}).join('')+'</div>';
+  return h;
+}
+function orgClubs(){
+  var h='<div class="card" style="margin-bottom:16px"><div class="kicker">'+window.t('b_newclub')+'</div><div class="formgrid" style="margin-top:10px">'+
+    '<div><label>Nome</label><input class="input" id="f_cname" placeholder="Es. Club Astra"></div>'+
+    '<div><label>Città</label><input class="input" id="f_ccity" placeholder="Milano"></div>'+
+    '<div><label>Prezzo Fidelity (€) — 0 se nessuno</label><input class="input" id="f_cfp" placeholder="120"></div>'+
+    '<div><label>Ingressi Fidelity</label><input class="input" id="f_cfu" placeholder="5"></div></div>'+
+    '<button style="margin-top:12px" onclick="createClub()">'+window.t('b_newclub')+'</button></div>';
+  h+='<div class="grid">'+state.clubs.map(function(c){var n=clubEvents(c.id).length;
+    return '<div class="card"><div class="row"><div><div style="font-weight:600;font-size:15px">'+c.name+'</div><div class="muted">'+c.city+'</div></div>'+(c.fidelityUses>0?'<span class="pill gold">FIDELITY '+c.fidelityUses+'×</span>':'')+'</div>'+
+      '<div class="muted" style="margin:10px 0">'+n+' eventi · Fidelity '+(c.fidelityUses>0?eur(c.fidelityPrice):'—')+'</div>'+
+      '<button class="sm" onclick="enterClub(\''+c.id+'\')">'+window.t('b_enter')+'</button></div>'}).join('')+'</div>';
+  return h;
+}
+function orgClubDetail(){
+  var c=club(state.clubId); if(!c)return '<div class="card muted">Club non trovato.</div>';
+  var evs=clubEvents(c.id);var sold=evs.reduce(function(a,e){return a+e.sold},0);var gross=evs.reduce(function(a,e){return a+e.sold*e.price},0);
+  var h='<div class="crumb" onclick="state.page=\'club\';state.clubId=null;render()">'+window.t('m_allclubs')+'</div>';
+  h+='<div class="row" style="margin-bottom:14px"><div><h2>'+c.name+'</h2><div class="muted">'+c.city+'</div></div>'+(c.fidelityUses>0?'<span class="pill gold">FIDELITY '+c.fidelityUses+' ingressi · '+eur(c.fidelityPrice)+'</span>':'<span class="pill">Nessun Fidelity</span>')+'</div>';
+  h+='<div class="tiles">'+tileH(window.t('tl_events'),evs.length)+tileH(window.t('tl_venduti'),sold)+tileH(window.t('tl_incasso'),eur(gross))+'</div>';
+  h+='<div class="card" style="margin-bottom:16px"><div class="kicker">'+window.t('b_newevent')+' · '+c.name+'</div><div class="formgrid" style="margin-top:10px">'+
+    '<div><label>Titolo</label><input class="input" id="f_etitle" placeholder="Notte Elettronica"></div>'+
+    '<div><label>Data</label><input class="input" id="f_edate" placeholder="21 GIU"></div>'+
+    '<div><label>Prezzo (€)</label><input class="input" id="f_eprice" placeholder="31,50"></div>'+
+    '<div><label>Capienza</label><input class="input" id="f_ecap" placeholder="500"></div></div>'+
+    '<button style="margin-top:12px" onclick="createEvent()">'+window.t('b_newevent')+'</button></div>';
+  h+='<h3 style="margin:6px 0 12px">'+window.t('h_clubevents')+'</h3>';
+  h+=evs.length?('<div class="grid">'+evs.map(function(e){var pct=Math.min(100,Math.round(e.sold/e.capacity*100));
+    return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+' · '+eur(e.price)+'</div><div class="muted" style="margin-top:8px">'+e.sold+' / '+e.capacity+' venduti</div><div class="bar"><i style="width:'+pct+'%"></i></div></div>'}).join('')+'</div>'):'<div class="card muted">Nessun evento. Creane uno qui sopra.</div>';
+  return h;
+}
+function enterClub(id){state.clubId=id;state.page='clubDetail';render()}
+
+function cliEsplora(){
+  if(state.clubId){var c=club(state.clubId);var evs=clubEvents(c.id);
+    var h='<div class="crumb" onclick="state.clubId=null;render()">'+window.t('m_allclubs')+'</div><div class="row" style="margin-bottom:14px"><div><h2>'+c.name+'</h2><div class="muted">'+c.city+'</div></div></div>';
+    if(c.fidelityUses>0)h+='<div class="card" style="margin-bottom:16px;border-color:oklch(0.5 0.12 75)"><div class="row"><div><span class="pill gold">'+window.t('m_fidclub')+'</span><div style="font-weight:600;margin-top:8px">Carnet '+c.fidelityUses+' ingressi · valido su tutti gli eventi di '+c.name+'</div></div><div style="text-align:right"><div class="price">'+eur(c.fidelityPrice)+'</div><button class="sm" style="margin-top:8px" onclick="buyFidelity(\''+c.id+'\')">'+window.t('m_buyfid')+'</button></div></div></div>';
+    h+='<div class="grid">'+evs.map(function(e){var full=e.sold>=e.capacity,lim=heldFor(e.id)>=MAX_PER_EVENT;
+      return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="buyEvent(\''+e.id+'\')" '+((full||lim)?'disabled':'')+'>'+(full?window.t('b_soldout'):lim?window.t('b_limit'):window.t('b_buy'))+'</button></div>'+(heldFor(e.id)>0?'<div class="muted" style="margin-top:6px">Possiedi '+heldFor(e.id)+'/3</div>':'')+'</div>'}).join('')+'</div>';
+    return h;}
+  var feat=state.events[0],fc=feat?club(feat.clubId):null;
+  var h='<div class="kicker">'+window.t('k_news')+'</div><div class="grid" style="margin:8px 0 20px">'+NEWS.map(function(n){return '<div class="card"><div style="font-weight:600">'+n.t+'</div><div class="muted" style="margin-top:4px">'+n.d+'</div></div>'}).join('')+'</div>';
+  if(feat)h+='<div class="card" style="margin-bottom:20px;overflow:hidden;padding:0"><div class="art" style="height:150px;margin:0;border-radius:0;background:'+ART[feat.art||0]+'"><span class="badge">'+window.t('m_vetrina')+'</span></div><div style="padding:16px"><div class="row"><div><div style="font-weight:600;font-size:16px">'+feat.title+'</div><div class="muted">'+(fc?fc.name:'')+' · '+feat.date+'</div></div><div style="text-align:right"><div class="price">'+eur(feat.price)+'</div><button class="sm" style="margin-top:8px" onclick="buyEvent(\''+feat.id+'\')">'+window.t('b_buy')+'</button></div></div></div></div>';
+  h+='<h3 style="margin:0 0 12px">'+window.t('h_upcoming')+'</h3><div class="grid" style="margin-bottom:22px">'+state.events.map(function(e){var c=club(e.clubId),lim=heldFor(e.id)>=MAX_PER_EVENT,full=e.sold>=e.capacity;
+    return '<div class="card"><div class="art" style="background:'+ART[e.art||0]+'"><span class="badge">TICKET NFT</span></div><div style="font-weight:600">'+e.title+'</div><div class="muted">'+(c?c.name:'')+' · '+e.date+'</div><div class="row" style="margin-top:10px"><span class="price">'+eur(e.price)+'</span><button class="sm" onclick="buyEvent(\''+e.id+'\')" '+((lim||full)?'disabled':'')+'>'+(full?window.t('b_soldout'):lim?window.t('b_limit'):window.t('b_buy'))+'</button></div></div>'}).join('')+'</div>';
+  h+='<h3 style="margin:0 0 12px">'+window.t('h_clubs')+'</h3><div class="grid">'+state.clubs.map(function(c){
+    return '<div class="card"><div class="row"><div><div style="font-weight:600;font-size:15px">'+c.name+'</div><div class="muted">'+c.city+' · '+clubEvents(c.id).length+' eventi</div></div>'+(c.fidelityUses>0?'<span class="pill gold">FIDELITY</span>':'')+'</div><button class="sm" style="margin-top:12px" onclick="state.clubId=\''+c.id+'\';render()">'+window.t('b_enter')+'</button></div>'}).join('')+'</div>';
+  return h;
+}
+function tkCard(t){var a='',secs;
+  if(t.status==='attivo')a='<button class="sm ghost" onclick="openCheckin(\''+t.id+'\')">'+window.t('b_checkin')+'</button> <button class="sm ghost" onclick="sell(\''+t.id+'\')">'+window.t('b_sell')+'</button> <button class="sm ghost" onclick="gift(\''+t.id+'\')">'+window.t('b_gift')+'</button>';
+  else if(t.status==='vendita'){secs=Math.max(0,Math.ceil(((t.expiresAt||0)-Date.now())/1000));a='<div class="muted" style="margin-bottom:8px">In escrow a '+eur(t.salePrice||0)+' · scade tra <b>'+secs+'s</b></div><button class="sm" onclick="payMarket(\''+t.id+'\')">'+window.t('b_pay')+'</button> <button class="sm ghost" onclick="cancelSale(\''+t.id+'\')">'+window.t('b_cancel')+'</button>';}
+  else if(t.status==='usato')a='<button class="sm ghost" onclick="exportT(\''+t.id+'\',\'free\')">'+window.t('b_exp_free')+'</button> <button class="sm ghost" onclick="exportT(\''+t.id+'\',\'enforced\')">'+window.t('b_exp_enf')+'</button>';
+  else a='<span class="muted">Collectible esportato</span>';
+  var st={attivo:'pill ok',vendita:'pill warn',usato:'pill warn',exported:'pill plat'}[t.status]||'pill';
+  return '<div class="card"><div class="row"><div style="font-weight:600">'+t.title+'</div><span class="'+(t.kind==='fidelity'?'pill gold':st)+'">'+(t.kind==='fidelity'?'FIDELITY':t.status.toUpperCase())+'</span></div><div class="muted">'+(t.sub||'')+'</div>'+
+    '<div class="muted" style="margin:8px 0">tokenId <code>#'+t.tokenId+'</code> · base '+eur(t.paid)+' · tetto '+eur(resaleCap(t.paid))+(t.kind==='fidelity'?' · <b>'+(t.used||0)+'/'+t.uses+' usati</b>':'')+'</div>'+a+'</div>';
+}
+function cliBiglietti(){
+  if(state.checkin){var t=state.tickets.find(function(x){return x.id===state.checkin});
+    return '<div class="crumb" onclick="state.checkin=null;render()">'+window.t('m_backtk')+'</div><div class="card" style="max-width:320px"><div style="font-weight:600;margin-bottom:10px">'+(t?t.title:'')+'</div><div class="qr" id="qrbox"></div><div class="muted" style="margin-top:10px">Codice rotante · si rigenera ogni 5s. <span id="qrcd"></span></div></div>';}
+  var att=state.tickets.filter(function(t){return t.status==='attivo'}).length,us=state.tickets.filter(function(t){return t.status==='usato'}).length,fid=state.tickets.filter(function(t){return t.kind==='fidelity'}).length;
+  var head='<div class="tiles">'+tileH(window.t('tl_tickets'),state.tickets.length)+tileH(window.t('tl_active'),att)+tileH(window.t('tl_collect'),us)+tileH(window.t('tl_fid'),fid)+'</div>';
+  return head+(state.tickets.length?('<div class="grid">'+state.tickets.map(tkCard).join('')+'</div>'):'<div class="card muted">Nessun biglietto. Vai su Esplora e acquista.</div>');
+}
+function valScan(){
+  var r=state.scan,T={valid:['var(--ok)','✓','Accesso valido',158],screenshot:['var(--warn)','!','Codice non valido (screenshot)',70],duplicate:['var(--err)','✕','Già validato',25],escrow:['var(--warn)','⏸','In trasferimento · negato',70],fake:['var(--err)','✕','Biglietto non valido',25]};
+  var res='';if(r){var th=T[r.outcome]||T.valid;res='<div class="scanres" style="margin-top:14px;background:radial-gradient(120% 80% at 50% 30%,oklch(0.28 0.12 '+th[3]+'),#08080c)"><div class="scanic" style="border-color:'+th[0]+';color:'+th[0]+'">'+th[1]+'</div><div style="font-weight:600;font-size:16px">'+th[2]+'</div>'+(r.holder?'<div class="muted" style="margin-top:6px">'+r.holder+' · '+r.meta+'</div>':'')+'</div>';}
+  var log=state.valLog.length?state.valLog.slice(0,9).map(function(l){var col={valid:'var(--ok)',duplicate:'var(--err)',fake:'var(--err)',screenshot:'var(--warn)',escrow:'var(--warn)'}[l.outcome]||'var(--mut)';return '<div class="listrow"><div><div style="font-weight:600">'+l.holder+'</div><div class="muted">'+(l.meta||l.outcome)+'</div></div><div style="text-align:right"><div style="color:'+col+';font-size:11px;text-transform:uppercase">'+l.outcome+'</div><div class="muted">'+l.time+'</div></div></div>'}).join(''):'<div class="muted" style="margin-top:8px">Nessuna scansione ancora.</div>';
+  return '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">'+
+    '<div class="card" style="flex:1;min-width:300px"><div class="row"><div class="kicker">'+window.t('k_scan')+'</div><span class="pill '+(state.offline?'warn':'ok')+'" style="cursor:pointer" onclick="state.offline=!state.offline;render()">'+(state.offline?'OFFLINE · coda sync':'ONLINE')+'</span></div>'+
+    '<button style="width:100%;margin-top:12px" onclick="doScan()">'+window.t('b_scan')+'</button>'+
+    '<div class="muted" style="margin-top:8px">Fidelity: consuma un ingresso per volta. Tocca uno stato per simulare un esito.</div>'+
+    '<div class="formgrid" style="margin-top:12px"><button class="sm ghost" onclick="doScan(\'screenshot\')">Screenshot</button><button class="sm ghost" onclick="doScan(\'duplicate\')">Già usato</button><button class="sm ghost" onclick="doScan(\'escrow\')">In escrow</button><button class="sm ghost" onclick="doScan(\'fake\')">Falso</button></div>'+res+'</div>'+
+    '<div class="card" style="width:300px"><div class="kicker">'+window.t('k_lastentries')+'</div>'+log+'</div></div>';
+}
+function valAccessi(){
+  return '<div class="tiles">'+tileH(window.t('tl_validated'),state.aggr.accessi)+tileH(window.t('tl_activetk'),activeScannable().length)+tileH(window.t('tl_used'),state.tickets.filter(function(t){return t.status==='usato'}).length)+'</div><div class="card muted">Storico accessi e sync tra varchi: nella app nativa (offline + coda di sync).</div>';
+}
+
+// nav per profilo
+var NAV={organizzatore:[['dash','n_dash'],['club','n_club']],cliente:[['esplora','n_esplora'],['biglietti','n_biglietti']],validatore:[['scan','n_scan'],['accessi','n_accessi']]};
+var TITLES={dash:['ti_dash','su_dash'],club:['ti_club','su_club'],clubDetail:['ti_cd','su_cd'],esplora:['ti_esp','su_esp'],biglietti:['ti_big','su_big'],scan:['ti_scan','su_scan'],accessi:['ti_acc','su_acc']};
+
+function render(){
+  if(window.__qr){clearInterval(window.__qr);window.__qr=null}
+  document.querySelectorAll('.role').forEach(function(el){el.classList.toggle('on',el.dataset.r===state.role)});
+  var nav=NAV[state.role];
+  $('nav').innerHTML=nav.map(function(n){return '<div class="navi'+(state.page===n[0]||(n[0]==='club'&&state.page==='clubDetail')?' on':'')+'" data-pg="'+n[0]+'">'+t(n[1])+'</div>'}).join('');
+  $('nav').querySelectorAll('.navi').forEach(function(el){el.onclick=function(){state.page=el.dataset.pg;state.clubId=null;state.checkin=null;render()}});
+  var tk=TITLES[state.page]||['',''];$('ttl').textContent=window.t(tk[0]);$('sub').textContent=window.t(tk[1]);
+  var L=state.ledger,tot=L.prim+L.royT+L.royO+L.exit,tr;
+  if(state.role==='organizzatore')tr='<div class="kicker">'+window.t('tr_rev')+'</div><div class="price" style="font-size:18px">'+eur(tot)+'</div>';
+  else if(state.role==='cliente')tr='<div class="kicker">'+window.t('tr_wallet')+'</div><div class="price" style="font-size:18px">'+state.tickets.filter(function(t){return t.status!=='exported'}).length+' '+window.t('tr_tickets')+'</div>';
+  else tr='<div class="kicker">'+window.t('tr_gate')+' VARCO-7788 · '+(state.offline?'OFFLINE':'ONLINE')+'</div><div class="price" style="font-size:18px">'+state.aggr.accessi+' '+window.t('tr_acc')+'</div>';
+  $('topright').innerHTML='<div style="text-align:right">'+tr+'</div>';
+
+  var c='';
+  if(state.role==='organizzatore'){c=state.page==='clubDetail'?orgClubDetail():state.page==='club'?orgClubs():orgDash();if(state.page==='dash')c=ledgerTiles()+c;}
+  else if(state.role==='cliente'){c=state.page==='biglietti'?cliBiglietti():cliEsplora();}
+  else{c=state.page==='accessi'?valAccessi():valScan();}
+  $('content').innerHTML=c;
+
+  if(state.role==='cliente'&&state.page==='biglietti'&&state.checkin){
+    var draw=function(){var now=Math.floor(Date.now()/1000);var b=$('qrbox'),cd=$('qrcd');if(b)b.innerHTML=qrCells(Math.floor(now/5));if(cd)cd.textContent='rigenera tra '+(5-(now%5))+'s'};draw();window.__qr=setInterval(draw,1000);
+  }
+}
+document.querySelectorAll('.role').forEach(function(el){el.onclick=function(){state.role=el.dataset.r;state.page=NAV[el.dataset.r][0][0];state.clubId=null;state.checkin=null;state.scan=null;render()}});
+function tick(){var now=Date.now(),sale=false;state.tickets.forEach(function(t){if(t.status==='vendita'){sale=true;if(t.expiresAt&&now>=t.expiresAt){t.status='attivo';t.salePrice=null;t.expiresAt=null;toast('Escrow scaduto · tornato al venditore')}}});if(sale&&state.role==='cliente')render()}
+setInterval(tick,1000);
+window.onLangChange=function(){applyI18n();render()};
+render();applyI18n();
+</script>
+</body>
+</html>

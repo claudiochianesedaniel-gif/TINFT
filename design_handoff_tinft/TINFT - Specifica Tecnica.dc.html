@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ background:#efece3; font-family:'IBM Plex Sans',sans-serif; color:#1a1d24; -webkit-font-smoothing:antialiased; }
+  .page{ break-inside:avoid; }
+  section,.avoid{ break-inside:avoid; }
+  @page{ margin:0.7in; }
+  @media print{
+    body{ background:#fff; }
+    .page{ width:auto !important; margin:0 !important; padding:0 !important; box-shadow:none !important; border-radius:0 !important; break-after:page; }
+    .page:last-child{ break-after:auto; }
+    .noprint{ display:none !important; }
+    *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</helmet>
+
+<div style="max-width:980px;margin:0 auto;padding:34px 20px 60px">
+
+  <!-- PAGE 1 — COVER -->
+  <div class="page" style="background:#fff;max-width:816px;margin:0 auto 34px;padding:74px 70px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:3px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#0a0a0a;display:flex;align-items:center;justify-content:center;color:#6f9eff;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px">T</div>
+      <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.04em">TINFT</span>
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8b9099">v1.0 · GIU 2026</span>
+    </div>
+    <div style="height:1px;background:#e3e1d8;margin:26px 0 0"></div>
+
+    <div style="margin-top:90px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#2f5fb0">Specifica tecnica · Developer handoff</div>
+      <h1 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:46px;line-height:1.08;margin:18px 0 0;letter-spacing:-0.01em">Dal prototipo<br/>alla produzione</h1>
+      <p style="font-size:15px;line-height:1.6;color:#5b6270;margin:22px 0 0;max-width:54ch">I dieci workstream fondanti per portare online il sito e l'app TINFT: modelli dati, contratti API, smart contract, escrow, anti-frode e conformità. Questo documento è la base costruibile per il team di sviluppo — non codice di produzione.</p>
+    </div>
+
+    <div style="margin-top:90px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#e3e1d8;border:1px solid #e3e1d8;border-radius:4px;overflow:hidden">
+      <div style="background:#fff;padding:18px 20px"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8b9099">SCOPE</div><div style="font-size:13.5px;font-weight:600;margin-top:5px">10 workstream · Sito + App nativa</div></div>
+      <div style="background:#fff;padding:18px 20px"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8b9099">VINCOLO PRODOTTO</div><div style="font-size:13.5px;font-weight:600;margin-top:5px">Ogni processo solo via smartphone</div></div>
+      <div style="background:#fff;padding:18px 20px"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8b9099">FONTE</div><div style="font-size:13.5px;font-weight:600;margin-top:5px">Prototipo TINFT (spec vivente)</div></div>
+      <div style="background:#fff;padding:18px 20px"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8b9099">STATO</div><div style="font-size:13.5px;font-weight:600;margin-top:5px">Da costruire</div></div>
+    </div>
+
+    <div style="margin-top:34px;background:#fbf4ec;border:1px solid #e7c9a3;border-radius:4px;padding:16px 18px">
+      <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:12.5px;color:#9c5e00">⚠ Da risolvere prima di stimare il go-live</div>
+      <p style="font-size:12.5px;line-height:1.55;color:#5b6270;margin:7px 0 0">La validazione "solo smartphone, nessun device esterno" dipende dalla fattibilità NFC telefono-a-telefono su iOS. Se non praticabile, il metodo primario diventa <b>QR dinamico firmato</b> (vedi §8). Questo spike va chiuso prima di congelare l'architettura del varco.</p>
+    </div>
+  </div>
+
+  <!-- PAGE 2 — legend + 1 + 2 -->
+  <div class="page" style="background:#fff;max-width:816px;margin:0 auto 34px;padding:64px 70px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:3px">
+
+    <div class="avoid" style="margin-bottom:34px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#8b9099">COME LEGGERE</div>
+      <p style="font-size:13px;line-height:1.6;color:#5b6270;margin:8px 0 14px">Ogni workstream ha <b>Obiettivo</b>, <b>Specifica</b> (concreta, costruibile) e <b>Criteri di accettazione</b> (come si verifica che è fatto). Le priorità:</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fdeaec;color:#b3261e;border:1px solid #f3c0c4;padding:4px 10px;border-radius:3px">P0 · bloccante go-live</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fbf4ec;color:#9c5e00;border:1px solid #e7c9a3;padding:4px 10px;border-radius:3px">P1 · importante</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#eef4ec;color:#2f7a44;border:1px solid #c5dec9;padding:4px 10px;border-radius:3px">P2 · successivo</span>
+      </div>
+    </div>
+
+    <!-- 1 -->
+    <section style="margin-bottom:34px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">01</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Backend &amp; modello dati</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fdeaec;color:#b3261e;border:1px solid #f3c0c4;padding:3px 8px;border-radius:3px">P0</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Sostituire il "mondo condiviso" (oggi in localStorage) con un backend e un DB autorevole. Tutte le superfici (sito, app, console) leggono/scrivono qui.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 8px"><b style="color:#2f5fb0">Specifica.</b> Entità principali e relazioni:</p>
+      <div style="background:#f5f3ec;border:1px solid #e3e1d8;border-radius:4px;padding:15px 17px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#2b2f37;overflow-x:auto">
+User(id, role['cliente'|'org'], cf*, nome, cognome, email,<br/>&nbsp;&nbsp;&nbsp;&nbsp; telefono, residenza, fatturazione, username, verified, createdAt)<br/>OrganizerProfile(userId→User, ragioneSociale, piva, sedeLegale,<br/>&nbsp;&nbsp;&nbsp;&nbsp; pec, sdi, iban, kycStatus)<br/>Club(id, organizerId→User, name, city, genre, cover, createdAt)<br/>Event(id, clubId→Club, title, date, type, price, capacity,<br/>&nbsp;&nbsp;&nbsp;&nbsp; status, contractAddr, tokenBaseUri)<br/>Ticket(id, eventId→Event, ownerId→User, tokenId, status<br/>&nbsp;&nbsp;&nbsp;&nbsp; ['attivo'|'usato'|'vendita'|'exported'], paid, mintTx, validatedAt)<br/>Transfer(id, ticketId→Ticket, fromId, toId, mode['regalo'|'pagamento'],<br/>&nbsp;&nbsp;&nbsp;&nbsp; price, royaltyOrg, royaltyTinft, status, expiresAt)<br/>Order(id, userId, ticketId, amount, pspRef, scaStatus, invoiceId)<br/>Payout(id, organizerId, period, gross, commission, royalty, net, status)
+      </div>
+      <p style="font-size:11.5px;line-height:1.55;color:#8b9099;margin:8px 0 0">* il codice fiscale e i dati identità non vanno mai in chiaro: cifratura a riposo + accesso minimo (vedi §9).</p>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Una sola identità per codice fiscale per ruolo (vincolo "2 biglietti/evento" applicabile lato server).</li>
+        <li>Tutte le mutazioni passano da API: nessun client scrive direttamente lo stato condiviso.</li>
+        <li>Migrazione dei dati seed del prototipo (eventi/club demo) eseguibile e ripetibile.</li>
+      </ul>
+    </section>
+
+    <!-- 2 -->
+    <section>
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">02</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Auth, sessioni, recupero account</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fdeaec;color:#b3261e;border:1px solid #f3c0c4;padding:3px 8px;border-radius:3px">P0</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Registrazione/accesso reali per cliente e organizzatore (due utenti distinti, stessi dati), con identità verificata.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Specifica.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li><b>SPID/CIE</b> via Identity Provider accreditato AgID (SAML/OIDC). I dati anagrafici arrivano firmati dall'IdP: niente verifica email su questo percorso.</li>
+        <li><b>Registrazione email</b>: stessi campi + verifica con codice OTP (email/SMS provider transazionale).</li>
+        <li><b>Sessioni</b>: access token JWT breve (~15&nbsp;min) + refresh token rotante con revoca lato server; logout = revoca refresh.</li>
+        <li><b>Recupero account</b>: reset password con token a tempo; re-login SPID come fallback identità.</li>
+      </ul>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Token revocato non accede più ad alcuna API (verificato con test).</li>
+        <li>Un account SPID e uno email con lo stesso CF non creano due identità diverse.</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- PAGE 3 — 3 + 4 -->
+  <div class="page" style="background:#fff;max-width:816px;margin:0 auto 34px;padding:64px 70px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:3px">
+
+    <!-- 3 -->
+    <section style="margin-bottom:34px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">03</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">KYC organizzatore</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fbf4ec;color:#9c5e00;border:1px solid #e7c9a3;padding:3px 8px;border-radius:3px">P1</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Nessun evento pubblicabile finché l'organizzatore non è verificato (identità + impresa).</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Specifica.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Verifica <b>P.IVA</b> (VIES) e ragione sociale; verifica titolarità IBAN (micro-deposito o provider KYB).</li>
+        <li>Stato <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#f5f3ec;padding:1px 5px;border-radius:3px">kycStatus: none → pending → verified → rejected</code>.</li>
+        <li>Gate: <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#f5f3ec;padding:1px 5px;border-radius:3px">Event.publish()</code> consentito solo se <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#f5f3ec;padding:1px 5px;border-radius:3px">verified</code>.</li>
+      </ul>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Un organizzatore non verificato può creare bozze ma non mettere eventi in vendita.</li>
+        <li>I payout vanno solo su IBAN verificato e intestato all'impresa.</li>
+      </ul>
+    </section>
+
+    <!-- 4 -->
+    <section>
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">04</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Split payment, payout, fattura</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fdeaec;color:#b3261e;border:1px solid #f3c0c4;padding:3px 8px;border-radius:3px">P0</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Incassare in euro, trattenere la commissione TINFT, accreditare il netto all'organizzatore, emettere fattura.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 8px"><b style="color:#2f5fb0">Specifica.</b> Marketplace PSP con conti connessi (es. Stripe Connect / Nexi / Adyen):</p>
+      <div style="background:#f5f3ec;border:1px solid #e3e1d8;border-radius:4px;padding:15px 17px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#2b2f37">
+prezzo lordo ──▶ PSP (3DS/SCA)<br/>&nbsp;&nbsp;├─ commissione TINFT (% configurabile) ──▶ conto TINFT<br/>&nbsp;&nbsp;└─ netto ──▶ conto connesso organizzatore ──▶ payout IBAN<br/>secondario: royalty organizzatore + fee TINFT su ogni rivendita<br/>fattura: TINFT→organizzatore (servizio) via SDI · IVA gestita
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Ogni ordine produce un movimento tracciabile e una fattura elettronica con numero progressivo.</li>
+        <li>Chargeback/rimborso riconciliano automaticamente il payout dell'organizzatore.</li>
+        <li>La commissione è applicata atomicamente: mai accreditato il lordo per errore.</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- PAGE 4 — 5 + 6 + 7 -->
+  <div class="page" style="background:#fff;max-width:816px;margin:0 auto 34px;padding:64px 70px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:3px">
+
+    <!-- 5 -->
+    <section style="margin-bottom:32px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">05</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Smart contract del biglietto</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fbf4ec;color:#9c5e00;border:1px solid #e7c9a3;padding:3px 8px;border-radius:3px">P1</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Biglietto NFT nominativo con tetto di rivendita, royalty automatica e trasferimenti solo in escrow.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 8px"><b style="color:#2f5fb0">Specifica.</b> ERC-721 + EIP-2981 su L2 a fee basse (Base/Polygon). Interfaccia minima:</p>
+      <div style="background:#f5f3ec;border:1px solid #e3e1d8;border-radius:4px;padding:15px 17px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#2b2f37;overflow-x:auto">
+mint(to, eventId, tokenURI) onlyMinter<br/>setResaleCap(eventId, maxWei) onlyOrg<br/>royaltyInfo(tokenId, salePrice) → (orgWallet, amount)   // EIP-2981<br/>_beforeTokenTransfer(...) → require(via escrow operator)  // nominativo<br/>burn(tokenId) onlyOwnerOrPlatform
+      </div>
+      <p style="font-size:12.5px;line-height:1.6;margin:9px 0 0;color:#5b6270">Il vincolo nominativo si ottiene bloccando i trasferimenti diretti: l'unico path è il contratto escrow di piattaforma (§ Transfer). Il tetto prezzo è verificato sia off-chain (marketplace) sia on-chain (listing ≤ cap).</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Un trasferimento diretto wallet-a-wallet fuori piattaforma fallisce.</li>
+        <li>Audit di sicurezza del contratto superato prima del mainnet.</li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section style="margin-bottom:32px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">06</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Minting, custodial wallet, storage</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fbf4ec;color:#9c5e00;border:1px solid #e7c9a3;padding:3px 8px;border-radius:3px">P1</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> L'utente comune possiede un NFT senza gestire chiavi né conoscere la blockchain.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Specifica.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li><b>Custodial wallet</b> o account abstraction (gas sponsorizzato): nessuna seed phrase per l'utente.</li>
+        <li><b>Mint</b> all'acquisto (o lazy-mint alla prima validazione per risparmiare gas).</li>
+        <li><b>Metadata/artwork</b> su IPFS/Arweave; <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#f5f3ec;padding:1px 5px;border-radius:3px">tokenURI</code> con nome evento, data, posto, immagine.</li>
+      </ul>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Un utente non tecnico compra e possiede il biglietto senza mai vedere una chiave privata.</li>
+        <li>Il metadata resta risolvibile anche se TINFT è offline (storage decentralizzato).</li>
+      </ul>
+    </section>
+
+    <!-- 7 -->
+    <section>
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">07</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Export verso wallet esterno</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#eef4ec;color:#2f7a44;border:1px solid #c5dec9;padding:3px 8px;border-radius:3px">P2</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Permettere l'export del biglietto-NFT su un wallet personale, con regole.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Specifica.</b> Export consentito <b>solo dopo l'evento</b> (biglietto già validato), come collezionabile; export prima dell'evento disabilitato per non aggirare il nominativo e l'anti-frode. Log dell'operazione + avviso che il collezionabile esportato non è più un titolo d'ingresso.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Un biglietto "attivo" non è esportabile; uno "usato" sì.</li>
+        <li>Dopo l'export lo stato diventa <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#f5f3ec;padding:1px 5px;border-radius:3px">exported</code> e non rientra nei flussi di ingresso.</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- PAGE 5 — 8 + 9 + 10 -->
+  <div class="page" style="background:#fff;max-width:816px;margin:0 auto 34px;padding:64px 70px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:3px">
+
+    <!-- 8 -->
+    <section style="margin-bottom:32px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">08</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Anti-frode &amp; validazione</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fdeaec;color:#b3261e;border:1px solid #f3c0c4;padding:3px 8px;border-radius:3px">P0</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Ingresso validato solo da smartphone, impossibile da falsificare o duplicare con screenshot.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 8px"><b style="color:#2f5fb0">Specifica.</b> QR dinamico firmato (rotazione tipo TOTP):</p>
+      <div style="background:#f5f3ec;border:1px solid #e3e1d8;border-radius:4px;padding:15px 17px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#2b2f37;overflow-x:auto">
+payload = { ticketId, nonce, ts }<br/>qr = sign(payload, serverKey)        // ruota ogni ~30s<br/>staff.scan(qr) → verify(sign) + check(server: non usato)<br/>&nbsp;&nbsp;&nbsp;&nbsp;→ markUsed(ticketId) ATOMICO → esito a schermo<br/>offline: staff tiene pubKey evento + set biglietti validi,<br/>&nbsp;&nbsp;&nbsp;&nbsp;verifica firma offline, accoda, sincronizza dopo
+      </div>
+      <p style="font-size:12.5px;line-height:1.6;margin:9px 0 0;color:#5b6270">Lo screenshot è inutile: il QR scade in secondi. Il doppio ingresso è impedito dalla marcatura atomica server-side; in offline i conflitti si risolvono alla sincronizzazione con log. Revoca biglietto immediata in caso di frode.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Uno screenshot del QR non valida l'ingresso dopo la finestra di rotazione.</li>
+        <li>Lo stesso biglietto non entra due volte, neanche con due varchi offline simultanei (risolto a sync).</li>
+      </ul>
+    </section>
+
+    <!-- 9 -->
+    <section style="margin-bottom:32px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">09</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">GDPR &amp; conformità</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#fdeaec;color:#b3261e;border:1px solid #f3c0c4;padding:3px 8px;border-radius:3px">P0</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Trattare dati identità (CF, residenza, SPID) in modo conforme.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Specifica — mappa dati.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li><b>Base giuridica</b>: esecuzione contratto (biglietteria); obbligo legale (fattura, anti-frode); consenso (marketing).</li>
+        <li><b>Retention</b>: fatture 10 anni (fiscale); account fino a cancellazione; log di validazione a tempo limitato.</li>
+        <li><b>DPA</b> con IdP SPID, PSP, cloud, storage; registro dei trattamenti; diritti dell'interessato (accesso, cancellazione, portabilità).</li>
+        <li><b>Documenti</b>: informativa privacy, ToS, contratto organizzatore, cookie/consent.</li>
+      </ul>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Richiesta di cancellazione eseguibile senza rompere obblighi fiscali (anonimizzazione selettiva).</li>
+        <li>Accessibilità AgID verificata (obbligatoria per servizi con SPID).</li>
+      </ul>
+    </section>
+
+    <!-- 10 -->
+    <section>
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#2f5fb0">10</span>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:21px;margin:0;flex:1">Analytics, monitoring, supporto</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#eef4ec;color:#2f7a44;border:1px solid #c5dec9;padding:3px 8px;border-radius:3px">P2</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:12px 0 0"><b style="color:#2f5fb0">Obiettivo.</b> Sostituire i KPI demo (oggi baseline+delta) con metriche reali e gestire l'esercizio.</p>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Specifica.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>Analytics organizzatore da dati reali (incassi, venduti, validati, accessi live).</li>
+        <li>Monitoring/log applicativo, alert su errori pagamento/minting/validazione, audit trail.</li>
+        <li>Notifiche push (trasferimenti, ingressi) e canale di supporto clienti.</li>
+      </ul>
+      <p style="font-size:13px;line-height:1.6;margin:11px 0 7px"><b style="color:#2f5fb0">Criteri di accettazione.</b></p>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#2b2f37">
+        <li>I numeri in console coincidono con i movimenti reali (riconciliazione contabile).</li>
+        <li>Un fallimento di pagamento o mint genera alert tracciabile entro pochi minuti.</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- PAGE 6 — sequencing -->
+  <div class="page" style="background:#fff;max-width:816px;margin:0 auto;padding:64px 70px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:3px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#8b9099">APPENDICE</div>
+    <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:24px;margin:8px 0 0">Sequenza consigliata</h2>
+    <p style="font-size:13px;line-height:1.6;color:#5b6270;margin:10px 0 22px;max-width:60ch">I dieci workstream non sono seriali. I colli di bottiglia sono esterni — accreditamento SPID, convenzione PSP, review App Store — e vanno avviati per primi perché hanno tempi lunghi indipendenti dal codice.</p>
+
+    <div style="display:flex;flex-direction:column;gap:1px;background:#e3e1d8;border:1px solid #e3e1d8;border-radius:4px;overflow:hidden">
+      <div style="background:#fff;padding:15px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#2f5fb0;width:70px;flex-shrink:0">AVVIO</span><span style="font-size:12.5px;line-height:1.55;color:#2b2f37">Pratiche esterne in parallelo: accreditamento <b>SPID/CIE</b>, convenzione <b>PSP/split payment</b>, parere <b>legale</b> (anti-bagarinaggio, GDPR), spike <b>NFC iOS</b>.</span></div>
+      <div style="background:#fff;padding:15px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#2f5fb0;width:70px;flex-shrink:0">CORE</span><span style="font-size:12.5px;line-height:1.55;color:#2b2f37">§01 Backend/DB → §02 Auth → §03 KYC. È la spina dorsale: tutto il resto vi si aggancia.</span></div>
+      <div style="background:#fff;padding:15px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#2f5fb0;width:70px;flex-shrink:0">VALORE</span><span style="font-size:12.5px;line-height:1.55;color:#2b2f37">§04 Pagamenti/payout + §05–07 NFT/wallet, in parallelo una volta pronto il core.</span></div>
+      <div style="background:#fff;padding:15px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#2f5fb0;width:70px;flex-shrink:0">VARCO</span><span style="font-size:12.5px;line-height:1.55;color:#2b2f37">§08 Validazione anti-frode, dopo l'esito dello spike NFC. Include modalità offline.</span></div>
+      <div style="background:#fff;padding:15px 18px;display:flex;gap:14px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#2f5fb0;width:70px;flex-shrink:0">LANCIO</span><span style="font-size:12.5px;line-height:1.55;color:#2b2f37">§09 GDPR/accessibilità + §10 analytics/monitoring → <b>pilot</b> con 1 club e 1 evento piccolo prima del pubblico.</span></div>
+    </div>
+
+    <div style="margin-top:28px;background:#f5f3ec;border:1px solid #e3e1d8;border-radius:4px;padding:18px 20px">
+      <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px">Nota di stima</div>
+      <p style="font-size:12.5px;line-height:1.6;color:#5b6270;margin:7px 0 0">Con un team piccolo (2–3 dev + legale part-time), realisticamente <b>4–6 mesi</b> al primo evento pilota. La variabile dominante non è lo sviluppo ma i tempi di accreditamento esterni. L'app deve essere <b>nativa</b> (il vincolo "solo app" non è soddisfatto da una semplice PWA per la parte di validazione/NFC).</p>
+    </div>
+
+    <div style="margin-top:40px;display:flex;align-items:center;gap:9px;opacity:.7">
+      <div style="width:24px;height:24px;border-radius:50%;background:#0a0a0a;display:flex;align-items:center;justify-content:center;color:#6f9eff;font-family:'Quicksand',sans-serif;font-weight:700;font-size:10px">T</div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8b9099">TINFT · Specifica tecnica · documento di lavoro, da validare con sviluppo e legale</span>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "tinft",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TINFT — biglietteria con biglietti-NFT su L2 (Base). Monorepo.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test -vvv",
+    "contracts:fmt": "cd contracts && forge fmt",
+    "contracts:fmt:check": "cd contracts && forge fmt --check src test script",
+    "api:typecheck": "pnpm --filter @tinft/api typecheck",
+    "api:test": "pnpm --filter @tinft/api test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

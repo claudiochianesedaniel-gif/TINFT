@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+  /*__rounded__*/
+  [style*="border:1px solid"]:not([style*="border-radius"]){border-radius:13px;overflow:hidden}
+  [style*="background:#4472c4"]:not([style*="border-radius"]),[style*="background:#6f9eff"]:not([style*="border-radius"]),[style*="background:#00cc88"]:not([style*="border-radius"]),[style*="background:#0a8a5c"]:not([style*="border-radius"]){border-radius:13px}
+  img:not([style*="border-radius"]):not([style*="object-fit:cover"]){border-radius:9px}
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;font-family:'Quicksand',sans-serif;-webkit-font-smoothing:antialiased;color:#e8e6e0}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:rgba(68,114,196,.4)}
+  .scr::-webkit-scrollbar{width:8px}.scr::-webkit-scrollbar-thumb{background:#2a2a2a}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .lift{transition:border-color .15s ease, transform .15s ease}
+  .lift:hover{border-color:#4472c4!important;transform:translateY(-2px)}
+</style>
+</helmet>
+
+<div style="min-height:100vh;width:100%;background:#0a0a0a;color:#e8e6e0">
+
+  <!-- TOP BAR -->
+  <div style="position:sticky;top:0;z-index:30;background:rgba(10,10,10,.9);backdrop-filter:blur(12px);border-bottom:1px solid #2a2a2a">
+    <div style="max-width:1200px;margin:0 auto;padding:0 22px;height:60px;display:flex;align-items:center;gap:14px">
+      <a href="TINFT - Sito Web.dc.html" style="display:flex;align-items:center;gap:10px"><img src="assets/tinft-logo.png" alt="TINFT" style="width:32px;height:32px;object-fit:contain"/><span style="font-weight:700;font-size:15px;letter-spacing:0.1em">TI<span style="color:#6f9eff">N</span>FT</span></a>
+      <span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#5a5754;border-left:1px solid #2a2a2a;padding-left:14px">Area personale · web</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+        <sc-if value="{{ logged }}">
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;background:rgba(68,114,196,.16);color:#6f9eff;padding:8px 13px;border:1px solid #2a2a2a">Area cliente</span>
+          <div style="display:flex;align-items:center;gap:9px;background:#131313;border:1px solid #2a2a2a;padding:6px 10px 6px 7px">
+            <div style="width:26px;height:26px;border-radius:50%;background:#2f4f8a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;position:relative">{{ meInitials }}<sc-if value="{{ hasIncoming }}"><span style="position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;border-radius:8px;background:#00cc88;color:#06210f;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px">{{ incomingCount }}</span></sc-if></div>
+            <span style="font-size:12.5px;font-weight:600">{{ meName }}</span>
+            <span onClick="{{ logout }}" style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;color:#6f9eff;cursor:pointer;border-left:1px solid #2a2a2a;padding-left:9px">Cambia</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notLogged }}">
+          <a href="TINFT - Console Web.dc.html" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;color:#8a8682;padding:8px 10px">Console organizzatori</a>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN / REGISTRAZIONE -->
+  <sc-if value="{{ notLogged }}" hint-placeholder-val="{{ true }}">
+
+    <sc-if value="{{ isLogin }}">
+      <div style="max-width:560px;margin:0 auto;padding:70px 22px">
+        <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;color:#6f9eff"><span>▸</span> Accedi alla tua area</div>
+        <h1 style="font-weight:700;font-size:34px;margin-top:12px;line-height:1.1">Entra come cliente</h1>
+        <p style="font-size:14px;color:#8a8682;margin-top:10px;line-height:1.55">Scegli un account demo, oppure crea il tuo. Tutto è sincronizzato con l'app e i banchi di prova: ciò che fai qui appare lì.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:26px;background:#2a2a2a;border:1px solid #2a2a2a">
+          <sc-for list="{{ loginAccounts }}" as="a" hint-placeholder-count="4">
+            <div onClick="{{ a.pick }}" class="lift" style="background:#131313;padding:18px;cursor:pointer;display:flex;align-items:center;gap:13px">
+              <div style="width:40px;height:40px;border-radius:50%;background:{{ a.bg }};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">{{ a.initials }}</div>
+              <div><div style="font-weight:700;font-size:15px">{{ a.name }}</div><div style="font-size:11.5px;color:#8a8682;margin-top:2px">{{ a.tickets }} biglietti · {{ a.goodwill }} goodwill</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:26px"><div style="flex:1;height:1px;background:#2a2a2a"></div><span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5a5754">non hai un account?</span><div style="flex:1;height:1px;background:#2a2a2a"></div></div>
+        <div onClick="{{ startRegister }}" style="margin-top:18px;border:1px solid #4472c4;color:#6f9eff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;padding:14px;cursor:pointer">Crea un account</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRegister }}">
+      <div style="max-width:560px;margin:0 auto;padding:48px 22px 80px">
+        <div onClick="{{ backToLogin }}" style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#8a8682;cursor:pointer">‹ Torna all'accesso</div>
+        <h1 style="font-weight:700;font-size:30px;margin-top:14px;line-height:1.1">Crea il tuo account</h1>
+        <p style="font-size:13.5px;color:#8a8682;margin-top:8px;line-height:1.55">Il biglietto TINFT è un NFT nominativo: serve un'identità verificata. Scegli come registrarti.</p>
+
+        <sc-if value="{{ regStepMethod }}">
+          <div style="display:flex;gap:8px;margin-top:22px">
+            <div onClick="{{ setRegCliente }}" style="flex:1;padding:13px 14px;border:1px solid {{ regCliBorder }};background:{{ regCliBg }};cursor:pointer"><div style="font-weight:700;font-size:14px;color:{{ regCliColor }}">Cliente</div><div style="font-size:11px;color:#8a8682;margin-top:2px">Compra · accedi · rivendi</div></div>
+            <div onClick="{{ setRegOrg }}" style="flex:1;padding:13px 14px;border:1px solid {{ regOrgBorder }};background:{{ regOrgBg }};cursor:pointer"><div style="font-weight:700;font-size:14px;color:{{ regOrgColor }}">Organizzatore</div><div style="font-size:11px;color:#8a8682;margin-top:2px">Vendi · gestisci eventi</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+            <div onClick="{{ pickSpid }}" class="lift" style="background:#131313;border:1px solid #2a2a2a;border-left:3px solid #4472c4;padding:18px;cursor:pointer;display:flex;align-items:center;gap:13px">
+              <div style="width:40px;height:40px;border-radius:11px;background:#0066cc;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0">SP</div>
+              <div style="flex:1"><div style="font-weight:700;font-size:15px">Entra con SPID</div><div style="font-size:12px;color:#8a8682;margin-top:2px">Identità già verificata · nessun codice email</div></div>
+              <span style="font-size:18px;color:#6f9eff">›</span>
+            </div>
+            <div onClick="{{ pickEmail }}" class="lift" style="background:#131313;border:1px solid #2a2a2a;padding:18px;cursor:pointer;display:flex;align-items:center;gap:13px">
+              <div style="width:40px;height:40px;border-radius:11px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">✉</div>
+              <div style="flex:1"><div style="font-weight:700;font-size:15px">Registrazione con email</div><div style="font-size:12px;color:#8a8682;margin-top:2px">Inserisci i dati · verifica con codice via email</div></div>
+              <span style="font-size:18px;color:#6f9eff">›</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ regStepSpid }}">
+          <div style="margin-top:22px;background:#0b1f3a;border:1px solid #2f4f8a;padding:16px 18px">
+            <div style="display:flex;align-items:center;gap:9px"><div style="width:30px;height:30px;border-radius:11px;background:#0066cc;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff">SP</div><span style="font-size:12px;color:#aac3f5;font-weight:600">Dati forniti da SPID · verificati</span></div>
+            <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:13px">
+              <sc-for list="{{ spidFields }}" as="f"><div><div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6a6764">{{ f.label }}</div><div style="font-size:13.5px;font-weight:600;margin-top:3px">{{ f.value }}</div></div></sc-for>
+            </div>
+            <div style="margin-top:13px"><div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#6a6764">Indirizzo di residenza</div><div style="font-size:13.5px;font-weight:600;margin-top:3px">{{ spidResidenza }}</div></div>
+          </div>
+          <div style="margin-top:14px;background:#131313;border:1px solid #2a2a2a;padding:12px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">SCEGLI UN NOME UTENTE</div><input value="{{ regUser }}" onInput="{{ onRegUser }}" placeholder="es. ale.russo" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:15px;font-weight:600;font-family:inherit"/></div>
+          <div onClick="{{ toggleBill }}" style="margin-top:14px;display:flex;align-items:center;gap:10px;cursor:pointer">
+            <div style="width:20px;height:20px;border:1px solid {{ billBorder }};background:{{ billBg }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0">{{ billCheck }}</div>
+            <span style="font-size:13px;color:#cfcdc8">Indirizzo di fatturazione uguale alla residenza</span>
+          </div>
+          <sc-if value="{{ billDiff }}">
+            <div style="margin-top:10px;background:#131313;border:1px solid #2a2a2a;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">INDIRIZZO DI FATTURAZIONE</div><input value="{{ fattVal }}" onInput="{{ onFatt }}" placeholder="Via, civico, CAP, città (Prov)" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+          </sc-if>
+          <sc-if value="{{ regError }}"><div style="margin-top:10px;font-size:12px;color:#ff8aa0">{{ regErrorMsg }}</div></sc-if>
+          <div onClick="{{ confirmSpid }}" style="margin-top:16px;background:#4472c4;color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;padding:14px;cursor:pointer">Conferma e crea account</div>
+        </sc-if>
+
+        <sc-if value="{{ regStepForm }}">
+          <div style="margin-top:22px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ regFields }}" as="f">
+              <div style="background:#131313;border:1px solid #2a2a2a;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">{{ f.label }}</div><input value="{{ f.value }}" onInput="{{ f.on }}" placeholder="{{ f.ph }}" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+            </sc-for>
+          </div>
+          <div onClick="{{ toggleBill }}" style="margin-top:14px;display:flex;align-items:center;gap:10px;cursor:pointer">
+            <div style="width:20px;height:20px;border:1px solid {{ billBorder }};background:{{ billBg }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0">{{ billCheck }}</div>
+            <span style="font-size:13px;color:#cfcdc8">Indirizzo di fatturazione uguale alla residenza</span>
+          </div>
+          <sc-if value="{{ billDiff }}">
+            <div style="margin-top:10px;background:#131313;border:1px solid #2a2a2a;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">INDIRIZZO DI FATTURAZIONE</div><input value="{{ fattVal }}" onInput="{{ onFatt }}" placeholder="Via, civico, CAP, città (Prov)" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+          </sc-if>
+          <sc-if value="{{ regError }}"><div style="margin-top:10px;font-size:12px;color:#ff8aa0">{{ regErrorMsg }}</div></sc-if>
+          <div onClick="{{ sendCode }}" style="margin-top:14px;background:#4472c4;color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;padding:14px;cursor:pointer">Invia codice di verifica</div>
+        </sc-if>
+
+        <sc-if value="{{ regStepVerify }}">
+          <div style="margin-top:22px;background:#131313;border:1px solid #2a2a2a;padding:18px">
+            <div style="font-size:13.5px;line-height:1.5">Abbiamo inviato un codice a <b>{{ regEmail }}</b>. Inseriscilo per verificare l'indirizzo.</div>
+            <div style="margin-top:10px;font-size:11px;color:#ffcf80;background:#0a0a0a;border:1px solid #2a2a2a;padding:8px 11px">Modalità demo · codice: <b>{{ regSentCode }}</b></div>
+            <div style="margin-top:12px;background:#0a0a0a;border:1px solid #2a2a2a;padding:12px 14px"><input value="{{ regCode }}" onInput="{{ onRegCode }}" placeholder="000000" maxlength="6" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:22px;font-weight:700;letter-spacing:0.4em;text-align:center;font-family:inherit"/></div>
+            <sc-if value="{{ regError }}"><div style="margin-top:10px;font-size:12px;color:#ff8aa0">{{ regErrorMsg }}</div></sc-if>
+            <div onClick="{{ verifyCode }}" style="margin-top:14px;background:#00cc88;color:#06210f;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.06em;padding:14px;cursor:pointer">Verifica e crea account</div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+  </sc-if>
+
+  <!-- APP -->
+  <sc-if value="{{ logged }}">
+    <div style="max-width:1200px;margin:0 auto;padding:24px 22px 70px;display:grid;grid-template-columns:{{ gridCols }};gap:22px;align-items:start">
+
+      <!-- SIDEBAR -->
+      <div style="position:{{ sideSticky }};top:78px;display:flex;flex-direction:{{ sideDir }};gap:6px;{{ sideExtra }}">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+          <div onClick="{{ n.go }}" style="display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;background:{{ n.bg }};border:1px solid {{ n.border }};white-space:nowrap">
+            <span style="font-size:15px;color:{{ n.iconColor }};width:18px;text-align:center">{{ n.glyph }}</span>
+            <span style="font-size:13.5px;font-weight:600;color:{{ n.textColor }}">{{ n.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- CONTENT -->
+      <div style="min-width:0">
+
+        <!-- HOME -->
+        <sc-if value="{{ isHome }}">
+          <div style="font-size:13px;color:#8a8682">Ciao,</div>
+          <h1 style="font-weight:700;font-size:clamp(24px,3vw,32px);margin-top:2px">{{ meName }}</h1>
+          <sc-if value="{{ hasIncoming }}">
+            <div onClick="{{ goBiglietti }}" style="margin-top:16px;background:#0d2a20;border:1px solid #0a8a5c;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer">
+              <div style="width:34px;height:34px;background:#00cc88;color:#06210f;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0">↓</div>
+              <div style="flex:1"><div style="font-size:13.5px;font-weight:700">{{ incomingCount }} biglietto in arrivo</div><div style="font-size:11.5px;color:#5fe0b0;margin-top:2px">Trattenuto in escrow · tocca per accettare o rifiutare</div></div>
+              <span style="font-size:18px;color:#5fe0b0">›</span>
+            </div>
+          </sc-if>
+          <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+            <div style="background:#131313;border:1px solid #2a2a2a;border-left:3px solid #4472c4;padding:20px">
+              <div style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff">Portafoglio TINFT</div>
+              <div style="font-weight:700;font-size:26px;margin-top:8px;color:#6f9eff">{{ walletCount }}</div>
+              <div style="font-size:12px;color:#8a8682;margin-top:4px">biglietti NFT nel tuo wallet</div>
+            </div>
+            <div style="background:#131313;border:1px solid #2a2a2a;padding:20px">
+              <div style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#8a8682">Goodwill</div>
+              <div style="font-weight:700;font-size:26px;margin-top:8px">{{ meGoodwill }}</div>
+              <div style="font-size:12px;color:#8a8682;margin-top:4px">punti fedeltà accumulati</div>
+            </div>
+            <div style="background:#131313;border:1px solid #2a2a2a;padding:20px">
+              <div style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#8a8682">In vendita</div>
+              <div style="font-weight:700;font-size:26px;margin-top:8px">{{ marketCount }}</div>
+              <div style="font-size:12px;color:#8a8682;margin-top:4px">titoli sul mercato secondario</div>
+            </div>
+          </div>
+          <div style="margin:26px 0 12px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">In evidenza</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+            <sc-for list="{{ homeEvents }}" as="e" hint-placeholder-count="2">
+              <div class="lift" style="background:#131313;border:1px solid #2a2a2a">
+                <div style="height:120px;background-image:url({{ e.art }});background-size:cover;background-position:center"></div>
+                <div style="padding:15px 16px"><div style="font-weight:700;font-size:15px">{{ e.title }}</div><div style="font-size:11.5px;color:#8a8682;margin-top:3px">{{ e.venue }}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:13px"><span style="font-weight:700;font-size:17px">{{ e.priceLabel }}</span><span onClick="{{ e.open }}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:9px 14px;cursor:pointer">Dettagli</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin:30px 0 12px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#6a6764">Consigliati per te</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+            <sc-for list="{{ recommended }}" as="e" hint-placeholder-count="3">
+              <div class="lift" style="background:#131313;border:1px solid #2a2a2a">
+                <div style="height:110px;background-image:url({{ e.art }});background-size:cover;background-position:center"></div>
+                <div style="padding:14px 15px"><div style="font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:#6f9eff">{{ e.reason }}</div><div style="font-weight:700;font-size:14.5px;margin-top:5px">{{ e.title }}</div><div style="font-size:11px;color:#8a8682;margin-top:3px">{{ e.venue }}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span style="font-weight:700;font-size:15px">{{ e.priceLabel }}</span><span onClick="{{ e.open }}" style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#fff;background:#4472c4;padding:8px 12px;cursor:pointer">Dettagli</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+        </sc-if>
+
+        <!-- ARTISTI -->
+        <sc-if value="{{ isArtisti }}">
+          <h1 style="font-weight:700;font-size:clamp(22px,2.6vw,28px)">Artisti da seguire</h1>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ artistiStats }}" as="s"><div style="background:#131313;padding:13px 15px"><div style="font-weight:700;font-size:19px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:3px">{{ s.label }}</div></div></sc-for>
+          </div>
+          <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+            <sc-for list="{{ artists }}" as="a" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:13px;background:#131313;border:1px solid #2a2a2a;padding:15px 16px">
+                <div style="width:46px;height:46px;border-radius:50%;background:{{ a.color }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0">{{ a.initials }}</div>
+                <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</div><div style="font-size:11.5px;color:#8a8682;margin-top:2px">{{ a.genre }}</div></div>
+                <span style="font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6f9eff;border:1px solid #2f4f8a;padding:8px 13px;cursor:pointer">Segui</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- BLOG -->
+        <sc-if value="{{ isBlog }}">
+          <h1 style="font-weight:700;font-size:clamp(22px,2.6vw,28px)">Dal blog TINFT</h1>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ blogStats }}" as="s"><div style="background:#131313;padding:13px 15px"><div style="font-weight:700;font-size:19px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:3px">{{ s.label }}</div></div></sc-for>
+          </div>
+          <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+            <sc-for list="{{ blogPosts }}" as="b" hint-placeholder-count="3">
+              <div class="lift" style="background:#131313;border:1px solid #2a2a2a">
+                <div style="height:140px;background-image:url({{ b.art }});background-size:cover;background-position:center"></div>
+                <div style="padding:16px 17px 18px"><div style="font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:#6f9eff">{{ b.tag }} · {{ b.read }}</div><div style="font-weight:700;font-size:16px;margin-top:7px;line-height:1.3">{{ b.title }}</div><div style="font-size:12px;color:#8a8682;margin-top:7px;line-height:1.55">{{ b.excerpt }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- NEWS -->
+        <sc-if value="{{ isNews }}">
+          <h1 style="font-weight:700;font-size:clamp(22px,2.6vw,28px)">News &amp; annunci</h1>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ newsStats }}" as="s"><div style="background:#131313;padding:13px 15px"><div style="font-weight:700;font-size:19px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:3px">{{ s.label }}</div></div></sc-for>
+          </div>
+          <div style="margin-top:18px;display:flex;flex-direction:column;gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ newsItems }}" as="n" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:16px;background:#131313;padding:17px 18px">
+                <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#6f9eff;white-space:nowrap;width:58px">{{ n.date }}</span>
+                <span style="font-size:14px;color:#e8e6e0">{{ n.title }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- EVENTI -->
+        <sc-if value="{{ isEventi }}">
+          <h1 style="font-weight:700;font-size:clamp(22px,2.6vw,28px)">Eventi in vendita</h1>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ eventiStats }}" as="s"><div style="background:#131313;padding:13px 15px"><div style="font-weight:700;font-size:19px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:3px">{{ s.label }}</div></div></sc-for>
+          </div>
+          <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+            <sc-for list="{{ allEvents }}" as="e" hint-placeholder-count="3">
+              <div class="lift" style="background:#131313;border:1px solid #2a2a2a">
+                <div style="height:150px;background-image:url({{ e.art }});background-size:cover;background-position:center"></div>
+                <div style="padding:16px 17px">
+                  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff;border:1px solid rgba(68,114,196,.4);background:rgba(68,114,196,.1);padding:3px 8px">{{ e.type }}</span></div>
+                  <div style="font-weight:700;font-size:17px;margin-top:13px">{{ e.title }}</div>
+                  <div style="font-size:12px;color:#8a8682;margin-top:4px">{{ e.venue }}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px"><span style="font-weight:700;font-size:20px">{{ e.priceLabel }}</span><span onClick="{{ e.open }}" style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:11px 17px;cursor:pointer">Dettagli & biglietti</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- BIGLIETTI -->
+        <sc-if value="{{ isBiglietti }}">
+          <h1 style="font-weight:700;font-size:clamp(22px,2.6vw,28px)">I miei biglietti</h1>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ bigliettiStats }}" as="s"><div style="background:#131313;padding:13px 15px"><div style="font-weight:700;font-size:19px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:3px">{{ s.label }}</div></div></sc-for>
+          </div>
+          <sc-if value="{{ hasIncoming }}">
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ incomingVMs }}" as="x" hint-placeholder-count="1">
+                <div style="background:#0d2a20;border:1px solid #0a8a5c;padding:18px">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:9.5px;letter-spacing:0.08em;font-weight:700;color:#5fe0b0;border:1px solid #0a8a5c;background:rgba(0,204,136,.08);padding:4px 9px;white-space:nowrap">{{ x.badge }}</span><span style="font-size:12px;color:#5fe0b0">da {{ x.from }}</span></div>
+                  <div style="font-weight:700;font-size:16px;margin-top:12px">{{ x.title }}</div>
+                  <div style="font-size:12px;color:#8a8682;margin-top:3px">{{ x.venue }}</div>
+                  <sc-if value="{{ x.isPaid }}">
+                    <div style="margin-top:12px;border-top:1px solid #144633;padding-top:10px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#8a8682">
+                      <div style="display:flex;justify-content:space-between"><span>Prezzo al venditore</span><span style="color:#e8e6e0">{{ x.priceLabel }}</span></div>
+                      <div style="display:flex;justify-content:space-between"><span>Royalty (0,5% TINFT + 0,5% org.)</span><span style="color:#e8e6e0">{{ x.royLabel }}</span></div>
+                      <div style="display:flex;justify-content:space-between;font-weight:700;color:#e8e6e0;border-top:1px solid #144633;padding-top:8px"><span>Totale a tuo carico</span><span>{{ x.totLabel }}</span></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ x.hasMsg }}"><div style="margin-top:12px;background:#0a0a0a;border:1px solid #2a2a2a;padding:10px 13px;font-size:12px;color:#8a8682;line-height:1.5">"{{ x.msg }}"</div></sc-if>
+                  <div style="font-size:11px;color:#6a6764;margin-top:12px;line-height:1.5">Il biglietto è trattenuto in escrow: diventa tuo solo quando accetti. Fino ad allora l'accesso al varco resta bloccato.</div>
+                  <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+                    <span onClick="{{ x.accept }}" style="font-size:12px;font-weight:700;letter-spacing:0.06em;color:#06210f;background:#00cc88;padding:12px 18px;cursor:pointer">{{ x.acceptLabel }}</span>
+                    <span onClick="{{ x.reject }}" style="font-size:12px;font-weight:600;color:#8a8682;border:1px solid #2a2a2a;padding:12px 16px;cursor:pointer">Rifiuta</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasOutgoing }}">
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ outgoingVMs }}" as="x" hint-placeholder-count="1">
+                <div style="background:#131313;border:1px solid #2a2a2a;padding:15px 17px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                  <span style="font-size:9.5px;letter-spacing:0.08em;font-weight:700;color:{{ x.badgeColor }};border:1px solid {{ x.badgeBorder }};padding:4px 9px;white-space:nowrap">{{ x.badge }}</span>
+                  <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:14px">{{ x.title }}</div><div style="font-size:11.5px;color:#8a8682;margin-top:3px">{{ x.line }}</div></div>
+                  <span style="font-size:14px;font-weight:700;white-space:nowrap">{{ x.amount }}</span>
+                  <span onClick="{{ x.cancel }}" style="font-size:11px;font-weight:600;color:#8a8682;border:1px solid #2a2a2a;padding:9px 13px;cursor:pointer;white-space:nowrap">Annulla</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noTickets }}"><div style="margin-top:18px;background:#131313;border:1px solid #2a2a2a;padding:24px;text-align:center;font-size:13px;color:#8a8682">Nessun biglietto. Vai su <b style="color:#6f9eff">Eventi</b> e acquista il primo.</div></sc-if>
+          <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+            <sc-for list="{{ myTickets }}" as="t" hint-placeholder-count="2">
+              <div style="background:#131313;border:1px solid #2a2a2a">
+                <div style="height:96px;background-image:url({{ t.art }});background-size:cover;background-position:center;position:relative"><span style="position:absolute;top:10px;right:10px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:{{ t.stColor }};background:rgba(10,10,10,.7);border:1px solid {{ t.stColor }};padding:3px 8px">{{ t.stLabel }}</span></div>
+                <div style="padding:15px 16px">
+                  <div style="font-weight:700;font-size:15px">{{ t.title }}</div>
+                  <div style="font-size:11.5px;color:#8a8682;margin-top:3px">{{ t.venue }}</div>
+                  <div style="font-size:11px;color:#6a6764;margin-top:8px">intestato a {{ t.holder }}</div>
+                  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+                    <sc-for list="{{ t.actions }}" as="ac">
+                      <span onClick="{{ ac.on }}" style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;color:{{ ac.color }};background:{{ ac.bg }};border:1px solid {{ ac.border }};padding:9px 13px;cursor:pointer">{{ ac.label }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- MERCATO -->
+        <sc-if value="{{ isMercato }}">
+          <h1 style="font-weight:700;font-size:clamp(22px,2.6vw,28px)">Mercato secondario</h1>
+          <p style="font-size:13px;color:#8a8682;margin-top:8px;max-width:60ch;line-height:1.55">Biglietti rivenduti da altri clienti. Royalty all'organizzatore inclusa. Prezzo con tetto.</p>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:#2a2a2a;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+            <sc-for list="{{ mercatoStats }}" as="s"><div style="background:#131313;padding:13px 15px"><div style="font-weight:700;font-size:19px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:3px">{{ s.label }}</div></div></sc-for>
+          </div>
+          <sc-if value="{{ noMarket }}"><div style="margin-top:18px;background:#131313;border:1px solid #2a2a2a;padding:24px;text-align:center;font-size:13px;color:#8a8682">Nessun biglietto in vendita ora. Mettine uno tu da <b style="color:#6f9eff">I miei biglietti</b>.</div></sc-if>
+          <div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+            <sc-for list="{{ marketTickets }}" as="t" hint-placeholder-count="2">
+              <div class="lift" style="background:#131313;border:1px solid #2a2a2a">
+                <div style="height:96px;background-image:url({{ t.art }});background-size:cover;background-position:center"></div>
+                <div style="padding:15px 16px">
+                  <div style="font-weight:700;font-size:15px">{{ t.title }}</div>
+                  <div style="font-size:11.5px;color:#8a8682;margin-top:3px">{{ t.venue }}</div>
+                  <div style="font-size:11px;color:#ffcf80;margin-top:8px">venduto da {{ t.sellerName }} · su {{ t.saleMarket }}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><span style="font-weight:700;font-size:18px">{{ t.priceLabel }}</span><span onClick="{{ t.buy }}" style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:10px 15px;cursor:pointer">Compra</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- EVENT DETAIL -->
+  <sc-if value="{{ detailOpen }}">
+    <div class="scr" style="position:fixed;inset:0;z-index:55;background:#0a0a0a;overflow-y:auto">
+      <div style="max-width:920px;margin:0 auto;padding:0 0 60px">
+        <div style="position:relative;height:300px;background-image:url({{ dArt }});background-size:cover;background-position:center">
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,#0a0a0a,rgba(10,10,10,.15) 55%,rgba(10,10,10,.55))"></div>
+          <div onClick="{{ closeDetail }}" style="position:absolute;top:18px;left:18px;background:rgba(10,10,10,.7);border:1px solid #2a2a2a;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer">‹ Eventi</div>
+          <div style="position:absolute;left:24px;bottom:18px;right:24px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff;border:1px solid rgba(68,114,196,.5);background:rgba(10,10,10,.6);padding:3px 8px">{{ dType }}</span><span style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#cfcdc8;border:1px solid #2a2a2a;background:rgba(10,10,10,.6);padding:3px 8px">{{ dGenre }}</span></div>
+            <div style="font-weight:700;font-size:clamp(24px,4vw,36px);margin-top:10px">{{ dTitle }}</div>
+          </div>
+        </div>
+        <div style="padding:22px 24px;display:grid;grid-template-columns:{{ dCols }};gap:26px;align-items:start">
+          <div style="min-width:0">
+            <div style="display:flex;gap:22px;flex-wrap:wrap">
+              <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Data</div><div style="font-weight:600;font-size:13.5px;margin-top:3px">{{ dDate }}</div></div>
+              <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Orario</div><div style="font-weight:600;font-size:13.5px;margin-top:3px">{{ dTime }}</div></div>
+              <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Luogo</div><div style="font-weight:600;font-size:13.5px;margin-top:3px">{{ dVenue }} · {{ dCity }}</div></div>
+            </div>
+            <div style="margin-top:16px;height:6px;background:#1c1c1c;border:1px solid #2a2a2a"><div style="height:100%;width:{{ dSoldW }};background:#ff9900"></div></div>
+            <div style="font-size:11px;color:#ffcf80;margin-top:6px">{{ dScarcity }}</div>
+            <p style="font-size:14px;color:#8a8682;margin-top:16px;line-height:1.6;text-wrap:pretty">{{ dDesc }}</p>
+            <div style="margin-top:20px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Line-up</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+              <sc-for list="{{ dLineup }}" as="a" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:11px;background:#131313;border:1px solid #2a2a2a;padding:11px 13px"><div style="width:30px;height:30px;border-radius:50%;background:#2f4f8a;flex-shrink:0"></div><span style="font-size:13px;font-weight:600">{{ a }}</span></div></sc-for>
+            </div>
+            <div style="margin-top:20px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Dove</div>
+            <div style="margin-top:10px;height:150px;background:#0d0d0d;border:1px solid #2a2a2a;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center"><div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 22px,rgba(111,158,255,.06) 22px,rgba(111,158,255,.06) 23px),repeating-linear-gradient(90deg,transparent,transparent 22px,rgba(111,158,255,.06) 22px,rgba(111,158,255,.06) 23px)"></div><span style="position:relative;font-size:11px;color:#5a5754">◍ {{ dVenue }} · {{ dCity }}</span></div>
+          </div>
+          <div style="position:sticky;top:18px;background:#131313;border:1px solid #2a2a2a;padding:18px">
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff">Scegli il biglietto</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+              <sc-for list="{{ dTiers }}" as="t" hint-placeholder-count="3">
+                <div onClick="{{ t.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:1px solid {{ t.border }};background:{{ t.bg }};cursor:{{ t.cursor }};opacity:{{ t.opacity }}">
+                  <div><div style="font-size:13px;font-weight:700;color:{{ t.nameColor }}">{{ t.n }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:2px">{{ t.note }}</div></div>
+                  <div style="font-weight:700;font-size:15px;color:{{ t.priceColor }};white-space:nowrap">{{ t.priceLabel }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+              <span style="font-size:12.5px;color:#8a8682">Quantità</span>
+              <div style="display:flex;align-items:center;gap:1px;background:#2a2a2a;border:1px solid #2a2a2a">
+                <span onClick="{{ decQty }}" style="width:34px;height:32px;display:flex;align-items:center;justify-content:center;background:#0d0d0d;color:#e8e6e0;font-size:16px;cursor:pointer">−</span>
+                <span style="width:42px;height:32px;display:flex;align-items:center;justify-content:center;background:#131313;font-weight:700">{{ qtyN }}</span>
+                <span onClick="{{ incQty }}" style="width:34px;height:32px;display:flex;align-items:center;justify-content:center;background:#0d0d0d;color:#e8e6e0;font-size:16px;cursor:pointer">+</span>
+              </div>
+            </div>
+            <div style="margin-top:14px;border-top:1px solid #2a2a2a;padding-top:12px;font-size:12.5px;color:#8a8682">
+              <div style="display:flex;justify-content:space-between"><span>Prezzo</span><span style="color:#e8e6e0">{{ dPrice }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Commissione servizio (4%)</span><span style="color:#e8e6e0">{{ dFee }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700;color:#e8e6e0"><span>Totale</span><span>{{ dTotal }}</span></div>
+            </div>
+            <div onClick="{{ buyTier }}" style="margin-top:14px;background:#4472c4;color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:14px;cursor:pointer">Acquista · {{ dTotal }}</div>
+            <div style="font-size:10px;color:#5a5754;margin-top:10px;line-height:1.5;text-align:center">Titolo NFT nominativo · accesso e rivendita dall'app</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- QR ACCESS MODAL -->
+  <sc-if value="{{ qrOpen }}">
+    <div onClick="{{ closeQr }}" style="position:fixed;inset:0;z-index:50;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="width:360px;max-width:100%;background:#131313;border:1px solid #2a2a2a;padding:24px;text-align:center" onClick="{{ stop }}">
+        <div style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff">Accesso al varco</div>
+        <div style="font-weight:700;font-size:17px;margin-top:8px">{{ qrTitle }}</div>
+        <div style="background:#fff;padding:16px;margin-top:16px;display:flex;justify-content:center">{{ qrImg }}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:14px;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;color:#5fe0b0"><span style="width:7px;height:7px;border-radius:50%;background:#5fe0b0;animation:pulse 2s infinite"></span> Ruota tra {{ qrSecs }}s · NFC pronto</div>
+        <div style="font-size:11px;color:#8a8682;margin-top:10px;line-height:1.5">Mostra questo codice allo staff. Cambia ogni 5s: lo screenshot non vale.</div>
+        <div onClick="{{ closeQr }}" style="margin-top:16px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#8a8682;border:1px solid #2a2a2a;padding:11px;cursor:pointer">Chiudi</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- TRANSFER COMPOSER -->
+  <sc-if value="{{ xferOpen }}">
+    <div style="position:fixed;inset:0;z-index:56;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div class="scr" style="width:440px;max-width:100%;max-height:92vh;overflow-y:auto;background:#131313;border:1px solid #2a2a2a;padding:24px;position:relative">
+        <span onClick="{{ closeXfer }}" style="position:absolute;top:16px;right:18px;font-size:18px;color:#8a8682;cursor:pointer">✕</span>
+        <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff">Trasferisci biglietto</div>
+        <div style="font-weight:700;font-size:18px;margin-top:8px">{{ xTitle }}</div>
+        <div style="font-size:12px;color:#8a8682;margin-top:3px">{{ xVenue }}</div>
+
+        <div style="display:flex;gap:1px;margin-top:18px;background:#2a2a2a;border:1px solid #2a2a2a">
+          <div onClick="{{ setXRegalo }}" style="flex:1;text-align:center;padding:11px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;background:{{ regaloBg }};color:{{ regaloColor }};cursor:pointer">Regalo</div>
+          <div onClick="{{ setXPaga }}" style="flex:1;text-align:center;padding:11px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;background:{{ pagaBg }};color:{{ pagaColor }};cursor:pointer">A pagamento</div>
+        </div>
+
+        <div style="margin-top:16px;font-size:10px;letter-spacing:0.12em;color:#5a5754">DESTINATARIO</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:9px">
+          <sc-for list="{{ xRecipients }}" as="r" hint-placeholder-count="3">
+            <div onClick="{{ r.pick }}" style="display:flex;align-items:center;gap:11px;padding:11px 13px;background:{{ r.bg }};border:1px solid {{ r.border }};cursor:pointer">
+              <div style="width:30px;height:30px;border-radius:50%;background:#2f4f8a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">{{ r.initials }}</div>
+              <span style="font-size:13px;font-weight:600;color:{{ r.color }}">{{ r.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ xIsPaga }}">
+          <div style="margin-top:16px;background:#0d0d0d;border:1px solid #2a2a2a;padding:11px 13px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">PREZZO (€)</div><input value="{{ xPrezzoVal }}" onInput="{{ onXPrezzo }}" placeholder="0,00" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:15px;font-weight:700;font-family:inherit"/></div>
+          <div style="margin-top:10px;background:#0d0d0d;border:1px solid #2a2a2a;padding:12px 13px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#8a8682">
+            <div style="display:flex;justify-content:space-between"><span>Royalty (0,5% TINFT + 0,5% org.)</span><span style="color:#e8e6e0">{{ xRoyLabel }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-weight:700;color:#e8e6e0"><span>Ricevi netto</span><span>{{ xNetLabel }}</span></div>
+          </div>
+        </sc-if>
+
+        <div style="margin-top:12px;background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">MESSAGGIO (FACOLTATIVO)</div><input value="{{ xMsgVal }}" onInput="{{ onXMsg }}" placeholder="Ci vediamo lì!" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
+
+        <div style="font-size:11px;color:#6a6764;margin-top:14px;line-height:1.5">Il biglietto esce subito dal tuo wallet e resta <b style="color:#ffcf80">trattenuto in escrow</b> finché il destinatario accetta. Se rifiuta, torna a te.</div>
+        <div onClick="{{ sendXfer }}" style="margin-top:14px;background:{{ xBtnBg }};color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;padding:14px;cursor:pointer">{{ xBtnLabel }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- TOAST -->
+  <sc-if value="{{ toastOn }}">
+    <div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;background:#16233d;border:1px solid #4472c4;color:#e8e6e0;font-size:13px;font-weight:600;padding:12px 20px;box-shadow:0 12px 40px rgba(0,0,0,.6)">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { now:Date.now(), user:null, tab:'home', tickets:[], transfers:[], accounts:null, clubs:[], qrId:null, toast:'', narrow:false, detailId:null, tierIdx:0, qty:1, xfer:null, authView:'login', reg:null };
+  SECRET='tinft-demo-secret';
+
+  DEF(){
+    return {
+      accounts:{
+        marco:{nome:'Marco',cognome:'Bianchi',email:'marco.b@email.it',goodwill:240,initials:'MB'},
+        giulia:{nome:'Giulia',cognome:'Verdi',email:'giulia.v@email.it',goodwill:120,initials:'GV'},
+        luca:{nome:'Luca',cognome:'Rossi',email:'luca.r@email.it',goodwill:24,initials:'LR'},
+        sara:{nome:'Sara',cognome:'Conti',email:'sara.c@email.it',goodwill:430,initials:'SC'}
+      },
+      transfers:[],
+      tickets:[
+        { id:'t1', owner:'marco', eventId:'vol4', paid:31.5, type:'Ticket NFT', title:'Notte Elettronica · Vol.4', venue:'Magazzino Generali · 21 GIU · 23:00', price:31.5, status:'attivo', holder:'Marco Bianchi', saleMarket:'' },
+        { id:'t2', owner:'marco', eventId:'live', paid:120, type:'Fidelity', title:'Stagione Live · Fidelity', venue:'Club Astra · carnet · 5 serate', price:120, status:'attivo', holder:'Marco Bianchi', saleMarket:'' },
+        { id:'t3', owner:'giulia', eventId:'jazz', paid:24, type:'Ticket NFT', title:'Blue Room · Jazz Sessions', venue:'Auditorium · 03 LUG · 21:00', price:24, status:'attivo', holder:'Giulia Verdi', saleMarket:'' },
+        { id:'t5', owner:'luca', eventId:'live', paid:120, type:'Fidelity', title:'Stagione Live · Fidelity', venue:'Club Astra · carnet', price:120, status:'attivo', holder:'Luca Rossi', saleMarket:'' }
+      ],
+      clubs:[]
+    };
+  }
+  EV(){
+    return {
+      vol4:{ id:'vol4', title:'Notte Elettronica · Vol.4', venue:'Magazzino Generali', city:'Milano', date:'Sab 21 GIU', time:'23:00 – 05:00', genre:'Techno · House', type:'Ticket NFT', art:'assets/ev-vol4.png', price:31.5, soldPct:62,
+        lineup:['Charlotte de Witte','Adam Beyer','Resident · Mind Against'],
+        desc:'Quarta data della serie elettronica al Magazzino Generali. Due floor, sound system Funktion-One, dalle 23 alle 05.',
+        tiers:[{n:'Early Bird',p:24,note:'esaurito',sold:true},{n:'Intero',p:31.5,note:'disponibile'},{n:'Last Release',p:38,note:'pochi rimasti'},{n:'Tavolo · 4 pax',p:160,note:'ingresso + tavolo riservato'}] },
+      live:{ id:'live', title:'Stagione Live · Fidelity', venue:'Club Astra', city:'Milano', date:'5 serate · carnet', time:'porte 21:30', genre:'Live · Indie', type:'Fidelity', art:'assets/ev-live.png', price:120, soldPct:70,
+        lineup:['Programmazione 5 concerti','Artisti della stagione'],
+        desc:'Carnet fidelity per 5 serate live della stagione al Club Astra. Posto garantito a ogni data, prezzo bloccato.',
+        tiers:[{n:'Carnet · 5 serate',p:120,note:'risparmi 30€'},{n:'Singola serata',p:30,note:'disponibile'}] },
+      jazz:{ id:'jazz', title:'Blue Room · Jazz Sessions', venue:'Auditorium', city:'Torino', date:'Gio 03 LUG', time:'21:00', genre:'Jazz', type:'Ticket NFT', art:'assets/ev-jazz.png', price:24, soldPct:18,
+        lineup:['Blue Room Quartet','Ospite a sorpresa'],
+        desc:'Serata jazz in formato club all\u2019Auditorium. Posti limitati, atmosfera intima.',
+        tiers:[{n:'Intero',p:24,note:'disponibile'},{n:'Ridotto under 26',p:18,note:'con documento'},{n:'Tavolo fronte palco',p:80,note:'2 posti'}] }
+    };
+  }
+  art(eventId){ const e=this.allEv()[eventId]; return e?e.art:'assets/ev-vol4.png'; }
+  _ph(color){ const svg="<svg xmlns='http://www.w3.org/2000/svg' width='400' height='220'><rect width='400' height='220' fill='"+color+"'/><g fill='#ffffff' opacity='0.06'><rect x='30' width='14' height='220'/><rect x='90' width='14' height='220'/><rect x='150' width='14' height='220'/><rect x='210' width='14' height='220'/><rect x='270' width='14' height='220'/><rect x='330' width='14' height='220'/></g></svg>"; return "data:image/svg+xml,"+encodeURIComponent(svg).replace(/[()']/g,m=>({'(':'%28',')':'%29',"'":'%27'}[m])); }
+  _clubEvMap(){ const map={}; (this.state.clubs||[]).forEach(c=>{ (c.events||[]).forEach(e=>{ const cap=e.capacity||0; const sold=(this.state.tickets||[]).filter(t=>t.eventId===e.id).length; const pct=cap?Math.min(96,Math.round(sold/cap*100)):0; map[e.id]={ id:e.id, title:e.title, venue:(c.name||''), city:c.city||'', date:e.date||'Data da definire', time:e.time||'—', genre:c.genre||'Evento', type:e.type||'Ticket NFT', art:this._ph(c.color||'#2f4f8a'), price:e.price||0, soldPct:pct, lineup:(e.desc?[e.desc]:['Line-up in arrivo']), desc:e.desc||('Evento organizzato da '+(c.name||'')+'.'), tiers:[{n:'Intero',p:e.price||0,note:'disponibile'}], club:c.name }; }); }); return map; }
+  allEv(){ return Object.assign({}, this.EV(), this._clubEvMap()); }
+  eur(n){ return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2}); }
+
+  componentDidMount(){
+    this.t=setInterval(()=>this.setState({now:Date.now()}),250);
+    this.onR=()=>{ const n=window.innerWidth<820; if(n!==this.state.narrow) this.setState({narrow:n}); };
+    this.onR(); window.addEventListener('resize', this.onR);
+    try{
+      const raw=localStorage.getItem('tinft_world');
+      if(raw){ const w=JSON.parse(raw); this.setState({ tickets:w.tickets||[], transfers:w.transfers||[], accounts:w.accounts||this.DEF().accounts, clubs:w.clubs||[] }); }
+      else { const d=this.DEF(); this.setState(d); this._persist(d); }
+      this._bc=new BroadcastChannel('tinft_world');
+      this._bc.onmessage=(e)=>{ const w=e.data; if(w&&w.tickets){ this._applying=true; this.setState({ tickets:w.tickets, transfers:w.transfers||[], accounts:w.accounts, clubs:w.clubs||[] }, ()=>{ this._applying=false; }); } };
+      this._onS=(e)=>{ if(e.key==='tinft_world'&&e.newValue){ try{ const w=JSON.parse(e.newValue); this._applying=true; this.setState({ tickets:w.tickets, transfers:w.transfers||[], accounts:w.accounts, clubs:w.clubs||[] }, ()=>{ this._applying=false; }); }catch(x){} } };
+      window.addEventListener('storage', this._onS);
+      try{ const sid=localStorage.getItem('tinft_session'); if(sid) this.setState({ user:sid }); }catch(_){}
+    }catch(e){}
+  }
+  componentWillUnmount(){ clearInterval(this.t); window.removeEventListener('resize', this.onR); if(this._bc){try{this._bc.close();}catch(e){}} if(this._onS) window.removeEventListener('storage', this._onS); }
+
+  _persist(s){ try{ const w={ t:'world', tickets:s.tickets, transfers:s.transfers, accounts:s.accounts, clubs:s.clubs||[] }; localStorage.setItem('tinft_world', JSON.stringify(w)); if(this._bc) this._bc.postMessage(w); }catch(e){} }
+  _w(upd){ this.setState(upd, ()=> this._persist(this.state)); }
+  toast(m){ this.setState({toast:m}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:''}),2200); }
+
+  buy(eventId){
+    const ev=this.EV()[eventId], u=this.state.user, me=this.state.accounts[u];
+    const tk={ id:'t'+Date.now()+Math.floor(Math.random()*99), owner:u, eventId, paid:ev.price, type:ev.type, title:ev.title, venue:ev.venue, price:ev.price, status:'attivo', holder:me.nome+' '+me.cognome, saleMarket:'' };
+    this._w(s=>({ tickets:[tk, ...s.tickets], accounts:{...s.accounts, [u]:{...s.accounts[u], goodwill:s.accounts[u].goodwill+15}} }));
+    this.toast('Biglietto acquistato · +15 goodwill'); this.setState({tab:'biglietti'});
+  }
+  // ---------- REGISTRAZIONE (SPID · Email) ----------
+  startRegister(){ this.setState({ authView:'register', reg:{ step:'method', role:'cliente', method:null, nome:'',cognome:'',cf:'',nascita:'',email:'',telefono:'',username:'',residenza:'',fatturazione:'',billSame:true,code:'',sent:'',error:'' } }); }
+  backToLogin(){ this.setState({ authView:'login', reg:null }); }
+  patchReg(p){ this.setState(s=>({ reg:{...s.reg, ...p, error:''} })); }
+  _spid(){ return { nome:'Alessandro', cognome:'Russo', cf:'RSSLSN90A01F205X', nascita:'01/01/1990', email:'a.russo@spid.it', telefono:'+39 348 11 22 334', residenza:'Via Garibaldi 18, 20121 Milano (MI)' }; }
+  pickRegMethod(m){ if(m==='spid'){ const s=this._spid(); this.setState(st=>({ reg:{...st.reg, method:'spid', step:'spid', nome:s.nome,cognome:s.cognome,cf:s.cf,nascita:s.nascita,email:s.email,telefono:s.telefono,residenza:s.residenza, error:''} })); } else { this.setState(st=>({ reg:{...st.reg, method:'email', step:'form', error:''} })); } }
+  _userTaken(u){ const A=this.state.accounts||{}; const key=(u||'').toLowerCase().replace(/[^a-z0-9]/g,''); return !!A[key]; }
+  _regCore(r){ const base=r&&r.nome.trim()&&r.cognome.trim()&&r.cf.trim()&&r.nascita.trim()&&r.email.trim()&&r.telefono.trim()&&r.username.trim()&&r.residenza.trim(); const bill=(r.billSame===false)? !!r.fatturazione.trim() : true; return base&&bill; }
+  sendCode(){ const r=this.state.reg; if(!this._regCore(r)){ this.patchReg({error:'Compila tutti i campi, incluso il nome utente'}); return; } if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email)){ this.patchReg({error:'Email non valida'}); return; } if(this._userTaken(r.username)){ this.patchReg({error:'Nome utente già in uso'}); return; } const code=String(Math.floor(100000+Math.random()*900000)); this.setState(s=>({ reg:{...s.reg, step:'verify', sent:code, code:'', error:''} })); this.toast('Codice inviato a '+r.email); }
+  verifyCode(){ const r=this.state.reg; if((r.code||'').trim()!==r.sent){ this.patchReg({error:'Codice errato, riprova'}); return; } this._finishRegister('email'); }
+  confirmSpid(){ const r=this.state.reg; if(!r.username.trim()){ this.patchReg({error:'Scegli un nome utente'}); return; } if(r.billSame===false && !r.fatturazione.trim()){ this.patchReg({error:'Inserisci l\'indirizzo di fatturazione'}); return; } if(this._userTaken(r.username)){ this.patchReg({error:'Nome utente già in uso'}); return; } this._finishRegister('spid'); }
+  _finishRegister(method){ const r=this.state.reg, A=this.state.accounts||{}; let key=(r.username||'').toLowerCase().replace(/[^a-z0-9]/g,'')||('u'+Date.now()); if(A[key]) key=key+String(Date.now()).slice(-3); const initials=((r.nome[0]||'')+(r.cognome[0]||'')).toUpperCase(); const acc={ nome:r.nome.trim(), cognome:r.cognome.trim(), email:r.email.trim(), goodwill:0, initials, username:r.username.trim(), cf:r.cf.trim(), nascita:r.nascita.trim(), telefono:r.telefono.trim(), residenza:r.residenza.trim(), fatturazione:(r.billSame===false? r.fatturazione.trim() : r.residenza.trim()), role:(r.role||'cliente'), method, verified:true }; try{ localStorage.setItem('tinft_session', key); }catch(e){} this._w(s=>({ accounts:{...s.accounts, [key]:acc} })); if((r.role||'cliente')==='org'){ try{ window.location.href='TINFT - Console Web.dc.html'; }catch(e){} return; } this.setState({ user:key, tab:'home', authView:'login', reg:null }); this.toast(method==='spid'?'Account creato con SPID · identità verificata':'Account creato · email verificata'); }
+  sell(id){ this._w(s=>({ tickets:s.tickets.map(t=> t.id===id?{...t,status:'vendita',saleMarket:'Re-Selling'}:t) })); this.toast('Messo in vendita sul mercato'); }
+  unsell(id){ this._w(s=>({ tickets:s.tickets.map(t=> t.id===id?{...t,status:'attivo',saleMarket:''}:t) })); this.toast('Ritirato dalla vendita'); }
+  // ---------- TRASFERIMENTO ESCROW (stesso registro condiviso del telefono) ----------
+  _evId(t){ if(t.eventId) return t.eventId; const m={'Notte Elettronica · Vol.4':'vol4','Stagione Live · Fidelity':'live','Blue Room · Jazz Sessions':'jazz','Blue Room · Jazz':'jazz'}; return m[t.title]||t.title; }
+  _paid(t){ return t.paid!=null? t.paid : (t.price||0); }
+  resolveUser(email){ const a=this.state.accounts||{}; const e=String(email||'').trim().toLowerCase(); for(const k in a){ if((a[k].email||'').toLowerCase()===e) return k; } return null; }
+  euro2(n){ return '\u20AC '+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  _mkTicket(owner, snap){ const me=this.state.accounts[owner]; return { id:'t'+Date.now()+Math.floor(Math.random()*99), owner, eventId:snap.eventId, paid:(snap.paid!=null?snap.paid:snap.price)||0, type:snap.type||'Ticket NFT', title:snap.title, venue:snap.venue, price:snap.price||0, status:'attivo', holder:me.nome+' '+me.cognome, saleMarket:'' }; }
+
+  openTransfer(id){ this.setState({ xfer:{ ticketId:id, mode:'regalo', toUser:'', prezzo:'', msg:'' } }); }
+  closeTransfer(){ this.setState({ xfer:null }); }
+  patchXfer(p){ this.setState(s=>({ xfer:{...s.xfer, ...p} })); }
+  commitTransfer(){
+    const S=this.state, T=S.xfer; if(!T) return;
+    const tk=S.tickets.find(x=>x.id===T.ticketId); if(!tk) return;
+    const to=T.toUser; if(!to){ this.toast('Scegli un destinatario'); return; }
+    const acc=S.accounts[to], from=S.accounts[S.user];
+    const prezzo=T.mode==='pagamento'? (Number(String(T.prezzo).replace(',','.'))||0) : 0;
+    if(T.mode==='pagamento' && prezzo<=0){ this.toast('Inserisci un prezzo'); return; }
+    const royC=Math.round((tk.price||0)*0.005*100)/100, royT=Math.round((tk.price||0)*0.005*100)/100;
+    const rec={ id:'x'+Date.now(), fromUser:S.user, fromName:from.nome+' '+from.cognome, toUser:to, toName:acc.nome+' '+acc.cognome,
+      ticket:{ type:tk.type, title:tk.title, venue:tk.venue, price:tk.price, eventId:this._evId(tk), paid:(T.mode==='pagamento'?prezzo:this._paid(tk)) },
+      mode:T.mode, prezzo, royalty:Math.round((royC+royT)*100)/100, royC, royT, msg:T.msg||'', ack:false,
+      createdAt:Math.floor(Date.now()/1000), ttl:600, status:T.mode==='pagamento'?'escrow':'pending' };
+    this._w(s=>({ tickets:s.tickets.filter(t=>t.id!==T.ticketId), transfers:[rec, ...(s.transfers||[])], xfer:null }));
+    this.toast(T.mode==='pagamento'? ('In escrow · '+acc.nome+' deve pagare per riceverlo') : ('Inviato a '+acc.nome+' · in attesa che accetti'));
+  }
+  acceptTransfer(id){
+    const S=this.state, rec=(S.transfers||[]).find(x=>x.id===id); if(!rec) return;
+    const tk=this._mkTicket(S.user, rec.ticket);
+    let accounts=S.accounts;
+    if(rec.mode==='pagamento'){ accounts={...accounts, [rec.fromUser]:{...accounts[rec.fromUser], goodwill:accounts[rec.fromUser].goodwill+Math.round(rec.prezzo)}}; }
+    this._w(s=>({ tickets:[tk, ...s.tickets], accounts, transfers:(s.transfers||[]).map(x=> x.id===id?{...x,status:'done',ack:false}:x) }));
+    this.toast(rec.mode==='pagamento'? 'Pagato e accettato · biglietto nel wallet' : 'Regalo accettato · biglietto nel wallet');
+    this.setState({ tab:'biglietti' });
+  }
+  rejectTransfer(id){
+    const S=this.state, rec=(S.transfers||[]).find(x=>x.id===id); if(!rec) return;
+    const back=this._mkTicket(rec.fromUser, rec.ticket);
+    this._w(s=>({ tickets:[back, ...s.tickets], transfers:(s.transfers||[]).filter(x=>x.id!==id) }));
+    this.toast('Trasferimento annullato · torna al mittente');
+  }
+  buyMarket(id){
+    const S=this.state, t=S.tickets.find(x=>x.id===id); if(!t||t.owner===S.user) return;
+    const u=S.user, buyer=S.accounts[u], seller=S.accounts[t.owner];
+    const price=this._paid(t);
+    const royC=Math.round((t.price||0)*0.005*100)/100, royT=Math.round((t.price||0)*0.005*100)/100;
+    const newTk={...t, id:'t'+Date.now()+Math.floor(Math.random()*99), owner:u, paid:price, status:'attivo', holder:buyer.nome+' '+buyer.cognome, saleMarket:''};
+    const rec={ id:'x'+Date.now(), fromUser:t.owner, fromName:seller.nome+' '+seller.cognome, toUser:u, toName:buyer.nome+' '+buyer.cognome, ticket:{type:t.type,title:t.title,venue:t.venue,price:t.price,eventId:this._evId(t),paid:price}, mode:'pagamento', prezzo:price, royalty:Math.round((royC+royT)*100)/100, royC, royT, status:'done', ack:true };
+    this._w(s=>({ tickets:[newTk, ...s.tickets.filter(x=>x.id!==id)], transfers:[rec, ...(s.transfers||[])], accounts:{...s.accounts, [t.owner]:{...seller, goodwill:seller.goodwill+Math.round(price)}} }));
+    this.toast('Comprato in escrow · royalty 0,5% TINFT + 0,5% organizzatore');
+  }
+
+  openDetail(id){ const ev=this.allEv()[id]; let idx=0; if(ev){ const f=ev.tiers.findIndex(t=>!t.sold); idx=f<0?0:f; } this.setState({ detailId:id, tierIdx:idx, qty:1 }); }
+  buyTier(){ const id=this.state.detailId, ev=this.allEv()[id]; if(!ev) return; const idx=Math.min(this.state.tierIdx, ev.tiers.length-1); const tier=ev.tiers[idx]||ev.tiers[0]; if(tier.sold) return; const u=this.state.user, me=this.state.accounts[u];
+    const q=Math.max(1,Math.min(4,this.state.qty||1)); const news=[];
+    for(let i=0;i<q;i++){ news.push({ id:'t'+Date.now()+'_'+i+Math.floor(Math.random()*999), owner:u, eventId:id, paid:tier.p, type:ev.type, title:ev.title, venue:ev.venue+' · '+ev.date, price:tier.p, status:'attivo', holder:me.nome+' '+me.cognome, saleMarket:'', tier:tier.n }); }
+    this._w(s=>({ tickets:[...news, ...s.tickets], accounts:{...s.accounts,[u]:{...s.accounts[u],goodwill:s.accounts[u].goodwill+15*q}} }));
+    this.toast('Acquistato: '+tier.n+' \u00b7 +15 goodwill'); this.setState({ detailId:null, tab:'biglietti' }); }
+  token(id){ const win=Math.floor(this.state.now/5000); let h=2166136261>>>0; const s=id+':'+win+':'+this.SECRET; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return id+'|'+win+'|'+(h>>>0).toString(36); }
+  qrImg(id){ if(!window.qrcode) return null; try{ const q=window.qrcode(0,'M'); q.addData(this.token(id)); q.make(); return React.createElement('img',{src:q.createDataURL(6,8),alt:'QR',style:{width:'100%',maxWidth:'240px',imageRendering:'pixelated',display:'block'}}); }catch(e){ return null; } }
+
+  renderVals(){
+    const S=this.state, A=S.accounts||this.DEF().accounts, u=S.user, me=u?A[u]:null;
+    const EV=this.allEv(), ACT='#6f9eff';
+    const clubEvIds=Object.keys(EV).filter(k=>k!=='vol4'&&k!=='live'&&k!=='jazz');
+    const RG=S.reg;
+    const myT=(S.tickets||[]).filter(t=>t.owner===u);
+    const market=(S.tickets||[]).filter(t=>t.status==='vendita');
+    const spesaTot = myT.reduce((a,t)=>a+(t.paid!=null?t.paid:(t.price||0)),0);
+    const eventiCount = new Set(myT.map(t=>t.eventId)).size;
+    const validati = myT.filter(t=>t.status==='usato').length;
+    const attivi = myT.filter(t=>t.status==='attivo').length;
+    const inVend = myT.filter(t=>t.status==='vendita').length;
+    const evAllIds = ['vol4','live','jazz', ...clubEvIds];
+    const minAll = Math.min.apply(null, ['vol4','live','jazz'].map(k=>Math.min.apply(null, EV[k].tiers.map(t=>t.p))));
+    const avgMarket = market.length? Math.round(market.reduce((a,t)=>a+(t.price||0),0)/market.length) : 0;
+    const cityCount = new Set(['vol4','live','jazz'].map(k=>EV[k].city)).size;
+    const PALL=['#2f4f8a','#0a8a5c','#9c5e00','#7a3550','#3a3a38'];
+    const dId=S.detailId, dE=dId?EV[dId]:null, dTiersArr=dE?dE.tiers:[];
+    const stIdx=Math.min(S.tierIdx, Math.max(0,dTiersArr.length-1));
+    const stT=dE?dTiersArr[stIdx]:null, dFeeN=stT?Math.round(stT.p*0.04*100)/100:0;
+    const qN=Math.max(1,Math.min(4,S.qty||1));
+    const navDef=[['home','◈','Home'],['eventi','€','Eventi'],['biglietti','◆','Biglietti'],['mercato','★','Mercato'],['artisti','♪','Artisti'],['blog','▤','Blog'],['news','✦','News']];
+
+    const stTheme={ attivo:{c:'#5fe0b0',l:'Attivo'}, vendita:{c:'#ffcf80',l:'In vendita'}, usato:{c:'#8a8682',l:'Validato'}, exported:{c:'#8a8682',l:'Esportato'} };
+    const ticketVM=(t)=>{
+      const th=stTheme[t.status]||stTheme.attivo;
+      let actions=[];
+      if(t.status==='attivo'){
+        actions=[
+          { label:'Accesso', color:'#fff', bg:'#4472c4', border:'#4472c4', on:()=>this.setState({qrId:t.id}) },
+          { label:'Vendi', color:'#e8e6e0', bg:'transparent', border:'#2a2a2a', on:()=>this.sell(t.id) },
+          { label:'Trasferisci', color:'#e8e6e0', bg:'transparent', border:'#2a2a2a', on:()=>this.openTransfer(t.id) }
+        ];
+      } else if(t.status==='vendita'){
+        actions=[{ label:'Ritira dalla vendita', color:'#ffcf80', bg:'transparent', border:'rgba(255,153,0,.45)', on:()=>this.unsell(t.id) }];
+      }
+      return { title:t.title, venue:t.venue, holder:t.holder, art:this.art(t.eventId), stColor:th.c, stLabel:th.l, actions };
+    };
+
+    const qrId=S.qrId, qrTk=qrId?(S.tickets||[]).find(t=>t.id===qrId):null;
+
+    const xfers=S.transfers||[];
+    const incoming=xfers.filter(x=> x.toUser===u && (x.status==='pending'||x.status==='escrow'));
+    const outgoing=xfers.filter(x=> x.fromUser===u && (x.status==='pending'||x.status==='escrow'));
+    const recipients=Object.keys(A).filter(k=>k!==u).map(k=>({ id:k, name:A[k].nome+' '+A[k].cognome, initials:A[k].initials }));
+    const X=S.xfer, xTk=X?(S.tickets||[]).find(t=>t.id===X.ticketId):null;
+    const xPrezzo=X?(Number(String(X.prezzo).replace(',','.'))||0):0;
+    const xRoy=xTk?Math.round((xTk.price||0)*0.005*100)/100:0;
+
+    return {
+      logged:!!u, notLogged:!u,
+      meName: me? me.nome+' '+me.cognome : '', meInitials: me?me.initials:'', meGoodwill: me?me.goodwill:0,
+      logout: ()=> { try{ localStorage.removeItem('tinft_session'); }catch(e){} this.setState({ user:null, tab:'home' }); },
+      loginAccounts: ['marco','giulia','luca','sara'].map((k,i)=>({
+        name:A[k].nome+' '+A[k].cognome, initials:A[k].initials,
+        tickets:(S.tickets||[]).filter(t=>t.owner===k).length, goodwill:A[k].goodwill,
+        bg:['#2f4f8a','#0a8a5c','#9c5e00','#7a3550'][i%4],
+        pick: ()=> { try{ localStorage.setItem('tinft_session', k); }catch(e){} this.setState({ user:k, tab:'home' }); }
+      })),
+
+      isLogin:(S.authView!=='register'), isRegister:(S.authView==='register'),
+      startRegister:()=>this.startRegister(), backToLogin:()=>this.backToLogin(),
+      regStepMethod:!!(RG&&RG.step==='method'), regStepSpid:!!(RG&&RG.step==='spid'), regStepForm:!!(RG&&RG.step==='form'), regStepVerify:!!(RG&&RG.step==='verify'),
+      regIsOrg:!!(RG&&RG.role==='org'),
+      setRegCliente:()=>this.patchReg({role:'cliente'}), setRegOrg:()=>this.patchReg({role:'org'}),
+      regCliBg:!(RG&&RG.role==='org')?'rgba(68,114,196,.16)':'#131313', regCliBorder:!(RG&&RG.role==='org')?'#4472c4':'#2a2a2a', regCliColor:!(RG&&RG.role==='org')?'#6f9eff':'#e8e6e0',
+      regOrgBg:(RG&&RG.role==='org')?'rgba(68,114,196,.16)':'#131313', regOrgBorder:(RG&&RG.role==='org')?'#4472c4':'#2a2a2a', regOrgColor:(RG&&RG.role==='org')?'#6f9eff':'#e8e6e0',
+      pickSpid:()=>this.pickRegMethod('spid'), pickEmail:()=>this.pickRegMethod('email'),
+      spidFields:(RG?[['Nome',RG.nome],['Cognome',RG.cognome],['Codice fiscale',RG.cf],['Data di nascita',RG.nascita],['Email',RG.email],['Telefono',RG.telefono]]:[]).map(p=>({label:p[0],value:p[1]})),
+      regFields:[['nome','NOME','Mario'],['cognome','COGNOME','Rossi'],['cf','CODICE FISCALE','RSSMRA85...'],['nascita','DATA DI NASCITA','GG/MM/AAAA'],['email','EMAIL','tu@email.it'],['telefono','TELEFONO','+39 ...'],['residenza','INDIRIZZO DI RESIDENZA','Via, civico, CAP, città (Prov)'],['username','NOME UTENTE','es. mario.rossi']].map(p=>({label:p[1],ph:p[2],value:(RG&&RG[p[0]])||'',on:(e)=>this.patchReg({[p[0]]:e.target.value})})),
+      spidResidenza:RG?RG.residenza:'',
+      billSameBool:!(RG&&RG.billSame===false), billDiff:!!(RG&&RG.billSame===false),
+      billCheck:!(RG&&RG.billSame===false)?'✓':'', billBg:!(RG&&RG.billSame===false)?'#4472c4':'transparent', billBorder:!(RG&&RG.billSame===false)?'#4472c4':'#3a3a38',
+      toggleBill:()=>this.patchReg({billSame:!(RG&&RG.billSame!==false)}),
+      fattVal:RG?RG.fatturazione:'', onFatt:(e)=>this.patchReg({fatturazione:e.target.value}),
+      regUser:RG?RG.username:'', onRegUser:(e)=>this.patchReg({username:e.target.value}),
+      regEmail:RG?RG.email:'', regSentCode:RG?RG.sent:'', regCode:RG?RG.code:'', onRegCode:(e)=>this.patchReg({code:e.target.value}),
+      regError:!!(RG&&RG.error), regErrorMsg:RG?RG.error:'',
+      sendCode:()=>this.sendCode(), verifyCode:()=>this.verifyCode(), confirmSpid:()=>this.confirmSpid(),
+
+      gridCols: S.narrow? '1fr' : '210px 1fr',
+      sideSticky: S.narrow?'static':'sticky', sideDir: S.narrow?'row':'column',
+      sideExtra: S.narrow? 'overflow-x:auto;padding-bottom:4px' : '',
+      navItems: navDef.map(([id,g,l])=>({
+        glyph:g, label:l, go:()=>this.setState({tab:id}),
+        bg: S.tab===id?'rgba(68,114,196,.16)':'#131313',
+        border: S.tab===id?'#4472c4':'#2a2a2a',
+        iconColor: S.tab===id?ACT:'#8a8682',
+        textColor: S.tab===id?'#e8e6e0':'#8a8682'
+      })),
+      isHome:S.tab==='home', isEventi:S.tab==='eventi', isBiglietti:S.tab==='biglietti', isMercato:S.tab==='mercato', isArtisti:S.tab==='artisti', isBlog:S.tab==='blog', isNews:S.tab==='news',
+      clientStats:[{value:String(myT.length),label:'Biglietti',color:'#6f9eff'},{value:String(eventiCount),label:'Eventi',color:'#e8e6e0'},{value:String(me?me.goodwill:0),label:'Goodwill',color:'#5fe0b0'},{value:this.eur(spesaTot),label:'Spesa totale',color:'#e8e6e0'}],
+      artistiStats:[{value:'4',label:'Da seguire',color:'#6f9eff'},{value:'3',label:'Generi',color:'#e8e6e0'},{value:String(eventiCount),label:'Tuoi eventi',color:'#5fe0b0'}],
+      blogStats:[{value:'3',label:'Articoli',color:'#6f9eff'},{value:'3',label:'Categorie',color:'#e8e6e0'},{value:'12 min',label:'Lettura totale',color:'#e8e6e0'}],
+      newsStats:[{value:'3',label:'Annunci',color:'#6f9eff'},{value:'GIU',label:'Ultimo mese',color:'#e8e6e0'},{value:String(me?me.goodwill:0),label:'Goodwill',color:'#5fe0b0'}],
+
+      walletCount: myT.length, marketCount: market.length,
+      bigliettiStats:[{value:String(attivi),label:'Attivi',color:'#5fe0b0'},{value:String(validati),label:'Validati',color:'#8a8682'},{value:String(inVend),label:'In vendita',color:'#ffcf80'},{value:this.eur(spesaTot),label:'Spesa totale',color:'#6f9eff'}],
+      eventiStats:[{value:String(evAllIds.length),label:'In vendita',color:'#6f9eff'},{value:String(cityCount),label:'Città',color:'#e8e6e0'},{value:'da '+this.eur(minAll),label:'Prezzo minimo',color:'#e8e6e0'}],
+      mercatoStats:[{value:String(market.length),label:'Sul mercato',color:'#6f9eff'},{value:this.eur(avgMarket),label:'Prezzo medio',color:'#e8e6e0'},{value:String(inVend),label:'Tuoi in vendita',color:'#ffcf80'}],
+      recommended: ['vol4','jazz','live'].map((k,i)=>({ title:EV[k].title, venue:EV[k].venue, art:EV[k].art, reason:['Perché ascolti techno','Vicino a te','Ti potrebbe piacere'][i], priceLabel:'da '+this.eur(Math.min.apply(null,EV[k].tiers.map(t=>t.p))), open:()=>this.openDetail(k) })),
+      artists:[{name:'Charlotte de Witte',genre:'Techno',initials:'CW'},{name:'Adam Beyer',genre:'Techno',initials:'AB'},{name:'Mind Against',genre:'Melodic',initials:'MA'},{name:'Blue Room Quartet',genre:'Jazz',initials:'BR'}].map((a,i)=>({...a,color:PALL[i%5]})),
+      blogPosts:[{tag:'GUIDA',title:'Il biglietto NFT nominativo, spiegato',excerpt:'Cos’è, perché non si può falsificare e come vive nel tuo wallet.',read:'4 min'},{tag:'DIETRO LE QUINTE',title:'Come lo staff valida gli ingressi dal telefono',excerpt:'NFC, QR dinamico e modalità offline al varco.',read:'3 min'},{tag:'MERCATO',title:'Rivendere senza bagarini: il tetto di prezzo',excerpt:'Royalty all’organizzatore e prezzo massimo garantito.',read:'5 min'}].map(p=>({...p, art:this._ph('#16233d')})),
+      newsItems:[{date:'12 GIU',title:'Nuovi club a Milano e Torino sulla piattaforma'},{date:'05 GIU',title:'Aggiornamento app: trasferimento in escrow più veloce'},{date:'28 MAG',title:'Stagione Live: aperte le prevendite carnet'}],
+      homeEvents: ['vol4','jazz'].map(k=>({ title:EV[k].title, venue:EV[k].venue, art:EV[k].art, priceLabel:'da '+this.eur(Math.min.apply(null,EV[k].tiers.map(t=>t.p))), open:()=>this.openDetail(k) })),
+      allEvents: ['vol4','live','jazz', ...clubEvIds].map(k=>({ title:EV[k].title, venue:EV[k].venue, art:EV[k].art, type:EV[k].type.toUpperCase(), priceLabel:'da '+this.eur(Math.min.apply(null,EV[k].tiers.map(t=>t.p))), open:()=>this.openDetail(k) })),
+
+      myTickets: myT.map(ticketVM), noTickets: myT.length===0,
+      marketTickets: market.map(t=>{ const seller=A[t.owner]||{nome:'?',cognome:''}; return { title:t.title, venue:t.venue, art:this.art(t.eventId), saleMarket:t.saleMarket||'Re-Selling', sellerName:seller.nome+' '+seller.cognome, priceLabel:this.eur(t.price), buy:()=> t.owner===u? this.toast('È già il tuo biglietto') : this.buyMarket(t.id) }; }),
+      noMarket: market.length===0,
+
+      goBiglietti: ()=> this.setState({ tab:'biglietti' }),
+      hasIncoming: incoming.length>0, incomingCount: incoming.length,
+      incomingVMs: incoming.map(x=>({
+        title:x.ticket.title, venue:x.ticket.venue, from:x.fromName,
+        isPaid:x.mode==='pagamento',
+        badge:x.mode==='pagamento'?'A PAGAMENTO · ESCROW':'REGALO',
+        priceLabel:this.euro2(x.prezzo||0),
+        royLabel:this.euro2((x.royC||0)+(x.royT||0)),
+        totLabel:this.euro2((x.prezzo||0)+((x.royC||0)+(x.royT||0))),
+        msg:x.msg||'', hasMsg:!!(x.msg&&x.msg.trim()),
+        accept:()=>this.acceptTransfer(x.id), reject:()=>this.rejectTransfer(x.id),
+        acceptLabel:x.mode==='pagamento'? ('Paga '+this.euro2((x.prezzo||0)+((x.royC||0)+(x.royT||0)))+' e accetta') : 'Accetta il regalo'
+      })),
+      hasOutgoing: outgoing.length>0,
+      outgoingVMs: outgoing.map(x=>({
+        title:x.ticket.title,
+        badge:x.mode==='pagamento'?'IN ESCROW':'IN ATTESA',
+        badgeColor:x.mode==='pagamento'?'#ffcf80':'#6f9eff',
+        badgeBorder:x.mode==='pagamento'?'rgba(255,153,0,.45)':'#2f4f8a',
+        line:x.mode==='pagamento'? ('Trattenuto in escrow finché '+x.toName+' paga') : ('In attesa che '+x.toName+' accetti il regalo'),
+        amount:x.mode==='pagamento'? this.eur(x.prezzo) : 'Regalo',
+        cancel:()=>this.rejectTransfer(x.id)
+      })),
+
+      xferOpen:!!X, xTitle:xTk?xTk.title:'', xVenue:xTk?xTk.venue:'',
+      xIsPaga:!!(X&&X.mode==='pagamento'),
+      setXRegalo:()=>this.patchXfer({mode:'regalo'}), setXPaga:()=>this.patchXfer({mode:'pagamento'}),
+      regaloBg:(X&&X.mode==='regalo')?'#2f4f8a':'#0d0d0d', regaloColor:(X&&X.mode==='regalo')?'#fff':'#8a8682',
+      pagaBg:(X&&X.mode==='pagamento')?'#2f4f8a':'#0d0d0d', pagaColor:(X&&X.mode==='pagamento')?'#fff':'#8a8682',
+      xRecipients:recipients.map(r=>({ name:r.name, initials:r.initials,
+        bg:(X&&X.toUser===r.id)?'rgba(68,114,196,.16)':'#0d0d0d', border:(X&&X.toUser===r.id)?'#4472c4':'#2a2a2a', color:(X&&X.toUser===r.id)?'#6f9eff':'#e8e6e0',
+        pick:()=>this.patchXfer({toUser:r.id}) })),
+      xPrezzoVal:X?X.prezzo:'', onXPrezzo:(e)=>this.patchXfer({prezzo:e.target.value}),
+      xMsgVal:X?X.msg:'', onXMsg:(e)=>this.patchXfer({msg:e.target.value}),
+      xRoyLabel:this.euro2(xRoy*2), xNetLabel:this.euro2(Math.max(0,xPrezzo-xRoy*2)),
+      xBtnLabel:(X&&X.mode==='pagamento')?'Invia richiesta di pagamento':'Invia regalo',
+      xBtnBg:(X&&X.toUser&&(X.mode==='regalo'||xPrezzo>0))?'#4472c4':'#1c1c1c',
+      sendXfer:()=>this.commitTransfer(), closeXfer:()=>this.closeTransfer(),
+
+      detailOpen:!!dE, dCols: S.narrow?'1fr':'1.35fr 0.95fr',
+      dArt: dE?dE.art:'', dType: dE?dE.type.toUpperCase():'', dGenre: dE?dE.genre:'', dTitle: dE?dE.title:'',
+      dDate: dE?dE.date:'', dTime: dE?dE.time:'', dVenue: dE?dE.venue:'', dCity: dE?dE.city:'', dDesc: dE?dE.desc:'',
+      dSoldW:(dE?dE.soldPct:0)+'%', dScarcity: dE?(dE.soldPct>=80?'Ultimi biglietti rimasti':(dE.soldPct>=50?(100-dE.soldPct)+'% ancora disponibile':'Buona disponibilità')):'',
+      dLineup: dE?dE.lineup:[],
+      dTiers: dTiersArr.map((t,i)=>({ n:t.n, note:t.sold?'Esaurito':t.note, priceLabel:this.eur(t.p), selected:i===stIdx&&!t.sold,
+        pick: t.sold?(()=>{}):(()=>this.setState({tierIdx:i})),
+        border:(i===stIdx&&!t.sold)?'#4472c4':'#2a2a2a', bg:(i===stIdx&&!t.sold)?'rgba(68,114,196,.14)':'#0d0d0d',
+        cursor:t.sold?'not-allowed':'pointer', opacity:t.sold?'0.45':'1',
+        nameColor:(i===stIdx&&!t.sold)?'#6f9eff':'#e8e6e0', priceColor:(i===stIdx&&!t.sold)?'#6f9eff':'#e8e6e0' })),
+      dPrice: stT?this.eur(stT.p):'', dFee:this.eur(dFeeN), dTotal: stT?this.eur((stT.p+dFeeN)*qN):'', qtyN:qN, incQty:()=>this.setState({qty:Math.min(4,qN+1)}), decQty:()=>this.setState({qty:Math.max(1,qN-1)}),
+      buyTier: ()=> this.buyTier(), closeDetail: ()=> this.setState({detailId:null}),
+      qrOpen:!!qrTk, qrTitle: qrTk?qrTk.title:'', qrImg: qrTk?this.qrImg(qrTk.id):null,
+      qrSecs: (5-Math.floor((S.now%5000)/1000)),
+      closeQr: ()=> this.setState({qrId:null}), stop:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); },
+
+      toastOn:!!S.toast, toast:S.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

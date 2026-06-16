@@ -1,0 +1,5 @@
+packages:
+  - "apps/*"
+  - "!apps/mobile"   # app Expo standalone: gestita con `cd apps/mobile && npm install` (fuori dal monorepo pnpm)
+  - "services/*"
+  - "packages/*"

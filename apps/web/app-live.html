@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Web App (Live API)</title>
+<meta name="theme-color" content="#0a0a0a" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0a0a; --surf:#131313; --surf2:#1c1c1c; --deep:#0d0d0d;
+    --border:#2a2a2a; --border-soft:#222;
+    --txt:#e8e6e0; --mut:#8a8682; --mut2:#6a6764; --faint:#5a5754;
+    --blue:#4472c4; --blue-l:#6f9eff; --blue-d:#2f4f8a;
+    --green:#00cc88; --green-l:#5fe0b0; --green-bg:#0d2a20; --green-bd:#0a8a5c;
+    --orange:#ff9900; --orange-l:#ffcf80;
+    --err:#ff5577;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:'Quicksand',system-ui,sans-serif;min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:700;line-height:1.2}
+  h1{font-size:clamp(22px,2.6vw,30px)}
+  h2{font-size:22px}
+  h3{font-size:16px}
+  a{color:inherit}
+  .eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut2);font-weight:600}
+  .eyebrow.acc{color:var(--blue-l)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--blue-l);font-size:11px}
+
+  /* ---- top bar ---- */
+  .bar{display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--border);background:var(--deep);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em}
+  .logo-img{height:26px;width:auto;display:block}
+  .logo-fallback{width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--blue-l),var(--blue));transform:rotate(45deg);display:none}
+  .tabs{display:flex;gap:6px;margin-left:6px;flex-wrap:wrap}
+  .tab{padding:9px 16px;border-radius:13px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);cursor:pointer;border:1px solid transparent;background:transparent;transition:.15s}
+  .tab:hover{color:var(--txt)}
+  .tab.on{color:#fff;background:var(--blue);border-color:var(--blue);box-shadow:0 0 20px rgba(68,114,196,.3)}
+  .api{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--mut2);flex-shrink:0}
+  .dot.ok{background:var(--green)}.dot.err{background:var(--err)}
+  input,select,textarea{background:var(--deep);border:1px solid var(--border);border-radius:13px;padding:11px 13px;color:var(--txt);font-family:inherit;font-size:13px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue-d)}
+  input::placeholder{color:var(--faint)}
+  #api{width:190px}
+
+  /* ---- layout ---- */
+  .content{padding:24px 22px 60px;max-width:1080px;margin:0 auto}
+  .subnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+  .navlink{padding:8px 15px;border-radius:13px;font-size:12px;font-weight:600;color:var(--mut);cursor:pointer;border:1px solid var(--border-soft);background:var(--surf)}
+  .navlink:hover{color:var(--txt);border-color:var(--border)}
+  .navlink.on{color:var(--blue-l);border-color:var(--blue-d);background:rgba(68,114,196,.08)}
+
+  /* ---- stat strip ---- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:20px}
+  .stat{background:var(--surf);padding:14px 16px}
+  .stat .v{font-weight:700;font-size:20px}
+  .stat .l{font-size:10.5px;color:var(--mut);margin-top:3px}
+
+  /* ---- cards / grids ---- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .grid.sm{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:13px;overflow:hidden;transition:transform .15s,border-color .15s}
+  .card.lift:hover{transform:translateY(-2px);border-color:var(--blue-d)}
+  .card .body{padding:16px 17px}
+  .card .cover{height:120px;background-size:cover;background-position:center;position:relative}
+  .pad{padding:18px}
+  .panel{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:18px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--mut);font-size:12px}
+  .faint{color:var(--mut2);font-size:11px}
+  .price{font-weight:700}
+  .title{font-weight:700;font-size:15px}
+
+  /* ---- buttons ---- */
+  button,.btn{font-family:inherit;cursor:pointer;border:none;border-radius:13px;padding:11px 16px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--blue);transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  button:hover,.btn:hover{box-shadow:0 0 20px rgba(68,114,196,.3)}
+  button.sm{padding:9px 13px;font-size:11px}
+  button.ghost{background:transparent;color:var(--mut);border:1px solid var(--border);letter-spacing:.04em}
+  button.ghost:hover{color:var(--txt);box-shadow:none}
+  button.outline{background:rgba(68,114,196,.08);color:var(--blue-l);border:1px solid var(--blue-d)}
+  button.outline:hover{box-shadow:none;background:rgba(68,114,196,.16)}
+  button.green{background:var(--green);color:#06210f}
+  button.green:hover{box-shadow:0 0 20px rgba(0,204,136,.3)}
+  button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  button.connect{padding:10px 14px;font-size:11px}
+
+  /* ---- pills / badges ---- */
+  .pill{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:9px;border:1px solid var(--border);color:var(--mut);white-space:nowrap}
+  .pill.blue{color:var(--blue-l);border-color:rgba(68,114,196,.4);background:rgba(68,114,196,.1)}
+  .pill.green{color:var(--green-l);border-color:var(--green-bd);background:rgba(0,204,136,.08)}
+  .pill.orange{color:var(--orange-l);border-color:#9c5e00;background:rgba(255,153,0,.08)}
+  .pill.err{color:var(--err);border-color:#7a2a3a;background:rgba(255,85,119,.08)}
+  .pill.used{color:var(--mut2);border-color:var(--border)}
+
+  /* ---- forms ---- */
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}
+  .formgrid input,.formgrid select{width:100%}
+  .full{grid-column:1/-1}
+
+  /* ---- breakdown / list rows ---- */
+  .crumb{font-size:12px;color:var(--mut);cursor:pointer;margin-bottom:12px;display:inline-flex;align-items:center;gap:5px}
+  .crumb:hover{color:var(--blue-l)}
+  .breakdown{margin-top:14px;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:9px}
+  .breakdown .ln{display:flex;justify-content:space-between;font-size:13px;color:var(--mut)}
+  .breakdown .ln span:last-child{color:var(--txt)}
+  .breakdown .tot{display:flex;justify-content:space-between;font-weight:700;font-size:16px;color:var(--txt);border-top:1px solid var(--border);padding-top:11px}
+  .stepper{display:inline-flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .stepper button{background:var(--deep);color:var(--txt);border-radius:0;padding:9px 15px;font-size:16px;letter-spacing:0;box-shadow:none}
+  .stepper button:hover{background:var(--surf2);box-shadow:none}
+  .stepper .qty{padding:9px 18px;font-weight:700;font-size:15px;min-width:46px;text-align:center}
+  .listrows{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:14px}
+  .lr{background:var(--surf);padding:15px 17px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .lr .grow{flex:1;min-width:160px}
+  .empty{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:28px;text-align:center;font-size:13px;color:var(--mut)}
+  .sect-title{margin:8px 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+
+  .tierbtn{display:block;width:100%;text-align:left;background:var(--deep);color:var(--txt);border:1px solid var(--border);border-radius:13px;padding:13px 15px;margin-top:8px;letter-spacing:0;text-transform:none;font-weight:600;font-size:13px}
+  .tierbtn:hover{box-shadow:none;border-color:var(--blue-d)}
+  .tierbtn.on{border-color:var(--blue);background:rgba(68,114,196,.1)}
+  .tierbtn .row{margin:0}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--surf2);border:1px solid var(--border);padding:13px 18px;border-radius:13px;font-size:13px;z-index:50;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.ok{border-color:var(--green-bd)}
+  .toast.err{border-color:#7a2a3a;color:#ff8aa0}
+  .banner{font-size:12px;color:var(--mut);margin-bottom:18px;padding:11px 14px;border-radius:13px;border:1px solid var(--border);background:var(--surf)}
+  .banner.live{border-color:var(--green-bd);color:var(--green-l)}
+  .banner.mock{border-color:#9c5e00;color:var(--orange-l)}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue-l);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="brand">
+      <img src="assets/tinft-logo.png" alt="TINFT" class="logo-img" id="logoImg" onerror="this.style.display='none';document.getElementById('logoFb').style.display='inline-block'" />
+      <span class="logo-fallback" id="logoFb"></span>
+      <span>TINFT</span>
+    </div>
+    <div class="tabs" id="tabs">
+      <div class="tab on" data-r="cliente">Cliente</div>
+      <div class="tab" data-r="organizzatore">Organizzatore</div>
+      <div class="tab" data-r="validatore">Validatore</div>
+    </div>
+    <div class="api">
+      <span class="eyebrow">API</span>
+      <input id="api" spellcheck="false" />
+      <span class="dot" id="dot"></span>
+      <button class="connect ghost" onclick="init()">Connetti</button>
+    </div>
+  </div>
+  <div class="content" id="content"><div class="muted"><span class="spin"></span>Avvio…</div></div>
+  <div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   TINFT Web App — single self-contained file, vanilla JS.
+   Wired to the v2 backend (services/api). Falls back to an in-file MOCK store
+   when the API is unreachable, so the app NEVER shows a blank screen and every
+   role renders with content. All logic lives in this one <script> block so a
+   DOM-stub harness can load it and call init()/render*().
+   ========================================================================= */
+
+var $ = function(id){ return document.getElementById(id); };
+
+/* API base: same-origin when served over http(s), localhost:3001 from disk. */
+var API_BASE = (location.protocol === 'file:' || !location.host) ? 'http://localhost:3001' : location.origin;
+
+/* fixed seeded demo accounts (all password "demo123") */
+var DEMO_PW = 'demo123';
+var DEMO_EMAIL = { cliente:'cli@tinft.io', organizzatore:'org@tinft.io' };
+
+/* ---- app state ---- */
+var ctx = {
+  role: 'cliente',
+  mock: false,
+  view: null,            // current sub-section per role
+  detailEventId: null,   // event open in client detail
+  sel: { tierId: null, qty: 1 }, // tier selector + quantity stepper
+  // per-role auth: {token, accountId}
+  auth: { organizzatore: null, cliente: null, validatore: null }
+};
+
+function base(){ return ($('api') && $('api').value ? $('api').value : API_BASE).replace(/\/$/, ''); }
+function eur(c){ return '€ ' + ((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];}); }
+function uid(p){ return p + Date.now() + Math.floor(Math.random()*1000); }
+
+function toast(msg, kind){
+  var t = $('toast'); if(!t) return;
+  t.innerHTML = '<div class="toast ' + (kind||'') + '">' + esc(msg) + '</div>';
+  clearTimeout(window.__toast);
+  window.__toast = setTimeout(function(){ t.innerHTML=''; }, 3200);
+}
+function setDot(ok){ if($('dot')) $('dot').className = 'dot ' + (ok?'ok':'err'); }
+
+/* a small deterministic gradient cover so cards look like the prototype even
+   without real cover images (the API has no image URLs). */
+function cover(seed){
+  var s = String(seed||''); var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  var a = h % 360, b = (a+40) % 360;
+  return 'linear-gradient(135deg,hsl('+a+',45%,22%),hsl('+b+',55%,12%))';
+}
+
+/* =========================================================================
+   MOCK STORE — used when the API is unreachable. Mirrors the v2 shapes so the
+   whole app works offline. Seeded with clubs, events, tiers, content.
+   ========================================================================= */
+var MOCK = (function(){
+  var seq = 100, tok = 0;
+  function id(p){ return p + '_' + (++seq); }
+  var store = {
+    accounts:{}, clubs:[], events:[], tiers:{}, orders:{}, tickets:[],
+    validators:{}, market:[],
+    ledger:{ presaleCommissionCents:0, royaltyTinftCents:0, royaltyOrganizerCents:0, exitFeeCents:0 },
+    artists:[
+      {id:'art_1',name:'Charlotte de Witte',genre:'Techno',initials:'CW',color:'#2f4f8a',followers:12840},
+      {id:'art_2',name:'Adam Beyer',genre:'Techno',initials:'AB',color:'#0a8a5c',followers:9760},
+      {id:'art_3',name:'Mind Against',genre:'Melodic',initials:'MA',color:'#9c5e00',followers:6420},
+      {id:'art_4',name:'Blue Room Quartet',genre:'Jazz',initials:'BR',color:'#7a3550',followers:2150}
+    ],
+    blog:[
+      {id:'b1',slug:'guida-acquisto',tag:'GUIDA',title:'Come acquistare un biglietto NFT su TINFT',excerpt:'Dalla registrazione al wallet: il percorso completo per il tuo primo biglietto.',readMins:5},
+      {id:'b2',slug:'mint-on-chain',tag:'DIETRO LE QUINTE',title:'Dietro le quinte: come funziona il mint on-chain',excerpt:'Cosa succede quando paghi: escrow, mint del token e ledger di piattaforma.',readMins:7},
+      {id:'b3',slug:'tetto-prezzo',tag:'MERCATO',title:'Mercato secondario: il tetto +10% e la royalty',excerpt:'Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.',readMins:4}
+    ],
+    news:[
+      {id:'n1',date:'2026-05-02',title:'TINFT apre le vendite per la stagione estiva'},
+      {id:'n2',date:'2026-05-18',title:'Nuovi club partner a Milano e Bologna'},
+      {id:'n3',date:'2026-06-01',title:'Aggiornamento: export libero con fee d\'uscita 25%'},
+      {id:'n4',date:'2026-06-10',title:'Charlotte de Witte annuncia una data esclusiva'}
+    ]
+  };
+  // seed an organizer + clubs + events + tiers
+  var org = {id:'org_seed',role:'ORGANIZER',nome:'Club',cognome:'Owner',email:'org@tinft.io'};
+  store.accounts[org.id] = org;
+  var c1={id:'club_1',organizerId:org.id,name:'Club Astra',city:'Milano',fidelityPriceCents:12000,fidelityUses:5};
+  var c2={id:'club_2',organizerId:org.id,name:'Magazzino Generali',city:'Milano',fidelityPriceCents:0,fidelityUses:0};
+  store.clubs.push(c1,c2);
+  function mkEvent(o){ var e={id:id('evt'),organizerId:org.id,clubId:o.clubId,title:o.title,venue:o.venue,date:o.date,type:'TICKET_NFT',priceCents:o.priceCents,capacity:o.capacity,sold:o.sold||0,status:'ON_SALE'}; store.events.push(e); return e; }
+  var e1=mkEvent({clubId:'club_1',title:'Notte Elettronica · Vol.4',venue:'Club Astra · Milano',date:'21 GIU',priceCents:3150,capacity:500,sold:312});
+  mkEvent({clubId:'club_1',title:'Blue Room · Jazz',venue:'Club Astra · Milano',date:'03 LUG',priceCents:2400,capacity:200,sold:36});
+  mkEvent({clubId:'club_2',title:'Opening Night',venue:'Magazzino Generali · Milano',date:'28 GIU',priceCents:2800,capacity:300,sold:120});
+  store.tiers[e1.id] = [
+    {id:'tier_1',eventId:e1.id,name:'Early Bird',priceCents:2800,note:'Disponibilità limitata',soldOut:false},
+    {id:'tier_2',eventId:e1.id,name:'Intero',priceCents:3150,note:'',soldOut:false},
+    {id:'tier_3',eventId:e1.id,name:'VIP · Front Stage',priceCents:5500,note:'Accesso area riservata',soldOut:false}
+  ];
+
+  function presale(p){ return Math.round(p*0.10); }            // 10% commissione prevendita
+  function cap(paid){ return Math.floor(paid*1.10); }          // tetto +10%
+  function royalty(orig){ return Math.floor(orig*0.01); }      // 1%
+
+  function makeTicket(o){
+    var t = {id:id('tkt'),eventId:o.eventId||'',clubId:o.clubId,kind:o.kind||'EVENT',ownerId:o.ownerId,
+      tokenId:++tok,originalPriceCents:o.priceCents||0,paidCents:o.priceCents||0,status:'ACTIVE',
+      exportMode:'NONE',exitFeeCents:0,holderName:o.holderName||'',uses:o.uses,used:o.used};
+    store.tickets.push(t); return t;
+  }
+  // seed a couple of resale listings so the Mercato is never empty
+  var seller={id:'acc_seller',role:'CLIENTE',nome:'Giulia',cognome:'Rossi',email:'g@x.it'};
+  store.accounts[seller.id]=seller;
+  (function(){
+    var t=makeTicket({eventId:e1.id,ownerId:seller.id,priceCents:3150,holderName:'Giulia Rossi'});
+    t.status='LISTED'; t.askPriceCents=Math.floor(3150*1.10); t.market='Re-Selling';
+  })();
+
+  function find(arr,pred){ for(var i=0;i<arr.length;i++) if(pred(arr[i])) return arr[i]; return null; }
+
+  return {
+    handle: function(path, method, body){
+      body = body || {}; method = method || 'GET';
+      var R = function(d){ return Promise.resolve(d); };
+      var m;
+
+      if(path==='/health') return R({status:'ok'});
+
+      if(path==='/accounts' && method==='POST'){ var a={id:id('acc'),role:body.role||'CLIENTE',nome:body.nome,cognome:body.cognome,email:body.email,goodwill:0,verified:false}; store.accounts[a.id]=a; return R(a); }
+      if(path==='/register' && method==='POST'){ var a2={id:id('acc'),role:'CLIENTE',nome:body.nome,cognome:body.cognome,email:body.email,cf:body.cf,cfHash:'0xMOCK',verified:true,goodwill:0}; store.accounts[a2.id]=a2; return R(a2); }
+      if(path==='/auth/login' && method==='POST'){
+        var acc=find(Object.keys(store.accounts).map(function(k){return store.accounts[k];}),function(x){return x.email&&x.email.toLowerCase()===String(body.email||'').toLowerCase();});
+        if(!acc) return Promise.reject(new Error('credenziali non valide'));
+        return R({token:'mock.'+acc.id, account:acc});
+      }
+
+      if(path==='/events' && method==='GET') return R(store.events.slice());
+      if(path==='/clubs' && method==='GET') return R(store.clubs.slice());
+      if(path==='/clubs' && method==='POST'){ var c={id:id('club'),organizerId:body.organizerId,name:body.name,city:body.city||'—',fidelityPriceCents:body.fidelityPriceCents||0,fidelityUses:body.fidelityUses||0}; store.clubs.push(c); return R(c); }
+
+      m=path.match(/^\/events\/([^/]+)\/tiers$/);
+      if(m && method==='GET') return R((store.tiers[m[1]]||[]).slice());
+      m=path.match(/^\/events\/([^/]+)$/);
+      if(m && method==='GET'){ var ev=find(store.events,function(x){return x.id===m[1];}); return ev?R(ev):Promise.reject(new Error('evento non trovato')); }
+      if(path==='/events' && method==='POST'){ var nev={id:id('evt'),organizerId:body.organizerId,clubId:body.clubId,title:body.title,venue:body.venue||'—',date:body.date,type:'TICKET_NFT',priceCents:body.priceCents,capacity:body.capacity,sold:0,status:'ON_SALE'}; store.events.push(nev); return R(nev); }
+      m=path.match(/^\/clubs\/([^/]+)\/events$/);
+      if(m && method==='POST'){ var cev={id:id('evt'),organizerId:body.organizerId,clubId:m[1],title:body.title,venue:body.venue||'—',date:body.date,type:'TICKET_NFT',priceCents:body.priceCents,capacity:body.capacity,sold:0,status:'ON_SALE'}; store.events.push(cev); return R(cev); }
+
+      if(path==='/orders' && method==='POST'){
+        var e=find(store.events,function(x){return x.id===body.eventId;}); if(!e) return Promise.reject(new Error('evento non trovato'));
+        var unit=e.priceCents;
+        if(body.tierId){ var tr=find(store.tiers[e.id]||[],function(x){return x.id===body.tierId;}); if(tr) unit=tr.priceCents; }
+        var q=Math.max(1,Math.min(4,body.quantity||1));
+        var fee=presale(unit);
+        var o={id:id('ord'),buyerId:body.buyerId,eventId:e.id,tierId:body.tierId,quantity:q,unitPriceCents:unit,presaleCommissionCents:fee,feeTotalCents:fee*q,subtotalCents:unit*q,totalCents:(unit+fee)*q,status:'PENDING',ticketIds:[],createdAt:Math.floor(Date.now()/1000)};
+        store.orders[o.id]=o; return R(o);
+      }
+      m=path.match(/^\/orders\/([^/]+)\/pay$/);
+      if(m && method==='POST'){
+        var ord=store.orders[m[1]]; if(!ord) return Promise.reject(new Error('ordine non trovato'));
+        if(ord.status!=='PAID'){
+          var ee=find(store.events,function(x){return x.id===ord.eventId;});
+          var ids=[];
+          for(var i=0;i<ord.quantity;i++){ var bt=store.accounts[ord.buyerId]||{}; var tk=makeTicket({eventId:ord.eventId,clubId:ee?ee.clubId:undefined,ownerId:ord.buyerId,priceCents:ord.unitPriceCents,holderName:(bt.nome||'')+' '+(bt.cognome||'')}); ids.push(tk.id); if(ee) ee.sold++; }
+          store.ledger.presaleCommissionCents+=ord.feeTotalCents;
+          if(store.accounts[ord.buyerId]) store.accounts[ord.buyerId].goodwill=(store.accounts[ord.buyerId].goodwill||0)+15*ord.quantity;
+          ord.ticketIds=ids; ord.status='PAID';
+        }
+        return R(ord);
+      }
+      m=path.match(/^\/accounts\/([^/]+)\/orders$/);
+      if(m && method==='GET') return R(Object.keys(store.orders).map(function(k){return store.orders[k];}).filter(function(o){return o.buyerId===m[1];}));
+      m=path.match(/^\/accounts\/([^/]+)\/tickets$/);
+      if(m && method==='GET') return R(store.tickets.filter(function(t){return t.ownerId===m[1];}));
+
+      if(path==='/market' && method==='GET'){
+        return R(store.tickets.filter(function(t){return t.status==='LISTED';}).map(function(t){
+          var ev=find(store.events,function(x){return x.id===t.eventId;});
+          return {ticketId:t.id,eventId:t.eventId,title:ev?ev.title:'',sellerName:t.holderName,askPriceCents:t.askPriceCents||0,royaltyCents:royalty(t.originalPriceCents),capCents:cap(t.paidCents)};
+        }));
+      }
+      m=path.match(/^\/tickets\/([^/]+)\/list$/);
+      if(m && method==='POST'){
+        var lt=find(store.tickets,function(x){return x.id===m[1];}); if(!lt) return Promise.reject(new Error('biglietto non trovato'));
+        if(lt.status!=='ACTIVE') return Promise.reject(new Error('biglietto non quotabile'));
+        if(body.priceCents>cap(lt.paidCents)) return Promise.reject(new Error('prezzo oltre il tetto +10%'));
+        lt.status='LISTED'; lt.askPriceCents=body.priceCents; lt.market='Re-Selling'; return R(lt);
+      }
+      m=path.match(/^\/tickets\/([^/]+)\/unlist$/);
+      if(m && method==='POST'){ var ut=find(store.tickets,function(x){return x.id===m[1];}); if(!ut) return Promise.reject(new Error('biglietto non trovato')); ut.status='ACTIVE'; ut.askPriceCents=undefined; ut.market=undefined; return R(ut); }
+      m=path.match(/^\/market\/([^/]+)\/buy$/);
+      if(m && method==='POST'){
+        var mt=find(store.tickets,function(x){return x.id===m[1];}); if(!mt||mt.status!=='LISTED') return Promise.reject(new Error('biglietto non in vendita'));
+        var buyer=store.accounts[body.buyerId]||{}; var ask=mt.askPriceCents||0; var roy=royalty(mt.originalPriceCents);
+        var split={tinftCents:Math.floor(roy/2)}; split.organizerCents=roy-split.tinftCents;
+        store.ledger.royaltyTinftCents+=split.tinftCents; store.ledger.royaltyOrganizerCents+=split.organizerCents;
+        mt.ownerId=body.buyerId; mt.paidCents=ask; mt.status='ACTIVE'; mt.holderName=(buyer.nome||'')+' '+(buyer.cognome||''); mt.askPriceCents=undefined; mt.market=undefined;
+        return R({ticket:mt,royalty:split,paidByBuyerCents:ask+roy});
+      }
+
+      if(path==='/artists' && method==='GET') return R(store.artists.slice());
+      if(path==='/blog' && method==='GET') return R(store.blog.slice());
+      if(path==='/news' && method==='GET') return R(store.news.slice());
+
+      m=path.match(/^\/organizers\/([^/]+)\/dashboard$/);
+      if(m && method==='GET'){
+        var evs=store.events.filter(function(e){return e.organizerId===m[1];});
+        var gross=0,sold=0,onsale=0; evs.forEach(function(e){gross+=e.sold*e.priceCents;sold+=e.sold;if(e.status==='ON_SALE')onsale++;});
+        return R({grossCents:gross,ticketsSold:sold,eventsOnSale:onsale,validated:store._validated||0,royaltyOrganizerCents:store.ledger.royaltyOrganizerCents});
+      }
+      m=path.match(/^\/organizers\/([^/]+)\/incassi$/);
+      if(m && method==='GET'){
+        var evi=store.events.filter(function(e){return e.organizerId===m[1];});
+        var g=0; evi.forEach(function(e){g+=e.sold*e.priceCents;});
+        var net=g+store.ledger.royaltyOrganizerCents;
+        return R({grossCents:g,royaltyOrganizerCents:store.ledger.royaltyOrganizerCents,netCents:net,nextPayoutCents:net,payoutEta:'entro 72h dalla fine evento'});
+      }
+      m=path.match(/^\/events\/([^/]+)\/validators$/);
+      if(m && method==='GET') return R((store.validators[m[1]]||[]).slice());
+      if(m && method==='POST'){ var g2={id:id('gate'),eventId:m[1],code:'VARCO-'+(1000+Math.floor(Math.random()*9000)),createdAt:Math.floor(Date.now()/1000)}; (store.validators[m[1]]=store.validators[m[1]]||[]).push(g2); return R(g2); }
+
+      m=path.match(/^\/tickets\/([^/]+)\/validate$/);
+      if(m && method==='POST'){
+        var vt=find(store.tickets,function(x){return x.id===m[1];}); var out='FAKE';
+        if(vt){ if(vt.status==='LISTED')out='ESCROW'; else if(vt.status==='USED'||vt.status==='EXPORTED')out='DUPLICATE'; else { out='VALID'; if(vt.kind==='FIDELITY'){ vt.used=(vt.used||0)+1; if(vt.used>=(vt.uses||1))vt.status='USED'; } else vt.status='USED'; store._validated=(store._validated||0)+1; } }
+        return R({id:id('val'),ticketId:m[1],outcome:out,at:Math.floor(Date.now()/1000)});
+      }
+
+      return Promise.reject(new Error('MOCK: ' + method + ' ' + path + ' non gestito'));
+    }
+  };
+})();
+
+/* =========================================================================
+   API helper — adds Bearer token, parses JSON, falls back to MOCK on any
+   network error so the UI never throws because the backend is down.
+   ========================================================================= */
+function api(path, method, body, token){
+  method = method || 'GET';
+  if(ctx.mock) return MOCK.handle(path, method, body);
+  var headers = { 'Content-Type':'application/json' };
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(base() + path, {
+    method: method,
+    headers: headers,
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(j){
+      if(!r.ok) throw new Error(j.message || j.error || ('HTTP ' + r.status));
+      return j;
+    });
+  }).catch(function(err){
+    // network-level failure (server down / CORS / DNS) → switch to MOCK so the
+    // app keeps working. A real HTTP error (4xx/5xx) re-throws above.
+    if(err instanceof TypeError){ ctx.mock = true; setDot(false); return MOCK.handle(path, method, body); }
+    throw err;
+  });
+}
+// authenticated call for the current role
+function aapi(path, method, body){
+  var a = ctx.auth[ctx.role];
+  return api(path, method, body, a ? a.token : undefined);
+}
+function meId(){ var a = ctx.auth[ctx.role]; return a ? a.accountId : null; }
+
+/* =========================================================================
+   SESSION PERSISTENCE + DEMO LOGIN
+   Store/restore the per-role session so a reload keeps the same demo account
+   (a client who buys a ticket still sees it after refresh).
+   ========================================================================= */
+function sessKey(role){ return 'tinft_sess_' + role; }
+function saveSess(role, sess){
+  try{ localStorage.setItem(sessKey(role), JSON.stringify(sess)); }catch(e){}
+}
+function loadSess(role){
+  try{ var raw = localStorage.getItem(sessKey(role)); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+// POST /auth/login {email, password:"demo123"} -> {token, account}; persist per role.
+function loginDemo(role){
+  var email = DEMO_EMAIL[role];
+  return api('/auth/login','POST',{ email:email, password:DEMO_PW }).then(function(r){
+    if(!r || !r.token || !r.account) throw new Error('login demo fallito');
+    var sess = { token:r.token, accountId:r.account.id, account:r.account };
+    ctx.auth[role] = sess;
+    saveSess(role, sess);
+    return sess;
+  });
+}
+
+/* =========================================================================
+   BOOTSTRAP — probe /health, then log in to the fixed seeded demo accounts to
+   get Bearer tokens for each role. On any failure, fall back to the legacy
+   auto-provision-or-MOCK path so nothing breaks.
+   ========================================================================= */
+function init(){
+  if($('api') && !$('api').value) $('api').value = API_BASE;
+  if($('content')) $('content').innerHTML = '<div class="muted"><span class="spin"></span>Connessione all\'API…</div>';
+  ctx.mock = false;
+  return api('/health').then(function(){ ctx.mock = false; })
+    .catch(function(){ ctx.mock = true; })
+    .then(function(){ return provision(); })
+    .then(function(){ return refreshClientTickets(); })
+    .then(function(){
+      setDot(!ctx.mock);
+      toast(ctx.mock ? 'Modalità DEMO offline · dati locali' : 'Connesso · dati reali dal backend', ctx.mock ? '' : 'ok');
+      ctx.view = null;
+      return render();
+    })
+    .catch(function(e){
+      // last-resort: never leave a blank screen — force MOCK and render
+      ctx.mock = true; setDot(false);
+      return provision().then(function(){ toast('API non raggiungibile · DEMO offline','err'); ctx.view=null; return render(); })
+        .catch(function(err){ if($('content')) $('content').innerHTML = '<div class="empty">Errore: ' + esc(err.message||String(err)) + '</div>'; });
+    });
+}
+
+// Log in to the fixed seeded demo accounts (cli@tinft.io / org@tinft.io).
+// The organizer also acts as the "validator" surface (validates the client's
+// tickets) — the backend validate endpoint just needs any authenticated user,
+// so the validator role reuses the organizer token.
+// On failure (no seed / API unreachable) fall back to legacy auto-provision/MOCK.
+function provision(){
+  // try to restore persisted sessions first so a reload is instant
+  var savedOrg = loadSess('organizzatore'), savedCli = loadSess('cliente');
+  return loginDemo('organizzatore')
+    .then(function(){ ctx.auth.validatore = ctx.auth.organizzatore; })
+    .then(function(){ return loginDemo('cliente'); })
+    .catch(function(){
+      // demo accounts not available → reuse any stored session, else auto-provision
+      if(savedOrg && savedCli){
+        ctx.auth.organizzatore = savedOrg; ctx.auth.validatore = savedOrg; ctx.auth.cliente = savedCli;
+        return;
+      }
+      return provisionFallback();
+    });
+}
+
+// Legacy fallback: provision a random organizer + verified client and log in.
+function provisionFallback(){
+  var pw = '1234';
+  var orgEmail = 'org' + uid('') + '@tinft.io';
+  var cliEmail = 'cli' + uid('') + '@email.it';
+  return api('/accounts','POST',{ role:'ORGANIZER', nome:'Club', cognome:'Owner', email:orgEmail, password:pw })
+    .then(function(){ return api('/auth/login','POST',{ email:orgEmail, password:pw }); })
+    .then(function(r){ ctx.auth.organizzatore = { token:r.token, accountId:r.account.id }; ctx.auth.validatore = ctx.auth.organizzatore; })
+    .then(function(){
+      return api('/register','POST',{ nome:'Marco', cognome:'Bianchi', cf:'BNCMRC90A01F205X', email:cliEmail, password:pw, dateOfBirth:'1990-01-01', address:'Via Roma 1', city:'Milano', province:'MI', phone:'3330000000' });
+    })
+    .then(function(){ return api('/auth/login','POST',{ email:cliEmail, password:pw }); })
+    .then(function(r){ ctx.auth.cliente = { token:r.token, accountId:r.account.id }; });
+}
+
+// After login, refresh the client's tickets from GET /accounts/:id/tickets with
+// the stored token, so a ticket bought earlier still shows after a reload.
+function refreshClientTickets(){
+  var a = ctx.auth.cliente;
+  if(!a || !a.accountId) return Promise.resolve([]);
+  return api('/accounts/'+a.accountId+'/tickets','GET',undefined,a.token)
+    .then(function(tks){ ctx.clientTickets = tks || []; return ctx.clientTickets; })
+    .catch(function(){ ctx.clientTickets = ctx.clientTickets || []; return ctx.clientTickets; });
+}
+
+/* =========================================================================
+   ROUTING
+   ========================================================================= */
+function setRole(r){
+  ctx.role = r; ctx.view = null; ctx.detailEventId = null;
+  document.querySelectorAll('.tab').forEach(function(el){ el.classList.toggle('on', el.dataset.r===r); });
+  render();
+}
+function setView(v){ ctx.view = v; ctx.detailEventId = null; render(); }
+
+if(typeof document!=='undefined' && document.querySelectorAll){
+  document.querySelectorAll('.tab').forEach(function(el){ el.onclick = function(){ setRole(el.dataset.r); }; });
+}
+
+function render(){
+  var c = $('content'); if(!c) return Promise.resolve();
+  if(!ctx.auth[ctx.role]){ c.innerHTML = '<div class="muted"><span class="spin"></span>Inizializzazione…</div>'; return Promise.resolve(); }
+  var p;
+  try{
+    if(ctx.role==='cliente') p = renderCliente();
+    else if(ctx.role==='organizzatore') p = renderOrganizzatore();
+    else p = renderValidatore();
+  }catch(e){ c.innerHTML = '<div class="empty">Errore: ' + esc(e.message||String(e)) + '</div>'; return Promise.resolve(); }
+  return Promise.resolve(p).catch(function(e){
+    c.innerHTML = '<div class="empty">Errore: ' + esc(e && e.message ? e.message : String(e)) + '</div>';
+  });
+}
+
+/* small UI helpers ------------------------------------------------------- */
+function banner(){
+  return '<div class="banner ' + (ctx.mock?'mock':'live') + '">' +
+    (ctx.mock ? 'Modalità DEMO offline · dati locali (avvia l\'API per i dati reali)' : 'Connesso · dati reali dal backend') +
+    '</div>';
+}
+function subnav(items){
+  return '<div class="subnav">' + items.map(function(it){
+    return '<div class="navlink ' + (ctx.view===it.v?'on':'') + '" onclick="setView(\'' + it.v + '\')">' + esc(it.label) + '</div>';
+  }).join('') + '</div>';
+}
+function statStrip(stats){
+  return '<div class="stats">' + stats.map(function(s){
+    return '<div class="stat"><div class="v" style="' + (s.color?('color:'+s.color):'') + '">' + esc(s.value) + '</div><div class="l">' + esc(s.label) + '</div></div>';
+  }).join('') + '</div>';
+}
+function statusPill(st){
+  var map = { ACTIVE:['green','Attivo'], LISTED:['orange','In vendita'], USED:['used','Usato'], EXPORTED:['used','Esportato'] };
+  var m = map[st] || ['', st];
+  return '<span class="pill ' + m[0] + '">' + esc(m[1]) + '</span>';
+}
+
+/* =========================================================================
+   CLIENTE
+   sections: Eventi (→ detail tiers/qty/breakdown/buy), Biglietti (list/unlist),
+             Mercato (browse + buy), Scopri (artisti/blog/news)
+   ========================================================================= */
+function renderCliente(){
+  if(!ctx.view) ctx.view = 'eventi';
+  var nav = subnav([
+    {v:'eventi',label:'Eventi'}, {v:'biglietti',label:'I miei biglietti'},
+    {v:'mercato',label:'Mercato'}, {v:'scopri',label:'Scopri'}
+  ]);
+  var c = $('content');
+  if(ctx.view==='eventi' && ctx.detailEventId) return cliEventDetail(nav);
+  if(ctx.view==='eventi') return cliEventi(nav);
+  if(ctx.view==='biglietti') return cliBiglietti(nav);
+  if(ctx.view==='mercato') return cliMercato(nav);
+  return cliScopri(nav);
+}
+
+function cliEventi(nav){
+  return api('/events').then(function(events){
+    var cities = {}; var minP = null;
+    events.forEach(function(e){ if(e.venue){ var cy=e.venue.split('·').pop().trim(); if(cy) cities[cy]=1; } if(minP===null||e.priceCents<minP) minP=e.priceCents; });
+    var stats = statStrip([
+      {value:events.length,label:'eventi in vendita',color:'#6f9eff'},
+      {value:Object.keys(cities).length||'—',label:'città'},
+      {value:minP!=null?eur(minP):'—',label:'prezzo minimo'}
+    ]);
+    var cards = events.length ? events.map(function(e){
+      var soldout = e.sold>=e.capacity;
+      return '<div class="card lift">' +
+        '<div class="cover" style="background:' + cover(e.id) + '"><span class="pill blue" style="position:absolute;top:12px;left:12px">' + esc(e.date||'') + '</span></div>' +
+        '<div class="body">' +
+          '<div class="eyebrow acc">' + esc(eventType(e)) + '</div>' +
+          '<div class="title" style="margin-top:8px">' + esc(e.title) + '</div>' +
+          '<div class="muted" style="margin-top:4px">' + esc(e.venue||'') + '</div>' +
+          '<div class="row" style="margin-top:14px"><span class="price" style="font-size:18px">' + (soldout?'Esaurito':'da '+eur(minTierOrBase(e))) + '</span>' +
+          '<button class="sm" onclick="openEvent(\'' + e.id + '\')"' + (soldout?' disabled':'') + '>Dettagli &amp; biglietti</button></div>' +
+        '</div></div>';
+    }).join('') : '';
+    var html = banner() + nav + '<div class="sect-title"><h1>Eventi in vendita</h1></div>' + stats +
+      (events.length ? ('<div class="grid">' + cards + '</div>') : '<div class="empty">Nessun evento. Crealo dal profilo Organizzatore.</div>');
+    $('content').innerHTML = html;
+  });
+}
+function eventType(e){ return e.type==='FIDELITY'?'Fidelity':(e.type==='SPECIAL'?'Evento speciale':'Biglietto NFT'); }
+function minTierOrBase(e){ return e.priceCents; }
+
+function openEvent(id){ ctx.detailEventId = id; ctx.sel = { tierId:null, qty:1 }; render(); }
+
+function cliEventDetail(nav){
+  var id = ctx.detailEventId;
+  return Promise.all([ api('/events/'+id), api('/events/'+id+'/tiers').catch(function(){return [];}) ]).then(function(res){
+    var e = res[0], tiers = res[1] || [];
+    // selected unit price
+    var sel = ctx.sel;
+    if(sel.tierId){ var found=false; for(var i=0;i<tiers.length;i++) if(tiers[i].id===sel.tierId) found=true; if(!found) sel.tierId=null; }
+    var unit = e.priceCents;
+    if(sel.tierId){ for(var j=0;j<tiers.length;j++) if(tiers[j].id===sel.tierId) unit=tiers[j].priceCents; }
+    var q = Math.max(1,Math.min(4,sel.qty||1));
+    var fee = Math.round(unit*0.10);
+    var subtotal = unit*q, feeTotal = fee*q, total = (unit+fee)*q;
+
+    var tierHtml = '';
+    if(tiers.length){
+      tierHtml = '<div class="eyebrow" style="margin-top:6px">Fasce di prezzo</div>' + tiers.map(function(t){
+        return '<button class="tierbtn ' + (sel.tierId===t.id?'on':'') + '" onclick="selTier(\'' + t.id + '\')">' +
+          '<div class="row"><span>' + esc(t.name) + (t.note?(' <span class="faint">· '+esc(t.note)+'</span>'):'') + '</span><span class="price">' + eur(t.priceCents) + '</span></div></button>';
+      }).join('');
+    } else {
+      tierHtml = '<button class="tierbtn ' + (!sel.tierId?'on':'') + '" onclick="selTier(null)"><div class="row"><span>Biglietto intero</span><span class="price">' + eur(e.priceCents) + '</span></div></button>';
+    }
+
+    var html = banner() + nav +
+      '<div class="crumb" onclick="closeEvent()">← Tutti gli eventi</div>' +
+      '<div class="card" style="overflow:hidden;margin-bottom:18px"><div class="cover" style="height:160px;background:' + cover(e.id) + '"></div></div>' +
+      '<div class="sect-title"><span class="pill blue">' + esc(e.date||'') + '</span><h1>' + esc(e.title) + '</h1></div>' +
+      '<div class="muted" style="margin-bottom:18px">' + esc(e.venue||'') + ' · ' + esc(e.sold) + '/' + esc(e.capacity) + ' venduti</div>' +
+      '<div class="grid" style="grid-template-columns:1fr;max-width:560px">' +
+        '<div class="panel">' +
+          tierHtml +
+          '<div class="row" style="margin-top:18px"><span class="eyebrow">Quantità (max 4)</span>' +
+            '<div class="stepper"><button onclick="stepQty(-1)" ' + (q<=1?'disabled':'') + '>−</button><span class="qty">' + q + '</span><button onclick="stepQty(1)" ' + (q>=4?'disabled':'') + '>+</button></div>' +
+          '</div>' +
+          '<div class="breakdown">' +
+            '<div class="ln"><span>Prezzo' + (q>1?(' × '+q):'') + '</span><span>' + eur(subtotal) + '</span></div>' +
+            '<div class="ln"><span>Commissione di prevendita (10%)</span><span>' + eur(feeTotal) + '</span></div>' +
+            '<div class="tot"><span>Totale</span><span>' + eur(total) + '</span></div>' +
+          '</div>' +
+          '<button style="width:100%;margin-top:16px" onclick="buyEvent(\'' + e.id + '\')">Acquista</button>' +
+          '<div class="faint" style="margin-top:10px;line-height:1.5">Pagamento simulato (FakeProvider). Il biglietto NFT viene coniato a tuo nome e compare in “I miei biglietti”.</div>' +
+        '</div>' +
+      '</div>';
+    $('content').innerHTML = html;
+  });
+}
+function selTier(id){ ctx.sel.tierId = id; render(); }
+function stepQty(d){ ctx.sel.qty = Math.max(1, Math.min(4, (ctx.sel.qty||1)+d)); render(); }
+function closeEvent(){ ctx.detailEventId = null; render(); }
+
+function buyEvent(eventId){
+  var me = meId();
+  var body = { buyerId: me, eventId: eventId, quantity: ctx.sel.qty||1 };
+  if(ctx.sel.tierId) body.tierId = ctx.sel.tierId;
+  return aapi('/orders','POST',body).then(function(order){
+    return aapi('/orders/'+order.id+'/pay','POST',{}).then(function(paid){
+      toast('Acquisto completato · ' + (paid.ticketIds?paid.ticketIds.length:order.quantity) + ' biglietto/i · ' + eur(paid.totalCents||order.totalCents), 'ok');
+      ctx.detailEventId = null; ctx.view = 'biglietti'; return render();
+    });
+  }).catch(function(e){ toast(e.message||String(e), 'err'); });
+}
+
+function cliBiglietti(nav){
+  var me = meId();
+  return aapi('/accounts/'+me+'/tickets').then(function(tks){
+    var active=0,used=0,listed=0,spent=0;
+    tks.forEach(function(t){ if(t.status==='ACTIVE')active++; else if(t.status==='USED'||t.status==='EXPORTED')used++; if(t.status==='LISTED')listed++; spent+=t.paidCents||0; });
+    var stats = statStrip([
+      {value:active,label:'attivi',color:'#5fe0b0'},
+      {value:used,label:'usati'},
+      {value:listed,label:'in vendita',color:'#ffcf80'},
+      {value:eur(spent),label:'spesa totale'}
+    ]);
+    var cards = tks.length ? tks.map(function(t){
+      var cap = Math.floor((t.paidCents||0)*1.10);
+      var actions = '';
+      if(t.status==='ACTIVE'){
+        actions = '<button class="sm outline" onclick="listTicket(\'' + t.id + '\',' + (t.paidCents||0) + ',' + cap + ')">Rivendi</button>';
+      } else if(t.status==='LISTED'){
+        actions = '<button class="sm ghost" onclick="unlistTicket(\'' + t.id + '\')">Ritira dal mercato</button>';
+      }
+      return '<div class="card">' +
+        '<div class="cover" style="height:96px;background:' + cover(t.eventId||t.id) + '"><span style="position:absolute;top:10px;right:10px">' + statusPill(t.status) + '</span></div>' +
+        '<div class="body">' +
+          '<div class="title">' + esc(t.kind==='FIDELITY'?'Fidelity':(t.holderName?titleForTicket(t):'Biglietto')) + '</div>' +
+          '<div class="faint" style="margin-top:6px">token <code>#' + esc(t.tokenId) + '</code> · ' + eur(t.paidCents) + (t.kind==='FIDELITY'&&t.uses?(' · '+(t.used||0)+'/'+t.uses+' ingressi'):'') + '</div>' +
+          '<div class="faint" style="margin-top:4px">intestato a ' + esc(t.holderName||'—') + '</div>' +
+          (t.status==='LISTED'&&t.askPriceCents?('<div class="faint" style="margin-top:4px;color:#ffcf80">richiesto ' + eur(t.askPriceCents) + ' · tetto ' + eur(cap) + '</div>'):'') +
+          (actions?('<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' + actions + '</div>'):'') +
+        '</div></div>';
+    }).join('') : '';
+    var html = banner() + nav + '<div class="sect-title"><h1>I miei biglietti</h1></div>' + stats +
+      (tks.length ? ('<div class="grid">' + cards + '</div>') : '<div class="empty">Nessun biglietto. Vai su <b style="color:#6f9eff">Eventi</b> e acquista il primo.</div>');
+    $('content').innerHTML = html;
+  });
+}
+function titleForTicket(t){ return 'Biglietto NFT'; }
+
+function listTicket(id, paid, cap){
+  var def = (cap/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+  var input = (typeof prompt==='function') ? prompt('Prezzo di rivendita in € (tetto +10% = ' + def + ')', def) : def;
+  if(input===null || input===undefined) return;
+  var cents = Math.round(parseFloat(String(input).replace(',','.'))*100);
+  if(!cents || cents<=0){ toast('Prezzo non valido','err'); return; }
+  if(cents>cap){ toast('Prezzo oltre il tetto +10% (' + eur(cap) + ')','err'); return; }
+  return aapi('/tickets/'+id+'/list','POST',{ ownerId:meId(), priceCents:cents }).then(function(){ toast('Biglietto messo in vendita','ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+}
+function unlistTicket(id){
+  return aapi('/tickets/'+id+'/unlist','POST',{ ownerId:meId() }).then(function(){ toast('Ritirato dal mercato','ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+}
+
+function cliMercato(nav){
+  return api('/market').then(function(items){
+    var minP=null,maxCap=null; items.forEach(function(t){ if(minP===null||t.askPriceCents<minP)minP=t.askPriceCents; if(maxCap===null||t.capCents>maxCap)maxCap=t.capCents; });
+    var stats = statStrip([
+      {value:items.length,label:'in vendita',color:'#ffcf80'},
+      {value:minP!=null?eur(minP):'—',label:'prezzo minimo'},
+      {value:'+10%',label:'tetto rivendita',color:'#6f9eff'}
+    ]);
+    var cards = items.length ? items.map(function(t){
+      return '<div class="card lift">' +
+        '<div class="cover" style="height:96px;background:' + cover(t.eventId||t.ticketId) + '"></div>' +
+        '<div class="body">' +
+          '<div class="title">' + esc(t.title||'Biglietto') + '</div>' +
+          '<div class="faint" style="margin-top:6px;color:#ffcf80">venduto da ' + esc(t.sellerName||'—') + ' · Re-Selling</div>' +
+          '<div class="faint" style="margin-top:4px">royalty ' + eur(t.royaltyCents) + ' · tetto ' + eur(t.capCents) + '</div>' +
+          '<div class="row" style="margin-top:14px"><span class="price" style="font-size:18px">' + eur(t.askPriceCents) + '</span>' +
+          '<button class="sm" onclick="buyMarket(\'' + t.ticketId + '\')">Compra</button></div>' +
+        '</div></div>';
+    }).join('') : '';
+    var html = banner() + nav + '<div class="sect-title"><h1>Mercato secondario</h1></div>' +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:60ch">Biglietti rivenduti da altri clienti. Royalty all\'organizzatore inclusa, prezzo con tetto +10%.</p>' + stats +
+      (items.length ? ('<div class="grid">' + cards + '</div>') : '<div class="empty">Nessun biglietto in vendita ora. Mettine uno tu da <b style="color:#6f9eff">I miei biglietti</b>.</div>');
+    $('content').innerHTML = html;
+  });
+}
+function buyMarket(ticketId){
+  return aapi('/market/'+ticketId+'/buy','POST',{ buyerId:meId() }).then(function(r){
+    toast('Acquistato dal mercato · pagato ' + eur(r.paidByBuyerCents||0), 'ok');
+    ctx.view = 'biglietti'; return render();
+  }).catch(function(e){ toast(e.message,'err'); });
+}
+
+function cliScopri(nav){
+  return Promise.all([ api('/artists'), api('/blog'), api('/news') ]).then(function(r){
+    var artists=r[0]||[], blog=r[1]||[], news=r[2]||[];
+    var artHtml = '<div class="sect-title" style="margin-top:6px"><span class="eyebrow acc">Scopri</span><h2>Artisti da seguire</h2></div>' +
+      '<div class="grid sm">' + (artists.length?artists.map(function(a){
+        return '<div class="card"><div class="body" style="display:flex;align-items:center;gap:13px">' +
+          '<div style="width:46px;height:46px;border-radius:50%;background:' + esc(a.color||'#2f4f8a') + ';display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">' + esc(a.initials||'') + '</div>' +
+          '<div style="flex:1;min-width:0"><div class="title" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(a.name) + '</div><div class="muted">' + esc(a.genre||'') + ' · ' + (a.followers||0).toLocaleString('it-IT') + ' follower</div></div>' +
+          '<button class="sm outline" onclick="followArtist(\'' + a.id + '\')">Segui</button>' +
+        '</div></div>';
+      }).join(''):'<div class="empty">Nessun artista.</div>') + '</div>';
+
+    var blogHtml = '<div class="sect-title" style="margin-top:28px"><h2>Dal blog TINFT</h2></div>' +
+      '<div class="grid">' + (blog.length?blog.map(function(b){
+        return '<div class="card lift"><div class="cover" style="height:120px;background:' + cover(b.slug||b.id) + '"></div>' +
+          '<div class="body"><div class="eyebrow acc">' + esc(b.tag||'') + ' · ' + esc(b.readMins||'?') + ' min</div>' +
+          '<div class="title" style="margin-top:7px;line-height:1.3">' + esc(b.title) + '</div>' +
+          '<div class="muted" style="margin-top:7px;line-height:1.5">' + esc(b.excerpt||'') + '</div></div></div>';
+      }).join(''):'<div class="empty">Nessun articolo.</div>') + '</div>';
+
+    var newsHtml = '<div class="sect-title" style="margin-top:28px"><h2>News &amp; annunci</h2></div>' +
+      '<div class="listrows">' + (news.length?news.map(function(n){
+        return '<div class="lr"><span style="font-size:11px;font-weight:700;letter-spacing:.04em;color:#6f9eff;width:88px;flex-shrink:0">' + esc(n.date||'') + '</span><span style="flex:1">' + esc(n.title) + '</span></div>';
+      }).join(''):'<div class="lr">Nessuna news.</div>') + '</div>';
+
+    $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Scopri</h1></div>' + artHtml + blogHtml + newsHtml;
+  });
+}
+function followArtist(id){
+  return aapi('/artists/'+id+'/follow','POST',{}).then(function(a){ toast('Ora segui ' + (a&&a.name?a.name:'questo artista'), 'ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+}
+
+/* =========================================================================
+   ORGANIZZATORE
+   sections: Dashboard, Club & Eventi (create), Incassi, Accessi/Varchi
+   ========================================================================= */
+function renderOrganizzatore(){
+  if(!ctx.view) ctx.view = 'dashboard';
+  var nav = subnav([
+    {v:'dashboard',label:'Dashboard'}, {v:'club',label:'Club & Eventi'},
+    {v:'incassi',label:'Incassi'}, {v:'accessi',label:'Accessi / Varchi'}
+  ]);
+  if(ctx.view==='dashboard') return orgDashboard(nav);
+  if(ctx.view==='club') return orgClub(nav);
+  if(ctx.view==='incassi') return orgIncassi(nav);
+  return orgAccessi(nav);
+}
+
+function orgDashboard(nav){
+  var me = meId();
+  return aapi('/organizers/'+me+'/dashboard').then(function(d){
+    var stats = statStrip([
+      {value:eur(d.grossCents),label:'incasso lordo',color:'#6f9eff'},
+      {value:d.ticketsSold,label:'biglietti venduti'},
+      {value:d.eventsOnSale,label:'eventi in vendita',color:'#5fe0b0'},
+      {value:d.validated,label:'validati'},
+      {value:eur(d.royaltyOrganizerCents),label:'royalty rivendite',color:'#ffcf80'}
+    ]);
+    $('content').innerHTML = banner() + nav + '<div class="sect-title"><span class="eyebrow acc">Console</span><h1>Dashboard</h1></div>' + stats +
+      '<div class="panel"><div class="eyebrow">Riepilogo</div><p class="muted" style="margin-top:10px;line-height:1.6">I KPI sono calcolati in tempo reale dal mondo condiviso del backend. Crea club ed eventi in <b style="color:#6f9eff">Club &amp; Eventi</b>; gli acquisti del profilo Cliente aggiornano incasso e biglietti venduti.</p></div>';
+  });
+}
+
+function orgClub(nav){
+  return api('/clubs').then(function(clubs){
+    var me = meId();
+    var mine = clubs.filter(function(c){ return c.organizerId===me; });
+    // load events per club (best-effort)
+    return Promise.all(mine.map(function(c){ return api('/clubs/'+c.id+'/events').catch(function(){return [];}); })).then(function(evLists){
+      var createClub =
+        '<div class="panel" style="margin-bottom:18px"><div class="eyebrow acc">Crea club</div>' +
+          '<div class="formgrid">' +
+            '<input id="cn" placeholder="Nome club" />' +
+            '<input id="cc" placeholder="Città" />' +
+            '<input id="cfp" placeholder="Prezzo Fidelity € (0 = nessuno)" />' +
+            '<input id="cfu" placeholder="Ingressi Fidelity (0 = nessuno)" />' +
+          '</div><button style="margin-top:14px" onclick="oCreateClub()">Crea club</button></div>';
+
+      var clubCards = mine.length ? mine.map(function(c, i){
+        var evs = evLists[i] || [];
+        var evHtml = evs.length ? ('<div class="listrows" style="margin-top:12px">' + evs.map(function(e){
+          return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">' + esc(e.title) + '</div><div class="faint" style="margin-top:3px">' + esc(e.date||'') + ' · ' + eur(e.priceCents) + ' · ' + esc(e.sold) + '/' + esc(e.capacity) + ' venduti</div></div><span class="pill ' + (e.status==='ON_SALE'?'green':'used') + '">' + esc(e.status) + '</span></div>';
+        }).join('') + '</div>') : '<div class="faint" style="margin-top:10px">Nessun evento in questo club.</div>';
+        return '<div class="panel" style="margin-bottom:14px">' +
+          '<div class="row"><div><div class="title">' + esc(c.name) + '</div><div class="muted" style="margin-top:3px">' + esc(c.city) + (c.fidelityUses>0?(' · Fidelity ' + c.fidelityUses + ' ingressi · ' + eur(c.fidelityPriceCents)):'') + '</div></div>' +
+            (c.fidelityUses>0?'<span class="pill orange">Fidelity</span>':'') + '</div>' +
+          evHtml +
+          '<div class="panel" style="margin-top:14px;background:#0d0d0d"><div class="eyebrow">Crea evento in ' + esc(c.name) + '</div>' +
+            '<div class="formgrid">' +
+              '<input id="et_' + c.id + '" placeholder="Titolo evento" />' +
+              '<input id="ev_' + c.id + '" placeholder="Venue" />' +
+              '<input id="ed_' + c.id + '" placeholder="Data (es. 21 GIU)" />' +
+              '<input id="ep_' + c.id + '" placeholder="Prezzo € (es. 31,50)" />' +
+              '<input id="ec_' + c.id + '" placeholder="Capienza" class="full" />' +
+            '</div><button class="sm" style="margin-top:12px" onclick="oCreateEvent(\'' + c.id + '\')">Crea evento</button></div>' +
+        '</div>';
+      }).join('') : '<div class="empty">Nessun club. Creane uno qui sopra.</div>';
+
+      $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Club &amp; Eventi</h1></div>' + createClub + clubCards;
+    });
+  });
+}
+function oCreateClub(){
+  var price = Math.round(parseFloat(($('cfp').value||'0').replace(',','.'))*100) || 0;
+  var body = { organizerId:meId(), name:($('cn').value||'').trim(), city:($('cc').value||'').trim()||'—', fidelityPriceCents:price, fidelityUses:parseInt($('cfu').value||'0',10)||0 };
+  if(!body.name){ toast('Inserisci il nome del club','err'); return; }
+  return aapi('/clubs','POST',body).then(function(){ toast('Club creato','ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+}
+function oCreateEvent(clubId){
+  var price = Math.round(parseFloat(($('ep_'+clubId).value||'0').replace(',','.'))*100) || 0;
+  var body = { organizerId:meId(), clubId:clubId, title:($('et_'+clubId).value||'').trim(), venue:($('ev_'+clubId).value||'').trim()||'—', date:($('ed_'+clubId).value||'').trim(), priceCents:price, capacity:parseInt($('ec_'+clubId).value||'0',10)||0 };
+  if(!body.title){ toast('Inserisci il titolo dell\'evento','err'); return; }
+  if(body.capacity<=0){ toast('Capienza non valida','err'); return; }
+  // backend supports both /events and /clubs/:id/events; use the club route
+  return aapi('/clubs/'+clubId+'/events','POST',body).then(function(){ toast('Evento creato','ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+}
+
+function orgIncassi(nav){
+  var me = meId();
+  return aapi('/organizers/'+me+'/incassi').then(function(d){
+    var stats = statStrip([
+      {value:eur(d.grossCents),label:'lordo primario',color:'#6f9eff'},
+      {value:eur(d.royaltyOrganizerCents),label:'royalty rivendite',color:'#ffcf80'},
+      {value:eur(d.netCents),label:'netto',color:'#5fe0b0'}
+    ]);
+    $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Incassi &amp; payout</h1></div>' + stats +
+      '<div class="panel"><div class="row"><div><div class="eyebrow acc">Prossimo bonifico</div><div style="font-weight:700;font-size:24px;margin-top:8px">' + eur(d.nextPayoutCents) + '</div></div>' +
+      '<span class="pill green">' + esc(d.payoutEta||'') + '</span></div>' +
+      '<div class="faint" style="margin-top:14px;line-height:1.6">Nessuna trattenuta TINFT sul primario: il compratore ha già pagato la commissione di prevendita (10%). Il netto somma lordo + royalty rivendite.</div></div>';
+  });
+}
+
+function orgAccessi(nav){
+  return api('/events').then(function(events){
+    var me = meId();
+    var mine = events.filter(function(e){ return e.organizerId===me; });
+    if(!mine.length){
+      $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Accessi / Varchi</h1></div><div class="empty">Nessun evento. Crea prima un evento in <b style="color:#6f9eff">Club &amp; Eventi</b>.</div>';
+      return;
+    }
+    return Promise.all(mine.map(function(e){ return aapi('/events/'+e.id+'/validators').catch(function(){return [];}); })).then(function(lists){
+      var html = mine.map(function(e, i){
+        var gates = lists[i] || [];
+        var gHtml = gates.length ? ('<div class="listrows" style="margin-top:12px">' + gates.map(function(g){
+          return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">' + esc(g.code) + '</div><div class="faint" style="margin-top:3px">varco di validazione</div></div><span class="pill blue">Attivo</span></div>';
+        }).join('') + '</div>') : '<div class="faint" style="margin-top:10px">Nessun varco. Creane uno per abilitare la validazione in app.</div>';
+        return '<div class="panel" style="margin-bottom:14px">' +
+          '<div class="row"><div><div class="title">' + esc(e.title) + '</div><div class="muted" style="margin-top:3px">' + esc(e.date||'') + ' · ' + esc(e.venue||'') + '</div></div>' +
+          '<button class="sm outline" onclick="oCreateValidator(\'' + e.id + '\')">+ Crea varco</button></div>' +
+          gHtml + '</div>';
+      }).join('');
+      $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Accessi / Varchi</h1></div>' +
+        '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">Crea i varchi (gate) per i tuoi eventi. La validazione degli ingressi avviene esclusivamente nell\'app TINFT del validatore.</p>' + html;
+    });
+  });
+}
+function oCreateValidator(eventId){
+  return aapi('/events/'+eventId+'/validators','POST',{ organizerId:meId() }).then(function(g){ toast('Varco creato · ' + (g&&g.code?g.code:''), 'ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+}
+
+/* =========================================================================
+   VALIDATORE
+   Lists the client's active tickets and validates them, showing the outcome.
+   (The backend validate endpoint just needs an authenticated user; the
+   organizer/validator token is used here.)
+   ========================================================================= */
+function renderValidatore(){
+  var clientId = ctx.auth.cliente ? ctx.auth.cliente.accountId : null;
+  if(!clientId) return Promise.resolve($('content').innerHTML = '<div class="empty">Cliente non inizializzato.</div>');
+  // read client tickets using the client's own token (ownership-gated endpoint)
+  var clientTok = ctx.auth.cliente.token;
+  return api('/accounts/'+clientId+'/tickets', 'GET', undefined, clientTok).then(function(tks){
+    var active = tks.filter(function(t){ return t.status==='ACTIVE'; });
+    var others = tks.filter(function(t){ return t.status!=='ACTIVE'; });
+    var stats = statStrip([
+      {value:active.length,label:'da validare',color:'#5fe0b0'},
+      {value:others.filter(function(t){return t.status==='USED'||t.status==='EXPORTED';}).length,label:'già usati'},
+      {value:tks.length,label:'totali'}
+    ]);
+    var list = active.length ? ('<div class="listrows">' + active.map(function(t){
+      return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">' + esc(t.kind==='FIDELITY'?'Fidelity':'Biglietto NFT') + '</div>' +
+        '<div class="faint" style="margin-top:3px">token #' + esc(t.tokenId) + ' · ' + esc(t.holderName||'—') + (t.kind==='FIDELITY'&&t.uses?(' · '+(t.used||0)+'/'+t.uses):'') + '</div></div>' +
+        '<button class="sm green" onclick="doValidate(\'' + t.id + '\')">Valida</button></div>';
+    }).join('') + '</div>') : '<div class="empty">Nessun biglietto attivo. Acquista qualcosa dal profilo <b style="color:#6f9eff">Cliente</b>.</div>';
+    var usedList = others.length ? ('<div class="sect-title" style="margin-top:24px"><span class="eyebrow">Storico</span></div><div class="listrows">' + others.map(function(t){
+      return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">Biglietto NFT</div><div class="faint" style="margin-top:3px">token #' + esc(t.tokenId) + '</div></div>' + statusPill(t.status) + '</div>';
+    }).join('') + '</div>') : '';
+    $('content').innerHTML = banner() + '<div class="sect-title"><span class="eyebrow acc">Varco · validazione</span><h1>Validatore</h1></div>' +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">Scansiona e valida i biglietti attivi. Esito: valido, duplicato (già usato), escrow (in trasferimento) o falso.</p>' +
+      stats + list + usedList;
+  });
+}
+function doValidate(ticketId){
+  return aapi('/tickets/'+ticketId+'/validate','POST',{}).then(function(v){
+    var out = v && v.outcome ? v.outcome : 'FAKE';
+    var labels = { VALID:'VALIDO ✓', DUPLICATE:'DUPLICATO · già usato', ESCROW:'ESCROW · in trasferimento', SCREENSHOT:'SCREENSHOT · non valido', FAKE:'FALSO · non riconosciuto' };
+    toast('Esito: ' + (labels[out]||out), out==='VALID' ? 'ok' : 'err');
+    return render();
+  }).catch(function(e){ toast(e.message,'err'); });
+}
+
+/* =========================================================================
+   START
+   ========================================================================= */
+init();
+</script>
+</body>
+</html>

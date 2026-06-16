@@ -1,0 +1,6 @@
+// Configurazione Metro di default per Expo. Estendibile se servono trasformazioni custom.
+const {getDefaultConfig} = require("expo/metro-config");
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = config;

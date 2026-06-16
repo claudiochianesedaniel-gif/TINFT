@@ -26,11 +26,27 @@ La cartella [`design_handoff_tinft/`](./design_handoff_tinft/) contiene la spec 
 - Royalty trasferimento **1%** del prezzo originale, a carico del compratore,
   split **0,5% TINFT + 0,5% organizzatore**, *enforced* on-chain.
 - **Escrow** sul P2P a pagamento: lock → pay atomico → reclaim a timeout.
-- Tetto rivendita **+5%** per passaggio; **max 2 biglietti/evento per identità** (`hash(CF)`).
+- Tetto rivendita **+10%** per passaggio; **max 3 biglietti/evento per identità** (`hash(CF)`).
 - **Export** post-evento a scelta: (A) rilascio con fee 25% / (B) enforced con royalty perpetua.
 - Custodia **custodial** (account abstraction): niente seed/gas per l'utente.
 
 ## Piano di implementazione
 
-Lo stack, la struttura del repo, la scelta L2 e il piano a milestone sono in proposta
-e **in attesa di approvazione** prima di iniziare a scrivere il codice di produzione.
+Decisioni tecniche prese (delegate dal committente — "la migliore per noi, più sicura
+e più semplice per il cliente"):
+
+- **Catena L2**: **Base** (testnet Base Sepolia) — rollup Ethereum (sicurezza ereditata da L1),
+  ecosistema account-abstraction + on-ramp euro più maturo, Transfer Validator ERC-721C disponibile.
+- **Custodia/wallet**: custodial con **account abstraction (ERC-4337)** — Turnkey + smart account
+  (Kernel) + Paymaster, login biometrico, niente seed/gas; recovery legato a SPID. Fallback MVP: Privy.
+- **Stack**: monorepo TypeScript (pnpm + Turborepo); contratti Solidity/Foundry (OpenZeppelin +
+  Limit Break ERC-721C); backend NestJS + PostgreSQL/Prisma + Redis; app React Native (Expo);
+  sito/console Next.js; pagamenti Stripe (poi Nexi); identità SPID via OIDC/aggregatore.
+
+Prima di scrivere il codice di produzione è stata fatta una **verifica 1:1 dei prototipi**
+(logica letta riga per riga): vedi [`docs/SPEC-VERIFICATA.md`](./docs/SPEC-VERIFICATA.md) —
+regole economiche R1–R10 con riferimenti `file:riga`, macchine a stati, modello dati,
+incongruenze rilevate (Q1–Q8) e nodi legali.
+
+Stato attuale: **verifica completata, in attesa di via libera** per avviare M0 (scaffolding + CI)
+e M1 (contratto core ERC-721/ERC-721C).

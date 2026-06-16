@@ -10,110 +10,133 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /*__rounded__*/
+  [style*="border:1px solid"]:not([style*="border-radius"]){border-radius:13px;overflow:hidden}
+  [style*="background:#4472c4"]:not([style*="border-radius"]),[style*="background:#6f9eff"]:not([style*="border-radius"]),[style*="background:#00cc88"]:not([style*="border-radius"]),[style*="background:#0a8a5c"]:not([style*="border-radius"]){border-radius:13px}
+  img:not([style*="border-radius"]):not([style*="object-fit:cover"]){border-radius:9px}
+
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:#06070c;font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;color:oklch(0.96 0.005 262)}
+  body{background:#0a0a0a;font-family:'Quicksand',sans-serif;-webkit-font-smoothing:antialiased;color:#e8e6e0}
   a{color:inherit;text-decoration:none}
+  ::selection{background:rgba(68,114,196,.4)}
   .scr::-webkit-scrollbar{width:8px}
-  .scr::-webkit-scrollbar-thumb{background:oklch(0.28 0.02 265);border-radius:4px}
-  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .scr::-webkit-scrollbar-thumb{background:#2a2a2a}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .lift{transition:border-color .15s ease, transform .15s ease}
+  .lift:hover{border-color:#4472c4!important;transform:translateY(-2px)}
 </style>
 </helmet>
 
-<div style="position:relative;width:100%;min-height:100vh;background:#06070c;overflow-x:hidden">
-  <div style="position:absolute;inset:0 0 auto;height:900px;pointer-events:none;background:radial-gradient(900px 560px at 78% -4%,oklch(0.5 0.2 264/.22),transparent 62%),radial-gradient(700px 600px at 8% 18%,oklch(0.45 0.16 290/.13),transparent 60%)"></div>
+<div style="position:relative;width:100%;min-height:100vh;background:#0a0a0a;overflow-x:hidden">
 
   <!-- NAV -->
-  <div style="position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);background:oklch(0.07 0.01 265/.72);border-bottom:1px solid oklch(0.18 0.02 265/.7)">
-    <div style="max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px">
-      <div style="display:flex;align-items:center;gap:10px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:30px;border-radius:7px"/><span style="font-family:'Space Grotesk';font-weight:600;font-size:18px;letter-spacing:0.01em">TINFT</span></div>
+  <div style="position:sticky;top:0;z-index:30;background:rgba(10,10,10,.88);backdrop-filter:blur(12px);border-bottom:1px solid #2a2a2a">
+    <div style="max-width:1240px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:16px">
+      <div style="display:flex;align-items:center;gap:11px">
+        <img src="assets/tinft-logo.png" alt="TINFT" style="width:34px;height:34px;object-fit:contain"/>
+        <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:15px;letter-spacing:0.14em">TI<span style="color:#6f9eff">N</span>FT</span>
+      </div>
       <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;align-items:center;gap:28px;font-size:13.5px;color:oklch(0.72 0.02 265)">
-          <a href="#come">Come funziona</a><a href="#eventi">Eventi</a><a href="#organizzatori">Per organizzatori</a>
+        <div style="display:flex;align-items:center;gap:2px;margin-left:14px;font-family:'Quicksand',sans-serif;font-size:12px;letter-spacing:0.06em;color:#8a8682">
+          <a href="#come" style="padding:8px 11px">Come funziona</a><a href="#eventi" style="padding:8px 11px">Eventi</a><a href="#organizzatori" style="padding:8px 11px">Per organizzatori</a><a href="TINFT - Web App.dc.html" style="padding:8px 11px;color:#6f9eff">Area personale</a>
         </div>
       </sc-if>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span onClick="{{ openLogin }}" style="font-size:13px;color:oklch(0.78 0.02 265);cursor:pointer;padding:8px 10px">Accedi</span>
-        <span onClick="{{ openRegister }}" style="font-size:13px;font-weight:600;color:#fff;background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));padding:9px 16px;border-radius:11px;cursor:pointer;box-shadow:0 0 20px oklch(0.55 0.2 264/.3)">Registrati</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+        <span onClick="{{ openLogin }}" style="font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;color:#8a8682;cursor:pointer;padding:9px 10px">Accedi</span>
+        <span onClick="{{ openRegister }}" style="font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:11px 18px;cursor:pointer">Registrati</span>
       </div>
     </div>
   </div>
 
   <!-- HERO -->
-  <div style="position:relative;max-width:1180px;margin:0 auto;padding:clamp(40px,7vw,92px) 24px clamp(30px,5vw,60px);display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:46px;align-items:center">
+  <div style="max-width:1140px;margin:0 auto;padding:clamp(46px,7vw,96px) 24px clamp(36px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:52px;align-items:center">
     <div>
-      <div style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:0.12em;color:oklch(0.78 0.1 264);border:1px solid oklch(0.4 0.1 264);padding:6px 12px;border-radius:999px;margin-bottom:22px">◆ TICKETING NFT · 100% DA APP</div>
-      <h1 style="font-family:'Space Grotesk';font-weight:700;font-size:clamp(34px,5vw,56px);line-height:1.04;letter-spacing:-0.01em;text-wrap:balance">Il biglietto che<br/>diventa <span style="background:linear-gradient(120deg,oklch(0.8 0.14 264),oklch(0.7 0.16 300));-webkit-background-clip:text;background-clip:text;color:transparent">davvero tuo.</span></h1>
-      <p style="font-size:clamp(15px,1.6vw,18px);color:oklch(0.72 0.02 265);margin-top:20px;line-height:1.6;max-width:46ch">Ogni titolo è un NFT nominativo nel tuo wallet TINFT. Acquisto in euro, accesso e rivendita: tutto dall'app, senza lettori né tornelli.</p>
+      <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Quicksand',sans-serif;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;color:#6f9eff;margin-bottom:22px;white-space:nowrap"><span>▸</span> Ticketing NFT · 100% da app</div>
+      <h1 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(32px,5vw,56px);line-height:1.08;letter-spacing:0.01em">Il biglietto<br/>che diventa<br/><span style="color:#6f9eff">davvero tuo.</span></h1>
+      <p style="font-size:clamp(15px,1.6vw,18px);color:#8a8682;margin-top:22px;line-height:1.6;max-width:48ch;text-wrap:pretty">Ogni titolo è un NFT nominativo nel tuo wallet TINFT. Acquisto in euro, accesso e rivendita: tutto dall'app, senza lettori né tornelli.</p>
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:30px">
-        <span onClick="{{ openRegister }}" style="font-family:'Space Grotesk';font-weight:600;font-size:15px;color:#fff;background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));padding:14px 26px;border-radius:13px;cursor:pointer;box-shadow:0 0 30px oklch(0.55 0.2 264/.4)">Crea il tuo account</span>
-        <a href="#come" style="font-family:'Space Grotesk';font-weight:600;font-size:15px;color:oklch(0.82 0.04 265);background:oklch(0.16 0.015 265);border:1px solid oklch(0.3 0.02 265);padding:14px 24px;border-radius:13px">Come funziona</a>
+        <span onClick="{{ openRegister }}" style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:15px 28px;cursor:pointer;white-space:nowrap">Crea il tuo account</span>
+        <a href="#come" style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#e8e6e0;background:transparent;border:1px solid #2a2a2a;padding:15px 26px">Come funziona</a>
       </div>
-      <div style="display:flex;gap:10px;margin-top:22px">
-        <div style="display:flex;align-items:center;gap:8px;background:oklch(0.13 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:11px;padding:9px 14px;font-size:12px;color:oklch(0.7 0.02 265)"><span style="font-size:15px"></span> App Store</div>
-        <div style="display:flex;align-items:center;gap:8px;background:oklch(0.13 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:11px;padding:9px 14px;font-size:12px;color:oklch(0.7 0.02 265)"><span style="font-size:14px">▶</span> Google Play</div>
+      <div style="display:flex;gap:10px;margin-top:24px">
+        <div style="display:flex;align-items:center;gap:8px;background:#131313;border:1px solid #2a2a2a;padding:9px 14px;font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.06em;color:#8a8682"><span style="color:#6f9eff"></span> App Store</div>
+        <div style="display:flex;align-items:center;gap:8px;background:#131313;border:1px solid #2a2a2a;padding:9px 14px;font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.06em;color:#8a8682"><span style="color:#6f9eff">▶</span> Google Play</div>
       </div>
     </div>
     <div style="display:flex;justify-content:center">
-      <div style="width:262px;background:linear-gradient(160deg,#1a1d27,#0a0b11);border-radius:40px;padding:11px;box-shadow:0 50px 90px -30px rgba(40,60,180,.55),0 0 0 1px oklch(0.32 0.03 265);animation:floaty 6s ease-in-out infinite">
-        <div style="background:#0a0c12;border-radius:30px;overflow:hidden;height:520px;position:relative;display:flex;flex-direction:column">
-          <div style="height:148px;background:linear-gradient(135deg,oklch(0.42 0.17 264),oklch(0.25 0.1 285));position:relative"><div style="position:absolute;right:-26px;top:-26px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,oklch(0.82 0.14 264/.5),transparent 70%)"></div></div>
-          <div style="padding:16px 16px 0;margin-top:-30px;position:relative">
-            <div style="background:#fff;border-radius:18px;padding:12px;display:flex;justify-content:center"><div style="display:grid;grid-template-columns:repeat(11,8px);grid-template-rows:repeat(11,8px)">{{ qrEl }}</div></div>
+      <div style="width:266px;background:#1c1c1c;padding:11px;border:1px solid #2a2a2a;box-shadow:0 40px 90px -40px rgba(0,0,0,.9)">
+        <div style="background:#0a0a0a;overflow:hidden;height:528px;position:relative;display:flex;flex-direction:column">
+          <div style="height:120px;background:#131313;border-bottom:1px solid #2a2a2a;position:relative;display:flex;align-items:flex-end;padding:13px">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent,transparent 9px,rgba(68,114,196,.07) 9px,rgba(68,114,196,.07) 10px)"></div>
+            <span style="position:relative;font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.1em;color:#6f9eff;white-space:nowrap">◆ TITOLO NFT</span>
           </div>
-          <div style="padding:14px 16px"><div style="font-family:'Space Grotesk';font-weight:600;font-size:14px">Notte Elettronica · Vol.4</div><div style="font-size:11px;color:oklch(0.6 0.02 265);margin-top:3px">intestato a Marco Bianchi</div><div style="margin-top:12px;font-family:'IBM Plex Mono';font-size:10px;color:oklch(0.78 0.1 264)">accesso valido · NFC pronto</div></div>
+          <div style="padding:16px 16px 0;margin-top:-26px;position:relative">
+            <div style="background:#fff;padding:12px;display:flex;justify-content:center;border:1px solid #2a2a2a"><div style="display:grid;grid-template-columns:repeat(11,8px);grid-template-rows:repeat(11,8px)">{{ qrEl }}</div></div>
+          </div>
+          <div style="padding:15px 16px">
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13.5px;letter-spacing:0.02em">Notte Elettronica · Vol.4</div>
+            <div style="font-size:11px;color:#8a8682;margin-top:4px">intestato a Marco Bianchi</div>
+            <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#00cc88"><span style="width:7px;height:7px;border-radius:50%;background:#00cc88;animation:pulse 2s infinite"></span> Accesso valido · NFC pronto</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- TRUST STRIP -->
-  <div style="border-top:1px solid oklch(0.16 0.02 265);border-bottom:1px solid oklch(0.16 0.02 265);background:oklch(0.08 0.01 265/.6)">
-    <div style="max-width:1180px;margin:0 auto;padding:22px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px">
+  <div style="border-top:1px solid #2a2a2a;border-bottom:1px solid #2a2a2a;background:#0d0d0d">
+    <div style="max-width:1140px;margin:0 auto;padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:#2a2a2a">
       <sc-for list="{{ trust }}" as="t" hint-placeholder-count="4">
-        <div style="text-align:center"><div style="font-family:'Space Grotesk';font-weight:700;font-size:clamp(20px,2.2vw,26px);color:oklch(0.8 0.13 264)">{{ t.k }}</div><div style="font-size:11.5px;color:oklch(0.6 0.02 265);margin-top:3px">{{ t.v }}</div></div>
+        <div style="text-align:center;background:#0d0d0d;padding:14px 10px"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(20px,2.2vw,26px);color:#6f9eff;letter-spacing:0.02em">{{ t.k }}</div><div style="font-family:'Quicksand',sans-serif;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#8a8682;margin-top:6px">{{ t.v }}</div></div>
       </sc-for>
     </div>
   </div>
 
   <!-- COME FUNZIONA -->
-  <div id="come" style="max-width:1180px;margin:0 auto;padding:clamp(50px,7vw,86px) 24px 30px">
-    <div style="font-family:'IBM Plex Mono';font-size:11px;letter-spacing:0.14em;color:oklch(0.6 0.1 264)">COME FUNZIONA</div>
-    <h2 style="font-family:'Space Grotesk';font-weight:600;font-size:clamp(26px,3.4vw,38px);margin-top:12px;max-width:18ch;text-wrap:balance">Tre passi, un solo dispositivo: il tuo telefono.</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:34px">
+  <div id="come" style="max-width:1140px;margin:0 auto;padding:clamp(56px,7vw,88px) 24px 30px">
+    <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Quicksand',sans-serif;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;color:#6f9eff"><span>▸</span> Come funziona</div>
+    <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(26px,3.6vw,38px);margin-top:16px;max-width:20ch;line-height:1.12;text-wrap:balance">Tre passi, un solo dispositivo: il tuo telefono.</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(264px,1fr));gap:1px;margin-top:36px;background:#2a2a2a;border:1px solid #2a2a2a">
       <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
-        <div style="background:oklch(0.13 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:24px;position:relative;overflow:hidden">
-          <div style="position:absolute;right:-20px;top:-20px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,oklch(0.7 0.14 264/.14),transparent 70%)"></div>
-          <div style="font-family:'Space Grotesk';font-weight:700;font-size:13px;width:34px;height:34px;border-radius:10px;background:oklch(0.22 0.06 264);color:oklch(0.84 0.12 264);display:flex;align-items:center;justify-content:center">{{ s.n }}</div>
-          <div style="font-family:'Space Grotesk';font-weight:600;font-size:18px;margin-top:16px">{{ s.title }}</div>
-          <div style="font-size:13.5px;color:oklch(0.68 0.02 265);margin-top:8px;line-height:1.6">{{ s.body }}</div>
+        <div style="background:#131313;padding:28px 26px;position:relative">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#000;background:#4472c4;width:30px;height:30px;display:flex;align-items:center;justify-content:center">{{ s.n }}</div><span style="font-family:'Quicksand',sans-serif;font-size:16px;color:#6f9eff">{{ s.glyph }}</span></div>
+          <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px;margin-top:20px;letter-spacing:0.02em">{{ s.title }}</div>
+          <div style="font-size:13.5px;color:#8a8682;margin-top:10px;line-height:1.6;text-wrap:pretty">{{ s.body }}</div>
         </div>
       </sc-for>
     </div>
   </div>
 
   <!-- EVENTI -->
-  <div id="eventi" style="max-width:1180px;margin:0 auto;padding:clamp(40px,5vw,64px) 24px 30px">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px">
+  <div id="eventi" style="max-width:1140px;margin:0 auto;padding:clamp(44px,5vw,68px) 24px 30px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:28px">
       <div>
-        <div style="font-family:'IBM Plex Mono';font-size:11px;letter-spacing:0.14em;color:oklch(0.6 0.1 264)">IN VENDITA ORA</div>
-        <h2 style="font-family:'Space Grotesk';font-weight:600;font-size:clamp(26px,3.4vw,38px);margin-top:12px">Eventi in evidenza</h2>
+        <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Quicksand',sans-serif;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;color:#6f9eff"><span>▸</span> In vendita ora</div>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(26px,3.6vw,38px);margin-top:16px">Eventi in evidenza</h2>
       </div>
-      <span style="font-size:12.5px;color:oklch(0.62 0.02 265);font-family:'IBM Plex Mono'">L'acquisto si completa nell'app →</span>
+      <span style="font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.08em;color:#5a5754">L'acquisto si completa nell'app →</span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px">
-      <sc-for list="{{ eventCards }}" as="e" hint-placeholder-count="3">
-        <div style="background:oklch(0.13 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
-          <div style="height:140px;background:{{ e.gradient }};position:relative;display:flex;align-items:flex-end;padding:14px"><div style="position:absolute;right:-22px;top:-22px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,oklch(0.82 0.14 264/.4),transparent 70%)"></div><span style="font-family:'IBM Plex Mono';font-size:9px;color:oklch(0.92 0.05 264);position:relative">[ visual evento ]</span></div>
-          <div style="padding:16px 17px">
-            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'IBM Plex Mono';font-size:9.5px;color:oklch(0.78 0.13 264);border:1px solid oklch(0.42 0.12 264);padding:3px 8px;border-radius:6px">{{ e.type }}</span><span style="font-size:11px;color:oklch(0.6 0.02 265)">{{ e.date }}</span></div>
-            <div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;margin-top:12px">{{ e.title }}</div>
-            <div style="font-size:11.5px;color:oklch(0.6 0.02 265);margin-top:4px">{{ e.availLabel }}</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
-              <span style="font-family:'Space Grotesk';font-weight:700;font-size:19px">{{ e.priceLabel }}</span>
-              <span onClick="{{ e.onBuy }}" style="font-size:12.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));padding:9px 15px;border-radius:11px;cursor:pointer">Acquista</span>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;background:#131313;border:1px solid #2a2a2a;padding:9px 13px;flex:1;min-width:200px;max-width:320px"><span style="color:#5a5754">⌕</span><input value="{{ query }}" onInput="{{ onQuery }}" placeholder="Cerca artisti, locali, eventi…" style="width:100%;background:transparent;border:none;outline:none;color:#e8e6e0;font-family:'Quicksand',sans-serif;font-size:13px"/></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ cityChips }}" as="c"><span onClick="{{ c.on }}" style="font-family:'Quicksand',sans-serif;font-size:11px;font-weight:600;padding:9px 13px;cursor:pointer;background:{{ c.bg }};color:{{ c.color }};border:1px solid {{ c.border }};white-space:nowrap">{{ c.label }}</span></sc-for></div>
+      <span onClick="{{ toggleWeekend }}" style="font-family:'Quicksand',sans-serif;font-size:11px;font-weight:600;padding:9px 13px;cursor:pointer;background:{{ weekendBg }};color:{{ weekendColor }};border:1px solid {{ weekendBorder }};white-space:nowrap">Questo weekend</span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px"><sc-for list="{{ genreChips }}" as="g"><span onClick="{{ g.on }}" style="font-family:'Quicksand',sans-serif;font-size:11px;font-weight:600;padding:8px 12px;cursor:pointer;background:{{ g.bg }};color:{{ g.color }};border:1px solid {{ g.border }};white-space:nowrap">{{ g.label }}</span></sc-for></div>
+    <sc-if value="{{ noEvents }}"><div style="background:#131313;border:1px solid #2a2a2a;padding:28px;text-align:center;font-size:13px;color:#8a8682">Nessun evento con questi filtri.</div></sc-if>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(264px,1fr));gap:16px">
+      <sc-for list="{{ events }}" as="e" hint-placeholder-count="3">
+        <div class="lift" style="background:#131313;border:1px solid #2a2a2a">
+          <div style="height:132px;background-image:url({{ e.art }});background-size:cover;background-position:center;border-bottom:1px solid #2a2a2a"></div>
+          <div style="padding:18px 17px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Quicksand',sans-serif;font-size:9.5px;letter-spacing:0.14em;color:#6f9eff;border:1px solid rgba(68,114,196,.4);background:rgba(68,114,196,.1);padding:3px 8px">{{ e.type }}</span><span style="font-family:'Quicksand',sans-serif;font-size:11px;color:#8a8682">{{ e.date }}</span></div>
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;margin-top:14px;letter-spacing:0.01em">{{ e.title }}</div>
+            <div style="font-family:'Quicksand',sans-serif;font-size:11px;color:#8a8682;margin-top:6px">{{ e.availLabel }}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">
+              <span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:19px">{{ e.priceLabel }}</span>
+              <span onClick="{{ e.onBuy }}" style="font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:10px 16px;cursor:pointer">Dettagli</span>
             </div>
           </div>
         </div>
@@ -121,24 +144,60 @@
     </div>
   </div>
 
+  <!-- ARTISTI / BLOG / NEWS -->
+  <div style="max-width:1140px;margin:0 auto;padding:clamp(20px,3vw,40px) 24px 10px">
+    <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(22px,3vw,32px);margin-bottom:20px">Artisti da seguire</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+      <sc-for list="{{ artists }}" as="a">
+        <div style="display:flex;align-items:center;gap:12px;background:#131313;border:1px solid #2a2a2a;padding:14px 16px">
+          <div style="width:42px;height:42px;border-radius:50%;background:{{ a.color }};display:flex;align-items:center;justify-content:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">{{ a.initials }}</div>
+          <div style="flex:1;min-width:0"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</div><div style="font-size:11.5px;color:#8a8682">{{ a.genre }}</div></div>
+          <span style="font-family:'Quicksand',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6f9eff;border:1px solid #2f4f8a;padding:7px 12px;cursor:pointer">Segui</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="max-width:1140px;margin:0 auto;padding:clamp(28px,4vw,48px) 24px 10px">
+    <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(22px,3vw,32px);margin-bottom:20px">Dal blog</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+      <sc-for list="{{ blogPosts }}" as="b">
+        <div style="background:#131313;border:1px solid #2a2a2a;overflow:hidden">
+          <div style="height:150px;background-image:url({{ b.art }});background-size:cover;background-position:center"></div>
+          <div style="padding:18px 18px 20px"><div style="font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#6f9eff">{{ b.tag }} · {{ b.read }}</div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px;margin-top:8px;line-height:1.3">{{ b.title }}</div><div style="font-size:13px;color:#8a8682;margin-top:8px;line-height:1.55">{{ b.excerpt }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="max-width:1140px;margin:0 auto;padding:clamp(28px,4vw,40px) 24px 10px">
+    <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(22px,3vw,32px);margin-bottom:20px">News &amp; annunci</h2>
+    <div style="display:flex;flex-direction:column;gap:1px;background:#2a2a2a;border:1px solid #2a2a2a">
+      <sc-for list="{{ newsItems }}" as="n">
+        <div style="display:flex;align-items:center;gap:16px;background:#0d0d0d;padding:16px 18px">
+          <span style="font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.06em;color:#6f9eff;white-space:nowrap;width:60px">{{ n.date }}</span>
+          <span style="font-size:14px;color:#e8e6e0">{{ n.title }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
   <!-- ORGANIZZATORI -->
-  <div id="organizzatori" style="max-width:1180px;margin:0 auto;padding:clamp(40px,5vw,70px) 24px">
-    <div style="border-radius:26px;padding:clamp(28px,4vw,48px);background:linear-gradient(135deg,oklch(0.22 0.07 264),oklch(0.13 0.03 285));border:1px solid oklch(0.4 0.1 264);position:relative;overflow:hidden;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:34px;align-items:center">
-      <div style="position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,oklch(0.7 0.16 264/.3),transparent 70%);pointer-events:none"></div>
+  <div id="organizzatori" style="max-width:1140px;margin:0 auto;padding:clamp(44px,5vw,72px) 24px">
+    <div style="padding:clamp(28px,4vw,48px);background:#131313;border:1px solid #2a2a2a;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:38px;align-items:center;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent,transparent 13px,rgba(68,114,196,.04) 13px,rgba(68,114,196,.04) 14px);pointer-events:none"></div>
       <div style="position:relative">
-        <div style="font-family:'IBM Plex Mono';font-size:11px;letter-spacing:0.14em;color:oklch(0.84 0.1 264)">PER ORGANIZZATORI</div>
-        <h2 style="font-family:'Space Grotesk';font-weight:600;font-size:clamp(24px,3vw,34px);margin-top:12px;line-height:1.12">Emetti, vendi e validi.<br/>Tutto da una console.</h2>
-        <p style="font-size:14px;color:oklch(0.82 0.04 265);margin-top:14px;line-height:1.6;max-width:46ch">Carica l'artwork, TINFT lo converte in titolo NFT e lo mette in vendita sull'e-commerce. Incassi, royalty sul secondario e accessi live, in un'unica dashboard responsive.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px">
-          <span onClick="{{ openOrgRegister }}" style="font-family:'Space Grotesk';font-weight:600;font-size:14px;color:#fff;background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));padding:13px 24px;border-radius:12px;cursor:pointer;box-shadow:0 0 26px oklch(0.55 0.2 264/.4)">Registra la tua organizzazione</span>
-          <a href="TINFT - Console Web.dc.html" style="font-family:'Space Grotesk';font-weight:600;font-size:14px;color:oklch(0.86 0.04 265);background:oklch(0.14 0.02 265);border:1px solid oklch(0.34 0.04 265);padding:13px 22px;border-radius:12px">Vedi la console →</a>
+        <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Quicksand',sans-serif;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;color:#6f9eff"><span>▸</span> Per organizzatori</div>
+        <h2 style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(24px,3vw,34px);margin-top:16px;line-height:1.14">Emetti, vendi e validi.<br/>Tutto da una console.</h2>
+        <p style="font-size:14px;color:#8a8682;margin-top:16px;line-height:1.6;max-width:48ch;text-wrap:pretty">Carica l'artwork, TINFT lo converte in titolo NFT e lo mette in vendita sull'e-commerce. Incassi, royalty sul secondario e accessi live, in un'unica dashboard responsive.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:26px">
+          <span onClick="{{ openOrgRegister }}" style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:14px 24px;cursor:pointer">Registra la tua organizzazione</span>
+          <a href="TINFT - Console Web.dc.html" style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#e8e6e0;background:transparent;border:1px solid #2a2a2a;padding:14px 22px">Vedi la console →</a>
         </div>
       </div>
-      <div style="position:relative;display:flex;flex-direction:column;gap:12px">
+      <div style="position:relative;display:flex;flex-direction:column;gap:1px;background:#2a2a2a;border:1px solid #2a2a2a">
         <sc-for list="{{ orgPerks }}" as="p">
-          <div style="display:flex;align-items:center;gap:13px;background:oklch(0.1 0.013 265/.7);border:1px solid oklch(0.3 0.03 265);border-radius:14px;padding:14px 16px">
-            <div style="width:34px;height:34px;border-radius:10px;background:oklch(0.22 0.06 264);display:flex;align-items:center;justify-content:center;font-size:16px;color:oklch(0.84 0.12 264);flex-shrink:0">{{ p.icon }}</div>
-            <div><div style="font-family:'Space Grotesk';font-weight:600;font-size:13.5px">{{ p.title }}</div><div style="font-size:11.5px;color:oklch(0.68 0.02 265);margin-top:1px">{{ p.body }}</div></div>
+          <div style="display:flex;align-items:center;gap:14px;background:#0d0d0d;padding:16px 17px">
+            <div style="width:34px;height:34px;background:rgba(68,114,196,.12);border:1px solid rgba(68,114,196,.35);display:flex;align-items:center;justify-content:center;font-size:15px;color:#6f9eff;flex-shrink:0">{{ p.icon }}</div>
+            <div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13.5px;letter-spacing:0.02em">{{ p.title }}</div><div style="font-size:11.5px;color:#8a8682;margin-top:2px">{{ p.body }}</div></div>
           </div>
         </sc-for>
       </div>
@@ -146,64 +205,142 @@
   </div>
 
   <!-- FOOTER -->
-  <div style="border-top:1px solid oklch(0.16 0.02 265);margin-top:30px">
-    <div style="max-width:1180px;margin:0 auto;padding:30px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px;color:oklch(0.6 0.02 265)"><img src="assets/tinft-logo.png" alt="TINFT" style="height:24px;border-radius:6px"/><span style="font-family:'IBM Plex Mono';font-size:11px;letter-spacing:0.08em">© 2024 TINFT · ticketing NFT, solo da app</span></div>
-      <div style="display:flex;gap:22px;font-size:12px;color:oklch(0.58 0.02 265)"><a href="#come">Come funziona</a><a href="#organizzatori">Organizzatori</a><span onClick="{{ openLogin }}" style="cursor:pointer">Accedi</span></div>
+  <div style="border-top:1px solid #2a2a2a">
+    <div style="max-width:1140px;margin:0 auto;padding:30px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:11px;color:#8a8682"><img src="assets/tinft-logo.png" alt="TINFT" style="height:26px;width:26px;object-fit:contain"/><span style="font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.06em">© 2024 TINFT · ticketing NFT, solo da app</span></div>
+      <div style="display:flex;gap:20px;font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.06em;color:#5a5754"><a href="#come">Come funziona</a><a href="#organizzatori">Organizzatori</a><span onClick="{{ openLogin }}" style="cursor:pointer">Accedi</span></div>
     </div>
   </div>
 
+  <!-- EVENT DETAIL (pubblico) -->
+  <sc-if value="{{ detailOpen }}">
+    <div class="scr" style="position:fixed;inset:0;z-index:45;background:#0a0a0a;overflow-y:auto">
+      <div style="max-width:920px;margin:0 auto;padding:0 0 60px">
+        <div style="position:relative;height:300px;background-image:url({{ dArt }});background-size:cover;background-position:center">
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,#0a0a0a,rgba(10,10,10,.15) 55%,rgba(10,10,10,.55))"></div>
+          <div onClick="{{ closeDetail }}" style="position:absolute;top:18px;left:18px;background:rgba(10,10,10,.7);border:1px solid #2a2a2a;padding:9px 14px;font-family:'Quicksand',sans-serif;font-size:12px;font-weight:600;cursor:pointer">‹ Eventi</div>
+          <div style="position:absolute;left:24px;bottom:18px;right:24px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-family:'Quicksand',sans-serif;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff;border:1px solid rgba(68,114,196,.5);background:rgba(10,10,10,.6);padding:3px 8px">{{ dType }}</span><span style="font-family:'Quicksand',sans-serif;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#cfcdc8;border:1px solid #2a2a2a;background:rgba(10,10,10,.6);padding:3px 8px">{{ dGenre }}</span></div>
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(24px,4vw,36px);margin-top:10px">{{ dTitle }}</div>
+          </div>
+        </div>
+        <div style="padding:22px 24px;display:grid;grid-template-columns:{{ dCols }};gap:26px;align-items:start">
+          <div style="min-width:0">
+            <div style="display:flex;gap:22px;flex-wrap:wrap">
+              <div><div style="font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Data</div><div style="font-weight:600;font-size:13.5px;margin-top:3px">{{ dDate }}</div></div>
+              <div><div style="font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Orario</div><div style="font-weight:600;font-size:13.5px;margin-top:3px">{{ dTime }}</div></div>
+              <div><div style="font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Luogo</div><div style="font-weight:600;font-size:13.5px;margin-top:3px">{{ dVenue }} · {{ dCity }}</div></div>
+            </div>
+            <div style="margin-top:16px;height:6px;background:#1c1c1c;border:1px solid #2a2a2a"><div style="height:100%;width:{{ dSoldW }};background:#ff9900"></div></div>
+            <div style="font-size:11px;color:#ffcf80;margin-top:6px">{{ dScarcity }}</div>
+            <p style="font-size:14px;color:#8a8682;margin-top:16px;line-height:1.6;text-wrap:pretty">{{ dDesc }}</p>
+            <div style="margin-top:20px;font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6a6764">Line-up</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+              <sc-for list="{{ dLineup }}" as="a" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:11px;background:#131313;border:1px solid #2a2a2a;padding:11px 13px"><div style="width:30px;height:30px;border-radius:50%;background:#2f4f8a;flex-shrink:0"></div><span style="font-size:13px;font-weight:600">{{ a }}</span></div></sc-for>
+            </div>
+          </div>
+          <div style="position:sticky;top:18px;background:#131313;border:1px solid #2a2a2a;padding:18px">
+            <div style="font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#6f9eff">Scegli il biglietto</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+              <sc-for list="{{ dTiers }}" as="t" hint-placeholder-count="3">
+                <div onClick="{{ t.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:1px solid {{ t.border }};background:{{ t.bg }};cursor:{{ t.cursor }};opacity:{{ t.opacity }}">
+                  <div><div style="font-size:13px;font-weight:700;color:{{ t.nameColor }}">{{ t.n }}</div><div style="font-size:10.5px;color:#8a8682;margin-top:2px">{{ t.note }}</div></div>
+                  <div style="font-weight:700;font-size:15px;color:{{ t.priceColor }};white-space:nowrap">{{ t.priceLabel }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+              <span style="font-size:12.5px;color:#8a8682">Quantità</span>
+              <div style="display:flex;align-items:center;gap:1px;background:#2a2a2a;border:1px solid #2a2a2a">
+                <span onClick="{{ decQty }}" style="width:34px;height:32px;display:flex;align-items:center;justify-content:center;background:#0d0d0d;color:#e8e6e0;font-size:16px;cursor:pointer">−</span>
+                <span style="width:42px;height:32px;display:flex;align-items:center;justify-content:center;background:#131313;font-weight:700">{{ qtyN }}</span>
+                <span onClick="{{ incQty }}" style="width:34px;height:32px;display:flex;align-items:center;justify-content:center;background:#0d0d0d;color:#e8e6e0;font-size:16px;cursor:pointer">+</span>
+              </div>
+            </div>
+            <div style="margin-top:14px;border-top:1px solid #2a2a2a;padding-top:12px;font-size:12.5px;color:#8a8682">
+              <div style="display:flex;justify-content:space-between"><span>Prezzo</span><span style="color:#e8e6e0">{{ dPrice }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Commissione servizio (4%)</span><span style="color:#e8e6e0">{{ dFee }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700;color:#e8e6e0"><span>Totale</span><span>{{ dTotal }}</span></div>
+            </div>
+            <div onClick="{{ buyTier }}" style="margin-top:14px;background:#4472c4;color:#fff;text-align:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:14px;cursor:pointer">Acquista · {{ dTotal }}</div>
+            <div style="font-size:10px;color:#5a5754;margin-top:10px;line-height:1.5;text-align:center">Titolo NFT nominativo · l'acquisto si completa nell'app TINFT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
   <!-- ============ AUTH MODAL ============ -->
   <sc-if value="{{ authOpen }}">
-    <div style="position:fixed;inset:0;z-index:40;background:rgba(4,5,10,.74);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px">
-      <div class="scr" style="width:440px;max-width:100%;max-height:92vh;overflow-y:auto;background:linear-gradient(180deg,oklch(0.12 0.015 265),oklch(0.09 0.01 265));border:1px solid oklch(0.3 0.03 265);border-radius:24px;padding:26px;position:relative;box-shadow:0 40px 90px -20px rgba(20,30,120,.6)">
-        <span onClick="{{ closeAuth }}" style="position:absolute;top:18px;right:20px;font-size:20px;color:oklch(0.6 0.02 265);cursor:pointer">✕</span>
+    <div style="position:fixed;inset:0;z-index:50;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div class="scr" style="width:440px;max-width:100%;max-height:92vh;overflow-y:auto;background:#131313;border:1px solid #2a2a2a;padding:26px;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9)">
+        <span onClick="{{ closeAuth }}" style="position:absolute;top:18px;right:20px;font-size:18px;color:#8a8682;cursor:pointer">✕</span>
 
         <sc-if value="{{ authDone }}">
           <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 6px 8px">
-            <div style="width:78px;height:78px;border-radius:50%;background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.45 0.14 264));display:flex;align-items:center;justify-content:center;font-size:38px;color:#fff;box-shadow:0 0 40px oklch(0.55 0.2 264/.5)">✓</div>
-            <div style="font-family:'Space Grotesk';font-weight:600;font-size:21px;margin-top:18px">{{ doneTitle }}</div>
-            <div style="font-size:13px;color:oklch(0.7 0.02 265);margin-top:8px;line-height:1.55;max-width:34ch">{{ doneBody }}</div>
-            <a href="{{ doneHref }}" style="margin-top:22px;font-family:'Space Grotesk';font-weight:600;font-size:14px;color:#fff;background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));padding:13px 28px;border-radius:13px;box-shadow:0 0 26px oklch(0.55 0.2 264/.35)">{{ doneCta }}</a>
-            <span onClick="{{ closeAuth }}" style="margin-top:14px;font-size:12px;color:oklch(0.6 0.02 265);cursor:pointer">Torna al sito</span>
+            <div style="width:72px;height:72px;background:rgba(68,114,196,.14);border:1px solid #4472c4;display:flex;align-items:center;justify-content:center;font-size:34px;color:#6f9eff">✓</div>
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:20px;margin-top:18px;letter-spacing:0.02em">{{ doneTitle }}</div>
+            <div style="font-size:13px;color:#8a8682;margin-top:10px;line-height:1.55;max-width:36ch">{{ doneBody }}</div>
+            <a href="{{ doneHref }}" style="margin-top:22px;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#4472c4;padding:14px 28px">{{ doneCta }}</a>
+            <span onClick="{{ closeAuth }}" style="margin-top:14px;font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.06em;color:#5a5754;cursor:pointer">Torna al sito</span>
           </div>
         </sc-if>
 
         <sc-if value="{{ authForm }}" hint-placeholder-val="{{ true }}">
-          <div style="display:flex;align-items:center;gap:11px">
-            <div style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:{{ aIconBg }}">{{ aIcon }}</div>
-            <div><div style="font-family:'Space Grotesk';font-weight:600;font-size:18px">{{ aTitle }}</div><div style="font-size:11.5px;color:oklch(0.6 0.02 265)">{{ aKicker }}</div></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:{{ aIconBg }}">{{ aIcon }}</div>
+            <div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:18px;letter-spacing:0.02em">{{ aTitle }}</div><div style="font-family:'Quicksand',sans-serif;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:#5a5754;margin-top:2px">{{ aKicker }}</div></div>
           </div>
 
-          <div style="display:flex;gap:8px;margin-top:18px">
-            <div onClick="{{ setCliente }}" style="flex:1;text-align:center;padding:10px;border-radius:11px;font-size:12.5px;font-weight:600;background:{{ cliBg }};color:{{ cliColor }};border:1px solid oklch(0.26 0.02 265);cursor:pointer">Cliente</div>
-            <div onClick="{{ setOrg }}" style="flex:1;text-align:center;padding:10px;border-radius:11px;font-size:12.5px;font-weight:600;background:{{ orgBg }};color:{{ orgColor }};border:1px solid oklch(0.26 0.02 265);cursor:pointer">Organizzatore</div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <div onClick="{{ setLogin }}" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:12px;font-weight:600;background:{{ loginBg }};color:{{ loginColor }};border:1px solid oklch(0.24 0.02 265);cursor:pointer">Accedi</div>
-            <div onClick="{{ setRegister }}" style="flex:1;text-align:center;padding:9px;border-radius:10px;font-size:12px;font-weight:600;background:{{ regBg }};color:{{ regColor }};border:1px solid oklch(0.24 0.02 265);cursor:pointer">Registrati</div>
-          </div>
+          <sc-if value="{{ authShowToggles }}" hint-placeholder-val="{{ true }}">
+            <div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#5a5754;margin:20px 0 9px">Chi sei</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div onClick="{{ setCliente }}" style="padding:13px 14px;border:1px solid {{ cliBorder }};background:{{ cliBg }};cursor:pointer"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13.5px;color:{{ cliColor }}">Cliente</div><div style="font-size:10.5px;color:#6a6764;margin-top:3px">Compra · accedi · rivendi</div></div>
+              <div onClick="{{ setOrg }}" style="padding:13px 14px;border:1px solid {{ orgBorder }};background:{{ orgBg }};cursor:pointer"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13.5px;color:{{ orgColor }}">Organizzatore</div><div style="font-size:10.5px;color:#6a6764;margin-top:3px">Vendi · gestisci eventi</div></div>
+            </div>
+            <div style="display:flex;gap:1px;margin-top:13px;background:#2a2a2a;border:1px solid #2a2a2a">
+              <div onClick="{{ setLogin }}" style="flex:1;text-align:center;padding:10px;font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:{{ loginBg }};color:{{ loginColor }};cursor:pointer">Accedi</div>
+              <div onClick="{{ setRegister }}" style="flex:1;text-align:center;padding:10px;font-family:'Quicksand',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:{{ regBg }};color:{{ regColor }};cursor:pointer">Registrati</div>
+            </div>
+          </sc-if>
 
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-            <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ true }}">
-              <sc-if value="{{ isCliente }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ authIsVerify }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:18px;background:#0d0d0d;border:1px solid #2a2a2a;padding:15px 16px">
+              <div style="font-size:13px;color:#cfcdc8;line-height:1.5">Codice inviato a <b style="color:#fff">{{ fEmail }}</b>. Inseriscilo per verificare l'indirizzo.</div>
+              <div style="margin-top:9px;font-size:10.5px;color:#ffcf80;background:#0a0a0a;border:1px solid #2a2a2a;padding:7px 10px">Modalità demo · codice: <b>{{ regSentCode }}</b></div>
+              <div style="margin-top:11px;background:#0a0a0a;border:1px solid #2a2a2a;padding:11px 13px"><input value="{{ fCode }}" onInput="{{ onCode }}" placeholder="000000" maxlength="6" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:22px;font-weight:700;letter-spacing:0.45em;text-align:center;font-family:inherit"/></div>
+              <div style="height:14px;font-family:'Quicksand',sans-serif;font-size:11px;color:#ff5577;margin-top:8px">{{ authError }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ authShowForm }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+              <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ true }}">
                 <div style="display:flex;gap:10px">
-                  <div style="flex:1;background:oklch(0.16 0.015 265);border:1px solid oklch(0.26 0.02 265);border-radius:12px;padding:10px 13px"><div style="font-size:9.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono';margin-bottom:4px">NOME</div><input value="{{ fNome }}" onInput="{{ onNome }}" placeholder="Nome" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:'IBM Plex Sans'"/></div>
-                  <div style="flex:1;background:oklch(0.16 0.015 265);border:1px solid oklch(0.26 0.02 265);border-radius:12px;padding:10px 13px"><div style="font-size:9.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono';margin-bottom:4px">COGNOME</div><input value="{{ fCognome }}" onInput="{{ onCognome }}" placeholder="Cognome" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:'IBM Plex Sans'"/></div>
+                  <div style="flex:1;background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">NOME</div><input value="{{ fNome }}" onInput="{{ onNome }}" placeholder="Nome" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
+                  <div style="flex:1;background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">COGNOME</div><input value="{{ fCognome }}" onInput="{{ onCognome }}" placeholder="Cognome" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
                 </div>
+                <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">CODICE FISCALE</div><input value="{{ fCf }}" onInput="{{ onCf }}" placeholder="RSSMRA90A01H501Z" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;letter-spacing:0.04em"/></div>
+                <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">DATA DI NASCITA</div><input value="{{ fNascita }}" onInput="{{ onNascita }}" placeholder="GG/MM/AAAA" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
               </sc-if>
-              <sc-if value="{{ isOrg }}" hint-placeholder-val="{{ true }}">
-                <div style="background:oklch(0.16 0.015 265);border:1px solid oklch(0.26 0.02 265);border-radius:12px;padding:10px 13px"><div style="font-size:9.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono';margin-bottom:4px">NOME ORGANIZZAZIONE</div><input value="{{ fOrg }}" onInput="{{ onOrg }}" placeholder="Es. Club Astra" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:'IBM Plex Sans'"/></div>
-                <div style="background:oklch(0.16 0.015 265);border:1px solid oklch(0.26 0.02 265);border-radius:12px;padding:10px 13px"><div style="font-size:9.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono';margin-bottom:4px">PARTITA IVA</div><input value="{{ fPiva }}" onInput="{{ onPiva }}" placeholder="IT01234567890" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:'IBM Plex Sans'"/></div>
+              <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">EMAIL</div><input value="{{ fEmail }}" onInput="{{ onEmail }}" placeholder="email@esempio.it" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
+              <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ true }}">
+                <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">TELEFONO</div><input value="{{ fTelefono }}" onInput="{{ onTelefono }}" placeholder="+39 ..." style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
+                <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">INDIRIZZO DI RESIDENZA</div><input value="{{ fResidenza }}" onInput="{{ onResidenza }}" placeholder="Via, civico, CAP, città (Prov)" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
+                <div onClick="{{ toggleBill }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><div style="width:19px;height:19px;border:1px solid {{ billBorder }};background:{{ billBg }};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0">{{ billCheck }}</div><span style="font-size:12px;color:#8a8682">Fatturazione uguale alla residenza</span></div>
+                <sc-if value="{{ billDiff }}"><div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">INDIRIZZO DI FATTURAZIONE</div><input value="{{ fFatt }}" onInput="{{ onFatt }}" placeholder="Via, civico, CAP, città (Prov)" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div></sc-if>
+                <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">NOME UTENTE</div><input value="{{ fUsername }}" onInput="{{ onUsername }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div>
               </sc-if>
-            </sc-if>
-            <div style="background:oklch(0.16 0.015 265);border:1px solid oklch(0.26 0.02 265);border-radius:12px;padding:10px 13px"><div style="font-size:9.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono';margin-bottom:4px">EMAIL</div><input value="{{ fEmail }}" onInput="{{ onEmail }}" placeholder="email@esempio.it" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:'IBM Plex Sans'"/></div>
-            <div style="background:oklch(0.16 0.015 265);border:1px solid oklch(0.26 0.02 265);border-radius:12px;padding:10px 13px"><div style="font-size:9.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono';margin-bottom:4px">PASSWORD</div><input value="{{ fPwd }}" onInput="{{ onPwd }}" type="password" placeholder="••••••••" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:'IBM Plex Sans';letter-spacing:0.1em"/></div>
-            <div style="height:16px;font-size:11px;color:oklch(0.72 0.13 25)">{{ authError }}</div>
-          </div>
+              <div style="background:#0d0d0d;border:1px solid #2a2a2a;padding:10px 13px"><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.14em;color:#5a5754;margin-bottom:5px">PASSWORD</div><input value="{{ fPwd }}" onInput="{{ onPwd }}" type="password" placeholder="••••••••" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;letter-spacing:0.1em"/></div>
+              <div style="height:14px;font-family:'Quicksand',sans-serif;font-size:11px;color:#ff5577">{{ authError }}</div>
+            </div>
+          </sc-if>
 
-          <div onClick="{{ submitAuth }}" style="background:{{ btnBg }};color:#fff;text-align:center;font-weight:600;font-size:14.5px;font-family:'Space Grotesk';padding:14px;border-radius:13px;cursor:pointer;opacity:{{ btnOpacity }};box-shadow:0 0 26px oklch(0.55 0.2 264/.3)">{{ btnLabel }}</div>
-          <div style="text-align:center;font-size:10.5px;color:oklch(0.5 0.02 265);margin-top:12px;line-height:1.5;font-family:'IBM Plex Mono'">L'acquisto e la validazione avvengono solo nell'app TINFT · password demo: 1234</div>
+          <div onClick="{{ submitAuth }}" style="background:{{ btnBg }};color:#fff;text-align:center;font-weight:700;font-size:13px;font-family:'Quicksand',sans-serif;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:15px;cursor:pointer;opacity:{{ btnOpacity }};margin-top:16px">{{ btnLabel }}</div>
+          <sc-if value="{{ authShowSpid }}">
+            <div style="display:flex;align-items:center;gap:10px;margin:14px 2px 0"><div style="flex:1;height:1px;background:#2a2a2a"></div><span style="font-family:'Quicksand',sans-serif;font-size:10px;color:#5a5754">oppure</span><div style="flex:1;height:1px;background:#2a2a2a"></div></div>
+            <div onClick="{{ spidStart }}" style="display:flex;align-items:center;justify-content:center;gap:9px;margin-top:12px;background:#2f4f8a;border:1px solid #4472c4;padding:13px;cursor:pointer"><div style="width:20px;height:20px;background:#6f9eff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;font-family:'Quicksand',sans-serif">ID</div><span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px">Entra con SPID</span></div>
+          </sc-if>
+          <div style="text-align:center;font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.04em;color:#5a5754;margin-top:14px;line-height:1.5">Stessa registrazione per cliente e organizzatore · identità verificata · password demo 1234</div>
         </sc-if>
       </div>
     </div>
@@ -215,7 +352,8 @@
 class Component extends DCLogic {
   state = {
     narrow:false, now:Date.now(), D:null,
-    auth:{ open:false, role:'cliente', mode:'register', nome:'', cognome:'', email:'', pwd:'', org:'', piva:'', error:'', done:false }
+    fCity:'Tutte', fGenre:'Tutti', q:'', weekendOnly:false, detailId:null, tierIdx:0, qty:1,
+    auth:{ open:false, role:'cliente', mode:'register', step:'form', nome:'', cognome:'', cf:'', nascita:'', email:'', telefono:'', username:'', residenza:'', fatturazione:'', billSame:true, pwd:'', org:'', piva:'', code:'', sent:'', error:'', done:false }
   };
 
   componentDidMount(){
@@ -228,6 +366,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount(){ window.removeEventListener('resize', this.onResize); clearInterval(this.t); if(this._bc){try{this._bc.close();}catch(e){}} }
   _world(){ try{ const r=localStorage.getItem('tinft_world'); return r?JSON.parse(r):null; }catch(e){ return null; } }
+  _ph(color){ const svg="<svg xmlns='http://www.w3.org/2000/svg' width='400' height='220'><rect width='400' height='220' fill='"+color+"'/><g fill='#ffffff' opacity='0.06'><rect x='30' width='14' height='220'/><rect x='90' width='14' height='220'/><rect x='150' width='14' height='220'/><rect x='210' width='14' height='220'/><rect x='270' width='14' height='220'/><rect x='330' width='14' height='220'/></g></svg>"; return "data:image/svg+xml,"+encodeURIComponent(svg).replace(/[()']/g,m=>({'(':'%28',')':'%29',"'":'%27'}[m])); }
   _saveWorld(w){ try{ w.t='world'; localStorage.setItem('tinft_world', JSON.stringify(w)); if(this._bc) this._bc.postMessage(w); }catch(e){} }
   buyFromSite(ev){
     const w=this._world(); if(!w){ this.setState({ auth:{...this.state.auth, open:true, role:'cliente', done:true } }); return; }
@@ -238,18 +377,45 @@ class Component extends DCLogic {
     this.setState({ auth:{ open:true, role:'cliente', mode:'register', nome:'', cognome:'', email:'', pwd:'', org:'', piva:'', error:'', done:true, bought:ev.title } });
   }
 
-  open(role, mode){ this.setState({ auth:{ open:true, role, mode, nome:'', cognome:'', email: role==='org'?'astra@club.it':'marco.b@email.it', pwd:'', org:'', piva:'', error:'', done:false } }); }
+  EV(){ return {
+    vol4:{ id:'vol4', title:'Notte Elettronica · Vol.4', venue:'Magazzino Generali', city:'Milano', date:'Sab 21 GIU', time:'23:00 – 05:00', genre:'Techno · House', type:'Ticket NFT', art:'assets/ev-vol4.png', soldPct:62, weekend:true, lineup:['Charlotte de Witte','Adam Beyer','Resident · Mind Against'], desc:'Quarta data della serie elettronica al Magazzino Generali. Due floor, sound system Funktion-One, dalle 23 alle 05.', tiers:[{n:'Early Bird',p:24,note:'esaurito',sold:true},{n:'Intero',p:31.5,note:'disponibile'},{n:'Last Release',p:38,note:'pochi rimasti'},{n:'Tavolo · 4 pax',p:160,note:'ingresso + tavolo'}] },
+    live:{ id:'live', title:'Stagione Live · Fidelity', venue:'Club Astra', city:'Milano', date:'5 serate · carnet', time:'porte 21:30', genre:'Live · Indie', type:'Fidelity', art:'assets/ev-live.png', soldPct:70, weekend:false, lineup:['Programmazione 5 concerti','Artisti della stagione'], desc:'Carnet fidelity per 5 serate live della stagione al Club Astra. Posto garantito a ogni data.', tiers:[{n:'Carnet · 5 serate',p:120,note:'risparmi 30€'},{n:'Singola serata',p:30,note:'disponibile'}] },
+    jazz:{ id:'jazz', title:'Blue Room · Jazz Sessions', venue:'Auditorium', city:'Torino', date:'Gio 03 LUG', time:'21:00', genre:'Jazz', type:'Ticket NFT', art:'assets/ev-jazz.png', soldPct:18, weekend:false, lineup:['Blue Room Quartet','Ospite a sorpresa'], desc:'Serata jazz in formato club all’Auditorium. Posti limitati, atmosfera intima.', tiers:[{n:'Intero',p:24,note:'disponibile'},{n:'Ridotto under 26',p:18,note:'con documento'},{n:'Tavolo fronte palco',p:80,note:'2 posti'}] }
+  }; }
+  minP(k){ const e=this.EV()[k]; return Math.min.apply(null,e.tiers.map(t=>t.p)); }
+  openDetail(id){ const ev=this.EV()[id]; let idx=0; if(ev){ const f=ev.tiers.findIndex(t=>!t.sold); idx=f<0?0:f; } this.setState({ detailId:id, tierIdx:idx, qty:1 }); }
+  buyTierSite(){ const id=this.state.detailId, ev=this.EV()[id]; if(!ev) return; const tier=ev.tiers[Math.min(this.state.tierIdx,ev.tiers.length-1)]; if(tier.sold) return; const q=Math.max(1,Math.min(4,this.state.qty||1)); const w=this._world(); if(w){ for(let i=0;i<q;i++){ w.tickets=[{ id:'t'+Date.now()+'_'+i+Math.floor(Math.random()*999), owner:'marco', eventId:ev.id, paid:tier.p, type:ev.type, title:ev.title, venue:ev.venue+' · '+ev.date, price:tier.p, endIn:2*86400+9000, refundIn:86400+15000, status:'attivo', holder:'Marco Bianchi', saleMarket:'' }, ...(w.tickets||[])]; } this._saveWorld(w); } this.setState({ detailId:null, auth:{ open:true, role:'cliente', mode:'register', nome:'', cognome:'', email:'', pwd:'', org:'', piva:'', error:'', done:true, bought:(q>1?(q+'× '):'')+ev.title } }); }
+
+  open(role, mode){ this.setState({ auth:{ open:true, role, mode, step:'form', nome:'', cognome:'', cf:'', nascita:'', email: role==='org'?'astra@club.it':'marco.b@email.it', telefono:'', username:'', residenza:'', fatturazione:'', billSame:true, pwd:'', org:'', piva:'', code:'', sent:'', error:'', done:false } }); }
   patch(p){ this.setState(s=>({ auth:{ ...s.auth, ...p, error:'' } })); }
 
   submit(canSubmit){
     const A=this.state.auth;
+    if(A.mode==='register' && A.step==='verify'){ this._verifySite(); return; }
     if(!canSubmit){
       let msg='Compila i campi richiesti';
       if(!/.+@.+\..+/.test(A.email)) msg='Inserisci un\u2019email valida';
       else if(A.pwd.length<4) msg='Password troppo corta (min 4)';
       this.patch({ error:msg }); return;
     }
-    if(A.mode==='login' && A.pwd!=='1234'){ this.patch({ error:'Credenziali non valide · password demo: 1234' }); return; }
+    if(A.mode==='login'){ if(A.pwd!=='1234'){ this.patch({ error:'Credenziali non valide \u00b7 password demo: 1234' }); return; } this.setState(s=>({ auth:{ ...s.auth, done:true } })); return; }
+    const code=String(Math.floor(100000+Math.random()*900000));
+    this.setState(s=>({ auth:{ ...s.auth, step:'verify', sent:code, code:'', error:'' } }));
+  }
+  _verifySite(){ const A=this.state.auth; if((A.code||'').trim()!==A.sent){ this.patch({ error:'Codice errato, riprova' }); return; } this._finishSiteReg(A.role, { nome:A.nome.trim(), cognome:A.cognome.trim(), cf:A.cf.trim(), nascita:A.nascita.trim(), email:A.email.trim(), telefono:A.telefono.trim(), username:A.username.trim(), residenza:A.residenza.trim(), fatturazione:(A.billSame===false?A.fatturazione.trim():A.residenza.trim()) }, 'email'); }
+  _siteSpid(){ return { nome:'Alessandro', cognome:'Russo', cf:'RSSLSN90A01F205X', nascita:'01/01/1990', email:'a.russo@spid.it', telefono:'+39 348 11 22 334', residenza:'Via Garibaldi 18, 20121 Milano (MI)' }; }
+  spidConfirmSite(){ const A=this.state.auth, s=this._siteSpid(); this._finishSiteReg(A.role, { ...s, username:'a.russo', fatturazione:s.residenza }, 'spid'); }
+  _finishSiteReg(role, d, method){
+    try{
+      let w=this._world(); if(!w) w={ t:'world', tickets:[], transfers:[], accounts:{}, clubs:[] };
+      w.accounts=w.accounts||{};
+      let key=(d.username||'').toLowerCase().replace(/[^a-z0-9]/g,'')||('u'+Date.now());
+      if(w.accounts[key]) key=key+String(Date.now()).slice(-3);
+      const initials=((d.nome[0]||'')+(d.cognome[0]||'')).toUpperCase();
+      w.accounts[key]={ nome:d.nome, cognome:d.cognome, email:d.email, goodwill:0, initials, username:d.username||key, cf:d.cf, nascita:d.nascita, telefono:d.telefono, residenza:d.residenza, fatturazione:d.fatturazione, role, method, verified:true };
+      this._saveWorld(w);
+      localStorage.setItem('tinft_session', key);
+    }catch(e){}
     this.setState(s=>({ auth:{ ...s.auth, done:true } }));
   }
 
@@ -261,9 +427,9 @@ class Component extends DCLogic {
     const finder=(r,c)=> (r<4&&c<4)||(r<4&&c>=N-4)||(r>=N-4&&c<4);
     for(let r=0;r<N;r++){ for(let c=0;c<N;c++){
       let on;
-      if(finder(r,c)){ const ir=r<4?r:r-(N-4), ic=c<4?c:c-(N-4); on=(ir===0||ir===3||ic===0||ic===3)||(ir===2&&ic===2)||(ir>=1&&ir<=2&&ic>=1&&ic<=2&&!(ir===1&&ic===1)); on=(ir===0||ir===3||ic===0||ic===3)||(ir>=1&&ir<=2&&ic>=1&&ic<=2); }
+      if(finder(r,c)){ const ir=r<4?r:r-(N-4), ic=c<4?c:c-(N-4); on=(ir===0||ir===3||ic===0||ic===3)||(ir>=1&&ir<=2&&ic>=1&&ic<=2); }
       else on = rnd()>0.5;
-      cells.push(React.createElement('div',{key:r+'-'+c,style:{width:'8px',height:'8px',background:on?'#0a0c12':'transparent'}}));
+      cells.push(React.createElement('div',{key:r+'-'+c,style:{width:'8px',height:'8px',background:on?'#0a0a0a':'transparent'}}));
     }}
     return cells;
   }
@@ -272,16 +438,31 @@ class Component extends DCLogic {
     const S=this.state, A=S.auth, D=S.D||{ORG_EVENTS:[],eur:n=>'\u20AC '+n};
     const isCli=A.role==='cliente', isOrgR=A.role==='org', isLogin=A.mode==='login', isReg=A.mode==='register';
     const emailOk=/.+@.+\..+/.test(A.email), pwdOk=A.pwd.length>=4;
+    const aVerify = isReg && A.step==='verify';
     let canSubmit=emailOk && pwdOk;
-    if(isReg && isCli) canSubmit = canSubmit && A.nome.trim() && A.cognome.trim();
-    if(isReg && isOrgR) canSubmit = canSubmit && A.org.trim() && A.piva.trim();
-    const ACT='oklch(0.76 0.14 264)';
+    if(isReg) canSubmit = canSubmit && A.nome.trim() && A.cognome.trim() && A.cf.trim() && A.nascita.trim() && A.telefono.trim() && A.username.trim() && A.residenza.trim() && (A.billSame===false? !!A.fatturazione.trim() : true);
+    if(aVerify) canSubmit = (A.code||'').trim().length>=6;
+    const ACT='#6f9eff';
+    const eur=(n)=>'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:(n%1?2:0),maximumFractionDigits:2});
+    const EVcat=this.EV(), evOrder=['vol4','live','jazz'];
+    let evList=evOrder.map(k=>EVcat[k]);
+    if(S.fCity!=='Tutte') evList=evList.filter(e=>e.city===S.fCity);
+    if(S.fGenre!=='Tutti') evList=evList.filter(e=>e.genre===S.fGenre);
+    if(S.weekendOnly) evList=evList.filter(e=>e.weekend);
+    if(S.q && S.q.trim()){ const qq=S.q.toLowerCase(); evList=evList.filter(e=>(e.title+' '+e.venue+' '+e.city+' '+e.genre).toLowerCase().indexOf(qq)>=0); }
+    const _w=this._world(); const _clubEv=[];
+    if(_w&&_w.clubs){ _w.clubs.forEach(c=>(c.events||[]).forEach(e=>{ _clubEv.push({ id:e.id, art:this._ph(c.color||'#2f4f8a'), type:(e.type||'Ticket NFT').toUpperCase(), date:e.date||'', title:e.title, availLabel:(c.name||'')+(c.city?' · '+c.city:''), priceLabel:eur(e.price||0), onBuy:()=>this.buyFromSite({ id:e.id, title:e.title, sub:(c.name||'')+' · '+(e.date||''), price:e.price||0 }) }); })); }
+    const events=[...evList.map(e=>({ id:e.id, art:e.art, type:e.type.toUpperCase(), date:e.date, title:e.title, availLabel:e.venue+' · '+e.city, priceLabel:'da '+eur(this.minP(e.id)), onBuy:()=>this.openDetail(e.id) })), ..._clubEv];
+    const cities=['Tutte','Milano','Torino'], genres=['Tutti','Techno · House','Live · Indie','Jazz'];
+    const dId=S.detailId, dE=dId?EVcat[dId]:null, dTar=dE?dE.tiers:[];
+    const stI=Math.min(S.tierIdx,Math.max(0,dTar.length-1)), stT=dE?dTar[stI]:null, feeN=stT?Math.round(stT.p*0.04*100)/100:0;
+    const qNs=Math.max(1,Math.min(4,S.qty||1));
 
-    const gradients={ 'Ticket NFT':'linear-gradient(135deg,oklch(0.4 0.16 264),oklch(0.25 0.1 285))', 'Fidelity':'linear-gradient(135deg,oklch(0.42 0.12 75),oklch(0.28 0.08 50))' };
-    const evIdMap={'Notte Elettronica · Vol.4':'vol4','Stagione Live · Fidelity':'live','Blue Room · Jazz':'jazz','Blue Room · Jazz Sessions':'jazz'};
+    const evIdMap={'Notte Elettronica \u00b7 Vol.4':'vol4','Stagione Live \u00b7 Fidelity':'live','Blue Room \u00b7 Jazz':'jazz','Blue Room \u00b7 Jazz Sessions':'jazz'};
+    const artMap={vol4:'assets/ev-vol4.png',live:'assets/ev-live.png',jazz:'assets/ev-jazz.png'};
     const eventCards=(D.ORG_EVENTS||[]).filter(e=>e.status==='in vendita').map(e=>({
       title:e.title, type:e.type.toUpperCase(), date:e.date,
-      gradient:gradients[e.type]||gradients['Ticket NFT'],
+      art:artMap[evIdMap[e.title]]||'assets/ev-vol4.png',
       priceLabel:D.eur(e.price), availLabel:Math.max(0,e.capacity-e.sold)+' titoli disponibili',
       onBuy: ()=> this.buyFromSite({ id: evIdMap[e.title]||e.id, title:e.title, sub:e.date, price:e.price })
     }));
@@ -291,25 +472,38 @@ class Component extends DCLogic {
       qrEl:this.makeQR(),
       trust:[ {k:'100%',v:'processi da app'}, {k:'0',v:'lettori o tornelli'}, {k:'NFT',v:'biglietto nominativo'}, {k:'24/7',v:'rivendita sicura'} ],
       steps:[
-        { n:'1', title:'Compra in euro', body:'Scegli l\u2019evento e paga in app. Ricevi un titolo NFT nominativo nel tuo wallet TINFT.' },
-        { n:'2', title:'Entra col telefono', body:'Allo varco mostri il QR dinamico o avvicini i telefoni via NFC. Lo staff valida dall\u2019app.' },
-        { n:'3', title:'Conserva o rivendi', body:'Dopo l\u2019evento il biglietto resta come NFT da collezione, oppure lo rivendi sul mercato TINFT.' }
+        { n:'1', glyph:'\u25C6', title:'Compra in euro', body:'Scegli l\u2019evento e paga in app. Ricevi un titolo NFT nominativo nel tuo wallet TINFT.' },
+        { n:'2', glyph:'\u2605', title:'Entra col telefono', body:'Al varco mostri il QR dinamico o avvicini i telefoni via NFC. Lo staff valida dall\u2019app.' },
+        { n:'3', glyph:'\u25B8', title:'Conserva o rivendi', body:'Dopo l\u2019evento il biglietto resta come NFT da collezione, oppure lo rivendi sul mercato TINFT.' }
       ],
       eventCards,
+      artists:[{name:'Charlotte de Witte',genre:'Techno',initials:'CW'},{name:'Adam Beyer',genre:'Techno',initials:'AB'},{name:'Mind Against',genre:'Melodic',initials:'MA'},{name:'Blue Room Quartet',genre:'Jazz',initials:'BR'}].map((a,i)=>({...a,color:['#2f4f8a','#0a8a5c','#9c5e00','#7a3550'][i%4]})),
+      blogPosts:[{tag:'GUIDA',read:'4 min',title:'Il biglietto NFT nominativo, spiegato',excerpt:'Cos’è, perché non si può falsificare e come vive nel tuo wallet.'},{tag:'DIETRO LE QUINTE',read:'3 min',title:'Come lo staff valida gli ingressi dal telefono',excerpt:'NFC, QR dinamico e modalità offline al varco.'},{tag:'MERCATO',read:'5 min',title:'Rivendere senza bagarini: il tetto di prezzo',excerpt:'Royalty all’organizzatore e prezzo massimo garantito.'}].map(p=>({...p,art:this._ph('#16233d')})),
+      newsItems:[{date:'12 GIU',title:'Nuovi club a Milano e Torino sulla piattaforma'},{date:'05 GIU',title:'Aggiornamento app: trasferimento in escrow più veloce'},{date:'28 MAG',title:'Stagione Live: aperte le prevendite carnet'}],
+      events, noEvents:events.length===0,
+      query:S.q, onQuery:(e)=>this.setState({q:e.target.value}),
+      cityChips:cities.map(c=>({label:c,on:()=>this.setState({fCity:c}),bg:S.fCity===c?'rgba(68,114,196,.16)':'#131313',color:S.fCity===c?'#6f9eff':'#8a8682',border:S.fCity===c?'#4472c4':'#2a2a2a'})),
+      genreChips:genres.map(g=>({label:g,on:()=>this.setState({fGenre:g}),bg:S.fGenre===g?'rgba(68,114,196,.16)':'#131313',color:S.fGenre===g?'#6f9eff':'#8a8682',border:S.fGenre===g?'#4472c4':'#2a2a2a'})),
+      weekendBg:S.weekendOnly?'rgba(68,114,196,.16)':'#131313', weekendColor:S.weekendOnly?'#6f9eff':'#8a8682', weekendBorder:S.weekendOnly?'#4472c4':'#2a2a2a', toggleWeekend:()=>this.setState({weekendOnly:!S.weekendOnly}),
+      detailOpen:!!dE, dCols:S.narrow?'1fr':'1.35fr 0.95fr',
+      dArt:dE?dE.art:'', dType:dE?dE.type.toUpperCase():'', dGenre:dE?dE.genre:'', dTitle:dE?dE.title:'', dDate:dE?dE.date:'', dTime:dE?dE.time:'', dVenue:dE?dE.venue:'', dCity:dE?dE.city:'', dDesc:dE?dE.desc:'',
+      dSoldW:(dE?dE.soldPct:0)+'%', dScarcity:dE?(dE.soldPct>=80?'Ultimi biglietti rimasti':(dE.soldPct>=50?(100-dE.soldPct)+'% ancora disponibile':'Buona disponibilità')):'',
+      dLineup:dE?dE.lineup:[],
+      dTiers:dTar.map((t,i)=>({n:t.n,note:t.sold?'Esaurito':t.note,priceLabel:eur(t.p),pick:t.sold?(()=>{}):(()=>this.setState({tierIdx:i})),border:(i===stI&&!t.sold)?'#4472c4':'#2a2a2a',bg:(i===stI&&!t.sold)?'rgba(68,114,196,.14)':'#0d0d0d',cursor:t.sold?'not-allowed':'pointer',opacity:t.sold?'0.45':'1',nameColor:(i===stI&&!t.sold)?'#6f9eff':'#e8e6e0',priceColor:(i===stI&&!t.sold)?'#6f9eff':'#e8e6e0'})),
+      dPrice:stT?eur(stT.p):'', dFee:eur(feeN), dTotal:stT?eur((stT.p+feeN)*qNs):'', qtyN:qNs, incQty:()=>this.setState({qty:Math.min(4,qNs+1)}), decQty:()=>this.setState({qty:Math.max(1,qNs-1)}),
+      buyTier:()=>this.buyTierSite(), closeDetail:()=>this.setState({detailId:null}),
       orgPerks:[
         { icon:'\u25C8', title:'Artwork \u2192 NFT', body:'Carichi il file, noi emettiamo i titoli.' },
         { icon:'\u20AC', title:'Incassi & royalty', body:'Prevendita + quota sul secondario.' },
         { icon:'\u26E8', title:'Accessi live', body:'Validazioni in tempo reale dallo staff.' }
       ],
-      // nav / cta
       openLogin: ()=> this.open('cliente','login'),
       openRegister: ()=> this.open('cliente','register'),
       openOrgRegister: ()=> this.open('org','register'),
-      // modal
       authOpen:A.open, authDone:A.done, authForm:!A.done,
       closeAuth: ()=> this.patch({ open:false }),
       aIcon: isCli?'\u25C6':'\u2B22',
-      aIconBg: isCli?'linear-gradient(135deg,oklch(0.6 0.17 264),oklch(0.42 0.13 280))':'linear-gradient(135deg,oklch(0.5 0.08 264),oklch(0.32 0.05 280))',
+      aIconBg: isCli?'#4472c4':'#1c1c1c',
       aTitle: isLogin? (isCli?'Bentornato':'Accedi alla console') : (isCli?'Crea il tuo account':'Registra l\u2019organizzazione'),
       aKicker: isCli?'Profilo cliente':'Profilo organizzatore',
       isCliente:isCli, isOrg:isOrgR, isLogin, isRegister:isReg,
@@ -317,23 +511,34 @@ class Component extends DCLogic {
       setOrg: ()=> this.patch({ role:'org', email:'astra@club.it' }),
       setLogin: ()=> this.patch({ mode:'login' }),
       setRegister: ()=> this.patch({ mode:'register' }),
-      cliBg: isCli?'oklch(0.24 0.07 264)':'oklch(0.14 0.013 265)', cliColor: isCli?ACT:'oklch(0.62 0.02 265)',
-      orgBg: isOrgR?'oklch(0.24 0.07 264)':'oklch(0.14 0.013 265)', orgColor: isOrgR?ACT:'oklch(0.62 0.02 265)',
-      loginBg: isLogin?'oklch(0.2 0.05 264)':'transparent', loginColor: isLogin?'#fff':'oklch(0.6 0.02 265)',
-      regBg: isReg?'oklch(0.2 0.05 264)':'transparent', regColor: isReg?'#fff':'oklch(0.6 0.02 265)',
+      cliBg: isCli?'rgba(68,114,196,.16)':'#131313', cliColor: isCli?ACT:'#8a8682',
+      orgBg: isOrgR?'rgba(68,114,196,.16)':'#131313', orgColor: isOrgR?ACT:'#8a8682',
+      loginBg: isLogin?'#1c1c1c':'#131313', loginColor: isLogin?'#fff':'#8a8682',
+      regBg: isReg?'#1c1c1c':'#131313', regColor: isReg?'#fff':'#8a8682',
       fNome:A.nome, fCognome:A.cognome, fEmail:A.email, fPwd:A.pwd, fOrg:A.org, fPiva:A.piva, authError:A.error,
       onNome:(e)=>this.patch({nome:e.target.value}), onCognome:(e)=>this.patch({cognome:e.target.value}),
       onEmail:(e)=>this.patch({email:e.target.value}), onPwd:(e)=>this.patch({pwd:e.target.value}),
       onOrg:(e)=>this.patch({org:e.target.value}), onPiva:(e)=>this.patch({piva:e.target.value}),
-      btnLabel: isLogin?'Accedi':'Crea account',
-      btnBg: canSubmit?'linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264))':'oklch(0.28 0.04 264)',
-      btnOpacity: canSubmit?'1':'0.5',
+      fCf:A.cf, onCf:(e)=>this.patch({cf:e.target.value.toUpperCase()}),
+      fNascita:A.nascita, onNascita:(e)=>this.patch({nascita:e.target.value}),
+      fTelefono:A.telefono, onTelefono:(e)=>this.patch({telefono:e.target.value}),
+      fUsername:A.username, onUsername:(e)=>this.patch({username:e.target.value}),
+      fResidenza:A.residenza, onResidenza:(e)=>this.patch({residenza:e.target.value}),
+      fFatt:A.fatturazione, onFatt:(e)=>this.patch({fatturazione:e.target.value}),
+      billDiff:(A.billSame===false), billCheck:!(A.billSame===false)?'\u2713':'', billBg:!(A.billSame===false)?'#4472c4':'transparent', billBorder:!(A.billSame===false)?'#4472c4':'#3a3a38',
+      toggleBill:()=>this.patch({billSame:!(A.billSame!==false)}),
+      fCode:A.code, onCode:(e)=>this.patch({code:e.target.value}), regSentCode:A.sent,
+      authIsVerify:aVerify, authShowToggles:!aVerify, authShowForm:!aVerify, authShowSpid:!aVerify,
+      cliBorder:isCli?'#4472c4':'#2a2a2a', orgBorder:isOrgR?'#4472c4':'#2a2a2a',
+      spidStart:()=>this.spidConfirmSite(),
+      btnLabel: aVerify?'Verifica e crea account':(isLogin?'Accedi':'Invia codice di verifica'),
+      btnBg: canSubmit?'#4472c4':'#1c1c1c',
+      btnOpacity: canSubmit?'1':'0.55',
       submitAuth: ()=> this.submit(canSubmit),
-      // done panel
       doneTitle: A.bought? 'Biglietto acquistato' : (isCli?'Account creato':'Organizzazione registrata'),
       doneBody: A.bought? ('"'+A.bought+'" \u00e8 ora nel wallet TINFT di Marco. Apri l\u2019app: lo trovi tra i tuoi biglietti, pronto per l\u2019accesso.') : (isCli? 'Scarica l\u2019app TINFT per comprare biglietti, accedere agli eventi e rivendere. Tutto avviene sul tuo telefono.' : 'La tua console \u00e8 pronta: emetti titoli, gestisci incassi e monitora gli accessi live.'),
-      doneCta: isCli?'Apri l\u2019anteprima app':'Vai alla console',
-      doneHref: isCli?'TINFT - Prototipo App.dc.html':'TINFT - Console Web.dc.html'
+      doneCta: isCli?'Apri la tua area TINFT':'Vai alla console',
+      doneHref: isCli?'TINFT - Web App.dc.html':'TINFT - Console Web.dc.html'
     };
   }
 }

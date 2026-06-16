@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# indirizzi di deploy locali (anvil/dry-run); per le reti reali committa a mano se vuoi un record
+/deployments/
+
+# build output
+dist/
+.next/
+.turbo/
+coverage/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# prototipo: snapshot persistenza in-memory
+.tinft-data.json
+services/api/.tinft-data.json
+
+# os / editor
+.DS_Store
+*.log

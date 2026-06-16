@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Biglietti NFT nominativi, solo da app</title>
+<meta name="description" content="TINFT — biglietteria NFT: ogni biglietto è un NFT nominativo nel tuo wallet. Acquisto in euro, accesso e rivendita, tutto dall'app." />
+<meta name="theme-color" content="#0a0a0a" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0a0a; --surf:#131313; --surf2:#1c1c1c; --deep:#0d0d0d;
+    --border:#2a2a2a; --border-soft:#222;
+    --txt:#e8e6e0; --mut:#8a8682; --mut2:#6a6764; --faint:#5a5754;
+    --blue:#4472c4; --blue-l:#6f9eff; --blue-d:#2f4f8a;
+    --green:#00cc88; --green-l:#5fe0b0; --green-bg:#0d2a20; --green-bd:#0a8a5c;
+    --orange:#ff9900; --orange-l:#ffcf80;
+    --err:#ff5577;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:'Quicksand',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden;min-height:100vh}
+  h1,h2,h3{font-weight:700;line-height:1.15}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:rgba(68,114,196,.4)}
+  img{display:block}
+
+  .container{max-width:1140px;margin:0 auto;padding:0 24px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-l);font-weight:600}
+  .eyebrow.sm{font-size:10px;letter-spacing:.12em;color:var(--mut2)}
+  .accent{color:var(--blue-l)}
+
+  /* ---- nav ---- */
+  nav{position:sticky;top:0;z-index:30;background:rgba(10,10,10,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .navin{display:flex;align-items:center;gap:16px;height:64px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .logo-img{width:34px;height:34px;object-fit:contain}
+  .logo-fb{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue-l),var(--blue));transform:rotate(45deg);display:none}
+  .brand b{font-weight:700;font-size:15px;letter-spacing:.14em}
+  .nlinks{display:flex;align-items:center;gap:2px;margin-left:14px;font-size:12px;letter-spacing:.06em;color:var(--mut)}
+  .nlinks a{padding:8px 11px;transition:color .15s}
+  .nlinks a:hover{color:var(--txt)}
+  .nlinks a.area{color:var(--blue-l)}
+  .nright{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+  /* ---- buttons ---- */
+  .btn{font-family:inherit;cursor:pointer;border:none;border-radius:13px;padding:14px 24px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--blue);box-shadow:0 0 20px rgba(68,114,196,.3);transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.sm{padding:10px 16px;font-size:11px;letter-spacing:.09em}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--border);box-shadow:none}
+  .btn.ghost:hover{border-color:var(--blue-d);filter:none}
+  .link-accedi{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);cursor:pointer;padding:9px 10px;white-space:nowrap}
+  .link-accedi:hover{color:var(--txt)}
+
+  /* ---- hero ---- */
+  .hero{position:relative;z-index:1}
+  .hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:52px;align-items:center;padding:clamp(46px,7vw,96px) 0 clamp(36px,5vw,64px)}
+  .hero h1{font-size:clamp(32px,5vw,56px);line-height:1.08;letter-spacing:.01em}
+  .hero p.sub{font-size:clamp(15px,1.6vw,18px);color:var(--mut);margin-top:22px;line-height:1.6;max-width:48ch}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+  .chips{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:9px 14px;font-size:11px;letter-spacing:.06em;color:var(--mut)}
+
+  /* phone mockup */
+  .phone-wrap{display:flex;justify-content:center}
+  .phone{width:266px;background:var(--surf2);padding:11px;border:1px solid var(--border);border-radius:34px;box-shadow:0 40px 90px -40px rgba(0,0,0,.9)}
+  .phone-screen{background:var(--bg);overflow:hidden;height:528px;border-radius:24px;position:relative;display:flex;flex-direction:column}
+  .phone-head{height:120px;background:var(--surf);border-bottom:1px solid var(--border);position:relative;display:flex;align-items:flex-end;padding:13px}
+  .phone-head .hatch{position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent,transparent 9px,rgba(68,114,196,.07) 9px,rgba(68,114,196,.07) 10px)}
+  .phone-head span{position:relative;font-size:9px;letter-spacing:.1em;color:var(--blue-l)}
+  .qr-box{margin:-26px 16px 0;position:relative;background:#fff;padding:12px;display:flex;justify-content:center;border:1px solid var(--border);border-radius:9px}
+  .qr-grid{display:grid;grid-template-columns:repeat(11,8px);grid-template-rows:repeat(11,8px)}
+  .qr-grid i{width:8px;height:8px;display:block}
+  .phone-body{padding:15px 16px}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ---- generic section ---- */
+  .sect{padding:clamp(44px,6vw,80px) 0 30px}
+  .sect h2{font-size:clamp(26px,3.6vw,38px);margin-top:16px}
+  .sect-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+
+  /* trust strip */
+  .trust{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--deep)}
+  .trust-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);margin:0 -1px}
+  .trust-cell{text-align:center;background:var(--deep);padding:18px 10px}
+  .trust-cell .k{font-weight:700;font-size:clamp(20px,2.2vw,26px);color:var(--blue-l);letter-spacing:.02em}
+  .trust-cell .v{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-top:6px}
+
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(264px,1fr));gap:1px;margin-top:36px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .step{background:var(--surf);padding:28px 26px}
+  .step-top{display:flex;align-items:center;justify-content:space-between}
+  .step-n{font-weight:700;font-size:13px;color:#000;background:var(--blue);width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+  .step-glyph{font-size:16px;color:var(--blue-l)}
+  .step h3{font-size:17px;margin-top:20px;letter-spacing:.02em}
+  .step p{font-size:13.5px;color:var(--mut);margin-top:10px;line-height:1.6}
+
+  /* event cards / grids */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(264px,1fr));gap:16px}
+  .grid.sm{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .grid.blog{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .card.lift{transition:border-color .15s ease,transform .15s ease}
+  .card.lift:hover{border-color:var(--blue);transform:translateY(-2px)}
+  .cover{height:132px;background-size:cover;background-position:center;border-bottom:1px solid var(--border)}
+  .card .body{padding:18px 17px}
+  .badge{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-l);border:1px solid rgba(68,114,196,.4);background:rgba(68,114,196,.1);padding:3px 8px;border-radius:9px;white-space:nowrap}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--mut);font-size:12px}
+  .faint{color:var(--faint);font-size:11px}
+  .price{font-weight:700}
+  .empty{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:28px;text-align:center;font-size:13px;color:var(--mut)}
+
+  /* artists */
+  .artist{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:14px 16px}
+  .avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+  .seg-follow{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue-l);border:1px solid var(--blue-d);border-radius:9px;padding:7px 12px;cursor:pointer;background:transparent}
+  .seg-follow:hover{background:rgba(68,114,196,.1)}
+
+  /* news rows */
+  .newsrows{display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .nrow{display:flex;align-items:center;gap:16px;background:var(--deep);padding:16px 18px}
+  .nrow .nd{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--blue-l);white-space:nowrap;width:64px}
+  .nrow .nt{font-size:14px;color:var(--txt)}
+
+  /* organizers */
+  .org-panel{padding:clamp(28px,4vw,48px);background:var(--surf);border:1px solid var(--border);border-radius:13px;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:38px;align-items:center;position:relative;overflow:hidden}
+  .org-panel .hatch{position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent,transparent 13px,rgba(68,114,196,.04) 13px,rgba(68,114,196,.04) 14px);pointer-events:none}
+  .org-perks{position:relative;display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .perk{display:flex;align-items:center;gap:14px;background:var(--deep);padding:16px 17px}
+  .perk-ic{width:34px;height:34px;border-radius:9px;background:rgba(68,114,196,.12);border:1px solid rgba(68,114,196,.35);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--blue-l);flex-shrink:0}
+
+  /* footer */
+  footer{border-top:1px solid var(--border)}
+  .footin{padding:30px 0;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+  .footlinks{display:flex;gap:20px;font-size:11px;letter-spacing:.06em;color:var(--faint)}
+
+  /* api status dot */
+  .apidot{position:fixed;right:14px;bottom:14px;z-index:20;display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--border);border-radius:13px;padding:7px 12px;font-size:10.5px;letter-spacing:.04em;color:var(--mut)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--mut2);flex-shrink:0}
+  .dot.ok{background:var(--green)}.dot.err{background:var(--orange)}
+
+  /* ---- modal scaffold ---- */
+  .scrim{position:fixed;inset:0;z-index:50;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+  .scr::-webkit-scrollbar{width:8px}.scr::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+
+  /* event detail */
+  .detail{position:fixed;inset:0;z-index:45;background:var(--bg);overflow-y:auto}
+  .detail-inner{max-width:920px;margin:0 auto;padding:0 0 60px}
+  .detail-hero{position:relative;height:300px;background-size:cover;background-position:center}
+  .detail-hero .grad{position:absolute;inset:0;background:linear-gradient(to top,#0a0a0a,rgba(10,10,10,.15) 55%,rgba(10,10,10,.55))}
+  .detail-back{position:absolute;top:18px;left:18px;background:rgba(10,10,10,.7);border:1px solid var(--border);border-radius:13px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer}
+  .detail-title{position:absolute;left:24px;bottom:18px;right:24px}
+  .detail-title h2{font-size:clamp(24px,4vw,36px);margin-top:10px}
+  .detail-cols{padding:22px 24px;display:grid;gap:26px;align-items:start}
+  .meta{display:flex;gap:22px;flex-wrap:wrap}
+  .meta .ml{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut2)}
+  .meta .mv{font-weight:600;font-size:13.5px;margin-top:3px}
+  .buybox{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:18px}
+  .tier{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:1px solid var(--border);border-radius:13px;background:var(--deep);cursor:pointer;margin-top:8px}
+  .tier.on{border-color:var(--blue);background:rgba(68,114,196,.14)}
+  .tier .tn{font-size:13px;font-weight:700}
+  .tier.on .tn{color:var(--blue-l)}
+  .tier .tnote{font-size:10.5px;color:var(--mut);margin-top:2px}
+  .tier .tp{font-weight:700;font-size:15px;white-space:nowrap}
+  .stepper{display:flex;align-items:center;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .stepper button{width:34px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--deep);color:var(--txt);border:none;font-size:16px;cursor:pointer;font-family:inherit}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed}
+  .stepper .q{width:42px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--surf);font-weight:700}
+  .bk{margin-top:14px;border-top:1px solid var(--border);padding-top:12px;font-size:12.5px;color:var(--mut)}
+  .bk .ln{display:flex;justify-content:space-between;margin-top:6px}
+  .bk .ln span:last-child{color:var(--txt)}
+  .bk .tot{display:flex;justify-content:space-between;margin-top:8px;font-weight:700;color:var(--txt)}
+
+  /* auth modal */
+  .modal{width:440px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:26px;position:relative;box-shadow:0 40px 90px -30px rgba(0,0,0,.9)}
+  .modal-x{position:absolute;top:18px;right:20px;font-size:18px;color:var(--mut);cursor:pointer;line-height:1}
+  .modal-head{display:flex;align-items:center;gap:12px}
+  .modal-ic{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff}
+  .modal-head h3{font-size:18px;letter-spacing:.02em}
+  .modal-head .k{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:2px}
+  .seg-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .role2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .role-card{padding:13px 14px;border:1px solid var(--border);border-radius:13px;background:var(--surf);cursor:pointer}
+  .role-card.on{border-color:var(--blue);background:rgba(68,114,196,.16)}
+  .role-card .t{font-weight:700;font-size:13.5px}
+  .role-card.on .t{color:var(--blue-l)}
+  .role-card .d{font-size:10.5px;color:var(--mut2);margin-top:3px}
+  .mode2{display:flex;gap:1px;margin-top:13px;background:var(--border);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .mode2 .m{flex:1;text-align:center;padding:10px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--surf);color:var(--mut);cursor:pointer}
+  .mode2 .m.on{background:var(--surf2);color:#fff}
+  .field{background:var(--deep);border:1px solid var(--border);border-radius:13px;padding:10px 13px}
+  .field .fl{font-size:9px;letter-spacing:.14em;color:var(--faint);margin-bottom:5px}
+  .field input{width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit}
+  .field input::placeholder{color:var(--faint)}
+  .fields{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+  .frow{display:flex;gap:10px}
+  .frow .field{flex:1}
+  .checkrow{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .checkbox{width:19px;height:19px;border-radius:6px;border:1px solid #3a3a38;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;background:transparent}
+  .checkbox.on{background:var(--blue);border-color:var(--blue)}
+  .err{font-size:11px;color:var(--err);min-height:14px}
+  .otp-box{margin-top:18px;background:var(--deep);border:1px solid var(--border);border-radius:13px;padding:15px 16px}
+  .otp-input{margin-top:11px;background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:11px 13px}
+  .otp-input input{width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:22px;font-weight:700;letter-spacing:.45em;text-align:center;font-family:inherit}
+  .demo-code{margin-top:9px;font-size:10.5px;color:var(--orange-l);background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px 10px}
+  .or{display:flex;align-items:center;gap:10px;margin:14px 2px 0}
+  .or .ln{flex:1;height:1px;background:var(--border)}
+  .or span{font-size:10px;color:var(--faint)}
+  .spid{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:12px;background:var(--blue-d);border:1px solid var(--blue);border-radius:13px;padding:13px;cursor:pointer;font-weight:700;font-size:13px}
+  .spid .id{width:20px;height:20px;border-radius:5px;background:var(--blue-l);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+  .done{display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 6px 8px}
+  .done .ck{width:72px;height:72px;border-radius:13px;background:rgba(68,114,196,.14);border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--blue-l)}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--surf2);border:1px solid var(--border);padding:13px 18px;border-radius:13px;font-size:13px;z-index:60;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.ok{border-color:var(--green-bd);color:var(--green-l)}
+  .toast.err{border-color:#7a2a3a;color:#ff8aa0}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue-l);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  @media(max-width:760px){
+    .nlinks{display:none}
+    .detail-cols{grid-template-columns:1fr!important}
+  }
+</style>
+</head>
+<body>
+  <div id="app"><div class="container" style="padding-top:80px"><div class="muted"><span class="spin"></span>Avvio…</div></div></div>
+  <div class="apidot"><span class="dot" id="apidot"></span><span id="apilabel">connessione…</span></div>
+  <div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   TINFT — Sito pubblico (v2). Single self-contained file, vanilla JS.
+   Fetches the public backend (services/api). Falls back to an in-file MOCK
+   store when the API is unreachable, so the site NEVER shows a blank screen
+   and every section renders with content. All logic lives in this one
+   <script> block so a DOM-stub harness can load it and call boot()/render().
+
+   The site is a public showcase + registration: real checkout happens in the
+   Web App (app-live.html). Here the event detail computes a price breakdown
+   only; the actual order is not created on the site.
+   ========================================================================= */
+
+var $ = function(id){ return document.getElementById(id); };
+/* API base: same-origin when served over http(s), localhost:3001 from disk. */
+var API_BASE = (location.protocol === 'file:' || !location.host) ? 'http://localhost:3001' : location.origin;
+
+/* ---- app state ---- */
+var ctx = {
+  mock: false,
+  data: { events:[], artists:[], blog:[], news:[] },
+  detail: null,   // { loading, event, tiers, tierIdx, qty } when event modal open
+  auth: null      // auth modal state, see openAuth()
+};
+
+function base(){ return API_BASE.replace(/\/$/, ''); }
+function eur(c){ return '€ ' + ((c||0)/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch];}); }
+function attr(s){ return esc(s).replace(/'/g,'&#39;'); }
+function uid(p){ return p + Date.now() + Math.floor(Math.random()*1000); }
+
+function toast(msg, kind){
+  var t = $('toast'); if(!t) return;
+  t.innerHTML = '<div class="toast ' + (kind||'') + '">' + esc(msg) + '</div>';
+  clearTimeout(window.__toast);
+  window.__toast = setTimeout(function(){ t.innerHTML=''; }, 3200);
+}
+function setDot(ok){
+  if($('apidot')) $('apidot').className = 'dot ' + (ok?'ok':'err');
+  if($('apilabel')) $('apilabel').textContent = ok ? 'API connessa' : 'Demo offline';
+}
+
+/* a deterministic gradient cover so cards look like the prototype even without
+   real cover images (the public API has no image URLs). */
+function cover(seed){
+  var s = String(seed||''); var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  var a = h % 360, b = (a+40) % 360;
+  return 'linear-gradient(135deg,hsl('+a+',45%,22%),hsl('+b+',55%,12%))';
+}
+
+/* =========================================================================
+   MOCK STORE — used when the API is unreachable. Mirrors the v2 shapes
+   (Event/Artist/BlogPost/News + email registration) so the site works
+   offline. Seeded with events, tiers, artists, blog and news.
+   ========================================================================= */
+var MOCK = (function(){
+  var seq = 100;
+  function id(p){ return p + '_' + (++seq); }
+  var pending = {}; // email -> {code, body}
+
+  var events = [];
+  function mkEvent(o){
+    var e = { id:id('evt'), organizerId:'org_seed', clubId:o.clubId, title:o.title, venue:o.venue,
+      date:o.date, type:o.type||'TICKET_NFT', priceCents:o.priceCents, capacity:o.capacity,
+      sold:o.sold||0, status:'ON_SALE' };
+    events.push(e); return e;
+  }
+  var e1 = mkEvent({clubId:'club_1',title:'Notte Elettronica · Vol.4',venue:'Magazzino Generali · Milano',date:'21 GIU',priceCents:3150,capacity:500,sold:312});
+  mkEvent({clubId:'club_1',title:'Stagione Live · Fidelity',venue:'Club Astra · Milano',date:'carnet · 5 serate',type:'FIDELITY',priceCents:12000,capacity:120,sold:84});
+  mkEvent({clubId:'club_2',title:'Blue Room · Jazz',venue:'Auditorium · Torino',date:'03 LUG',priceCents:2400,capacity:200,sold:36});
+
+  var tiers = {};
+  tiers[e1.id] = [
+    {id:'tier_1',eventId:e1.id,name:'Early Bird',priceCents:2400,note:'Disponibilità limitata',soldOut:true},
+    {id:'tier_2',eventId:e1.id,name:'Intero',priceCents:3150,note:'',soldOut:false},
+    {id:'tier_3',eventId:e1.id,name:'Last Release',priceCents:3800,note:'Pochi rimasti',soldOut:false},
+    {id:'tier_4',eventId:e1.id,name:'VIP · Front Stage',priceCents:5500,note:'Accesso area riservata',soldOut:false}
+  ];
+
+  var artists = [
+    {id:'art_1',name:'Charlotte de Witte',genre:'Techno',initials:'CW',color:'#2f4f8a',followers:12840},
+    {id:'art_2',name:'Adam Beyer',genre:'Techno',initials:'AB',color:'#0a8a5c',followers:9760},
+    {id:'art_3',name:'Mind Against',genre:'Melodic',initials:'MA',color:'#9c5e00',followers:6420},
+    {id:'art_4',name:'Blue Room Quartet',genre:'Jazz',initials:'BR',color:'#7a3550',followers:2150}
+  ];
+  var blog = [
+    {id:'b1',slug:'biglietto-nft-spiegato',tag:'GUIDA',title:'Il biglietto NFT nominativo, spiegato',excerpt:'Cos’è, perché non si può falsificare e come vive nel tuo wallet TINFT.',readMins:4},
+    {id:'b2',slug:'validazione-da-telefono',tag:'DIETRO LE QUINTE',title:'Come lo staff valida gli ingressi dal telefono',excerpt:'NFC, QR dinamico e modalità offline al varco — senza lettori né tornelli.',readMins:3},
+    {id:'b3',slug:'tetto-prezzo-rivendita',tag:'MERCATO',title:'Rivendere senza bagarini: il tetto di prezzo',excerpt:'Royalty all’organizzatore e prezzo massimo garantito sul mercato secondario.',readMins:5}
+  ];
+  var news = [
+    {id:'n1',date:'12 GIU',title:'Nuovi club a Milano e Torino sulla piattaforma'},
+    {id:'n2',date:'05 GIU',title:'Aggiornamento app: trasferimento in escrow più veloce'},
+    {id:'n3',date:'28 MAG',title:'Stagione Live: aperte le prevendite carnet'}
+  ];
+
+  function find(arr,pred){ for(var i=0;i<arr.length;i++) if(pred(arr[i])) return arr[i]; return null; }
+
+  return {
+    handle: function(path, method, body){
+      body = body || {}; method = method || 'GET';
+      var R = function(d){ return Promise.resolve(d); };
+      var m;
+
+      if(path==='/health') return R({status:'ok'});
+      if(path==='/events' && method==='GET') return R(events.slice());
+      m = path.match(/^\/events\/([^/]+)\/tiers$/);
+      if(m && method==='GET') return R((tiers[m[1]]||[]).slice());
+      m = path.match(/^\/events\/([^/]+)$/);
+      if(m && method==='GET'){ var ev=find(events,function(x){return x.id===m[1];}); return ev?R(ev):Promise.reject(new Error('evento non trovato')); }
+      if(path==='/artists' && method==='GET') return R(artists.slice());
+      m = path.match(/^\/artists\/([^/]+)\/follow$/);
+      if(m && method==='POST'){ var a=find(artists,function(x){return x.id===m[1];}); if(a) a.followers++; return R(a||{}); }
+      if(path==='/blog' && method==='GET') return R(blog.slice());
+      if(path==='/news' && method==='GET') return R(news.slice());
+
+      // email registration (OTP simulated locally)
+      if(path==='/auth/register/email' && method==='POST'){
+        var code = String(Math.floor(100000 + Math.random()*900000));
+        pending[String(body.email||'').toLowerCase()] = { code:code, body:body };
+        return R({ email:body.email, devCode:code });
+      }
+      if(path==='/auth/register/email/verify' && method==='POST'){
+        var key = String(body.email||'').toLowerCase();
+        var p = pending[key];
+        if(!p) return Promise.reject(new Error('registrazione non trovata'));
+        if(String(body.code||'').trim() !== p.code) return Promise.reject(new Error('codice errato'));
+        delete pending[key];
+        var acc = { id:id('acc'), role:'CLIENTE', nome:p.body.nome, cognome:p.body.cognome,
+          email:p.body.email, cf:p.body.cf, verified:true, goodwill:0 };
+        return R(acc);
+      }
+
+      return Promise.reject(new Error('MOCK: ' + method + ' ' + path + ' non gestito'));
+    }
+  };
+})();
+
+/* =========================================================================
+   API helper — parses JSON, falls back to MOCK on any network error so the
+   UI never throws because the backend is down. A real HTTP error (4xx/5xx)
+   re-throws so callers can show it.
+   ========================================================================= */
+function api(path, method, body, token){
+  method = method || 'GET';
+  if(ctx.mock) return MOCK.handle(path, method, body);
+  var headers = { 'Content-Type':'application/json' };
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(base() + path, {
+    method: method,
+    headers: headers,
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(j){
+      if(!r.ok) throw new Error(j.message || j.error || ('HTTP ' + r.status));
+      return j;
+    });
+  }).catch(function(err){
+    // network-level failure (server down / CORS / DNS) -> switch to MOCK so the
+    // site keeps working. A real HTTP error re-throws above.
+    if(err instanceof TypeError){ ctx.mock = true; setDot(false); return MOCK.handle(path, method, body); }
+    throw err;
+  });
+}
+
+/* =========================================================================
+   BOOT — probe /health, then load all public content. On any failure, fall
+   back to MOCK and still render. Never leaves a blank screen.
+   ========================================================================= */
+function boot(){
+  ctx.mock = false;
+  return api('/health').then(function(){ ctx.mock = false; })
+    .catch(function(){ ctx.mock = true; })
+    .then(function(){ return loadData(); })
+    .then(function(){
+      setDot(!ctx.mock);
+      return render();
+    })
+    .catch(function(){
+      // last-resort: force MOCK and render so the page is never blank
+      ctx.mock = true; setDot(false);
+      return loadData().then(render).catch(function(e){
+        if($('app')) $('app').innerHTML = '<div class="container" style="padding-top:80px"><div class="empty">Errore: ' + esc(e && e.message ? e.message : String(e)) + '</div></div>';
+      });
+    });
+}
+
+// Load events (ON_SALE), artists, blog, news. Each call independently falls
+// back to MOCK; a failure of one section never blanks the others.
+function loadData(){
+  return Promise.all([
+    api('/events').catch(function(){ return []; }),
+    api('/artists').catch(function(){ return []; }),
+    api('/blog').catch(function(){ return []; }),
+    api('/news').catch(function(){ return []; })
+  ]).then(function(r){
+    ctx.data.events  = (r[0]||[]).filter(function(e){ return e.status==='ON_SALE'; });
+    ctx.data.artists = r[1] || [];
+    ctx.data.blog    = r[2] || [];
+    ctx.data.news    = r[3] || [];
+  });
+}
+
+/* small helpers ---------------------------------------------------------- */
+function eventTypeLabel(e){
+  if(e.type==='FIDELITY') return 'Fidelity';
+  if(e.type==='SPECIAL') return 'Evento speciale';
+  return 'Biglietto NFT';
+}
+// fake but deterministic QR grid for the phone mockup
+function qrCells(){
+  var N=11, out='', x=2654435761;
+  function rnd(){ x=(x*1103515245+12345)&0x7fffffff; return (x>>8)/0x7fffff; }
+  function finder(r,c){ return (r<4&&c<4)||(r<4&&c>=N-4)||(r>=N-4&&c<4); }
+  for(var r=0;r<N;r++){ for(var c=0;c<N;c++){
+    var on;
+    if(finder(r,c)){ var ir=r<4?r:r-(N-4), ic=c<4?c:c-(N-4); on=(ir===0||ir===3||ic===0||ic===3)||(ir>=1&&ir<=2&&ic>=1&&ic<=2); }
+    else on = rnd()>0.5;
+    out += '<i style="background:' + (on?'#0a0a0a':'transparent') + '"></i>';
+  }}
+  return out;
+}
+
+/* =========================================================================
+   RENDER — builds the whole page. Each section is wrapped so a failure
+   degrades to an inline card instead of throwing / blanking the page.
+   ========================================================================= */
+function safe(fn, label){
+  try{ return fn(); }
+  catch(e){ return '<div class="container"><div class="empty">Sezione "' + esc(label) + '" non disponibile: ' + esc(e.message||String(e)) + '</div></div>'; }
+}
+
+function render(){
+  var app = $('app'); if(!app) return Promise.resolve();
+  var html = '';
+  try{
+    html += navHtml();
+    html += '<main>';
+    html += safe(heroHtml, 'hero');
+    html += safe(trustHtml, 'trust');
+    html += safe(comeHtml, 'come funziona');
+    html += safe(eventiHtml, 'eventi');
+    html += safe(artistiHtml, 'artisti');
+    html += safe(blogHtml, 'blog');
+    html += safe(newsHtml, 'news');
+    html += safe(orgHtml, 'organizzatori');
+    html += '</main>';
+    html += footerHtml();
+    html += detailHtml();   // event detail modal (if open)
+    html += authHtml();     // auth modal (if open)
+  }catch(e){
+    html = '<div class="container" style="padding-top:80px"><div class="empty">Errore: ' + esc(e.message||String(e)) + '</div></div>';
+  }
+  app.innerHTML = html;
+  return Promise.resolve();
+}
+
+function navHtml(){
+  return '<nav><div class="container navin">' +
+    '<div class="brand">' +
+      '<img src="assets/tinft-logo.png" alt="TINFT" class="logo-img" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-block\'" />' +
+      '<span class="logo-fb"></span>' +
+      '<b>TI<span class="accent">N</span>FT</b>' +
+    '</div>' +
+    '<div class="nlinks">' +
+      '<a href="#come">Come funziona</a>' +
+      '<a href="#eventi">Eventi</a>' +
+      '<a href="#organizzatori">Per organizzatori</a>' +
+      '<a href="app-live.html" class="area">Area personale</a>' +
+    '</div>' +
+    '<div class="nright">' +
+      '<span class="link-accedi" onclick="openAuth(\'cliente\',\'login\')">Accedi</span>' +
+      '<span class="btn sm" onclick="openAuth(\'cliente\',\'register\')">Registrati</span>' +
+    '</div>' +
+  '</div></nav>';
+}
+
+function heroHtml(){
+  return '<section class="hero"><div class="container hero-grid">' +
+    '<div>' +
+      '<div class="eyebrow"><span>▸</span> Ticketing NFT · 100% da app</div>' +
+      '<h1 style="margin-top:22px">Il biglietto<br/>che diventa<br/><span class="accent">davvero tuo.</span></h1>' +
+      '<p class="sub">Ogni titolo è un NFT nominativo nel tuo wallet TINFT. Acquisto in euro, accesso e rivendita: tutto dall’app, senza lettori né tornelli.</p>' +
+      '<div class="hero-cta">' +
+        '<span class="btn" onclick="openAuth(\'cliente\',\'register\')">Crea il tuo account</span>' +
+        '<a href="#come" class="btn ghost">Come funziona</a>' +
+      '</div>' +
+      '<div class="chips">' +
+        '<div class="chip"><span class="accent"></span> App Store</div>' +
+        '<div class="chip"><span class="accent">▶</span> Google Play</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="phone-wrap"><div class="phone"><div class="phone-screen">' +
+      '<div class="phone-head"><span class="hatch"></span><span>◆ TITOLO NFT</span></div>' +
+      '<div class="qr-box"><div class="qr-grid">' + qrCells() + '</div></div>' +
+      '<div class="phone-body">' +
+        '<div style="font-weight:700;font-size:13.5px;letter-spacing:.02em">Notte Elettronica · Vol.4</div>' +
+        '<div style="font-size:11px;color:var(--mut);margin-top:4px">intestato a Marco Bianchi</div>' +
+        '<div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--green)"><span class="pulse"></span> Accesso valido · NFC pronto</div>' +
+      '</div>' +
+    '</div></div></div>' +
+  '</div></section>';
+}
+
+function trustHtml(){
+  var items = [ {k:'100%',v:'processi da app'}, {k:'0',v:'lettori o tornelli'}, {k:'NFT',v:'biglietto nominativo'}, {k:'24/7',v:'rivendita sicura'} ];
+  return '<section class="trust"><div class="container"><div class="trust-grid">' +
+    items.map(function(t){ return '<div class="trust-cell"><div class="k">' + esc(t.k) + '</div><div class="v">' + esc(t.v) + '</div></div>'; }).join('') +
+  '</div></div></section>';
+}
+
+function comeHtml(){
+  var steps = [
+    {n:'1',glyph:'◆',title:'Compra in euro',body:'Scegli l’evento e paga in app. Ricevi un titolo NFT nominativo nel tuo wallet TINFT.'},
+    {n:'2',glyph:'★',title:'Entra col telefono',body:'Al varco mostri il QR dinamico o avvicini i telefoni via NFC. Lo staff valida dall’app.'},
+    {n:'3',glyph:'▸',title:'Conserva o rivendi',body:'Dopo l’evento il biglietto resta come NFT da collezione, oppure lo rivendi sul mercato TINFT.'}
+  ];
+  return '<section id="come" class="sect"><div class="container">' +
+    '<div class="eyebrow"><span>▸</span> Come funziona</div>' +
+    '<h2 style="max-width:20ch">Tre passi, un solo dispositivo: il tuo telefono.</h2>' +
+    '<div class="steps">' + steps.map(function(s){
+      return '<div class="step"><div class="step-top"><div class="step-n">' + esc(s.n) + '</div><span class="step-glyph">' + esc(s.glyph) + '</span></div>' +
+        '<h3>' + esc(s.title) + '</h3><p>' + esc(s.body) + '</p></div>';
+    }).join('') + '</div>' +
+  '</div></section>';
+}
+
+function eventiHtml(){
+  var events = ctx.data.events || [];
+  var cards = events.length ? events.map(function(e){
+    var soldout = e.capacity>0 && e.sold>=e.capacity;
+    var avail = soldout ? 'Esaurito' : (Math.max(0, e.capacity - e.sold) + ' titoli disponibili');
+    return '<div class="card lift">' +
+      '<div class="cover" style="background:' + cover(e.id) + '"></div>' +
+      '<div class="body">' +
+        '<div class="row"><span class="badge">' + esc(eventTypeLabel(e)) + '</span><span class="muted">' + esc(e.date||'') + '</span></div>' +
+        '<div style="font-weight:700;font-size:16px;margin-top:14px;letter-spacing:.01em">' + esc(e.title) + '</div>' +
+        '<div class="muted" style="margin-top:6px">' + esc(e.venue||'') + '</div>' +
+        '<div class="row" style="margin-top:18px">' +
+          '<span class="price" style="font-size:19px">' + (soldout ? 'Esaurito' : 'da ' + eur(e.priceCents)) + '</span>' +
+          '<span class="btn sm" onclick="openEvent(\'' + attr(e.id) + '\')">Dettagli</span>' +
+        '</div>' +
+        '<div class="faint" style="margin-top:10px">' + esc(avail) + '</div>' +
+      '</div></div>';
+  }).join('') : '';
+  return '<section id="eventi" class="sect"><div class="container">' +
+    '<div class="sect-head"><div>' +
+      '<div class="eyebrow"><span>▸</span> In vendita ora</div>' +
+      '<h2>Eventi in evidenza</h2>' +
+    '</div><span class="faint">L’acquisto si completa nell’app →</span></div>' +
+    (events.length ? ('<div class="grid">' + cards + '</div>') : '<div class="empty">Nessun evento in vendita al momento.</div>') +
+  '</div></section>';
+}
+
+function artistiHtml(){
+  var artists = ctx.data.artists || [];
+  var cards = artists.length ? artists.map(function(a){
+    return '<div class="artist">' +
+      '<div class="avatar" style="background:' + attr(a.color||'#2f4f8a') + '">' + esc(a.initials||'') + '</div>' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(a.name) + '</div>' +
+      '<div style="font-size:11.5px;color:var(--mut)">' + esc(a.genre||'') + '</div></div>' +
+      '<span class="seg-follow" onclick="followArtist(\'' + attr(a.id) + '\')">Segui</span>' +
+    '</div>';
+  }).join('') : '<div class="empty">Nessun artista.</div>';
+  return '<section class="sect"><div class="container">' +
+    '<h2 style="margin-bottom:20px">Artisti da seguire</h2>' +
+    '<div class="grid sm">' + cards + '</div>' +
+  '</div></section>';
+}
+
+function blogHtml(){
+  var blog = ctx.data.blog || [];
+  var cards = blog.length ? blog.map(function(b){
+    return '<div class="card lift">' +
+      '<div class="cover" style="height:150px;background:' + cover(b.slug||b.id) + '"></div>' +
+      '<div class="body">' +
+        '<div class="eyebrow sm accent" style="display:block">' + esc(b.tag||'') + ' · ' + esc(b.readMins||'?') + ' min</div>' +
+        '<div style="font-weight:700;font-size:17px;margin-top:8px;line-height:1.3">' + esc(b.title) + '</div>' +
+        '<div style="font-size:13px;color:var(--mut);margin-top:8px;line-height:1.55">' + esc(b.excerpt||'') + '</div>' +
+      '</div></div>';
+  }).join('') : '<div class="empty">Nessun articolo.</div>';
+  return '<section class="sect"><div class="container">' +
+    '<h2 style="margin-bottom:20px">Dal blog</h2>' +
+    '<div class="grid blog">' + cards + '</div>' +
+  '</div></section>';
+}
+
+function newsHtml(){
+  var news = ctx.data.news || [];
+  var rows = news.length ? news.map(function(n){
+    return '<div class="nrow"><span class="nd">' + esc(n.date||'') + '</span><span class="nt">' + esc(n.title) + '</span></div>';
+  }).join('') : '<div class="nrow"><span class="nt">Nessuna news.</span></div>';
+  return '<section class="sect"><div class="container">' +
+    '<h2 style="margin-bottom:20px">News &amp; annunci</h2>' +
+    '<div class="newsrows">' + rows + '</div>' +
+  '</div></section>';
+}
+
+function orgHtml(){
+  var perks = [
+    {icon:'◈',title:'Artwork → NFT',body:'Carichi il file, noi emettiamo i titoli.'},
+    {icon:'€',title:'Incassi & royalty',body:'Prevendita + quota sul secondario.'},
+    {icon:'⛨',title:'Accessi live',body:'Validazioni in tempo reale dallo staff.'}
+  ];
+  return '<section id="organizzatori" class="sect"><div class="container">' +
+    '<div class="org-panel"><span class="hatch"></span>' +
+      '<div style="position:relative">' +
+        '<div class="eyebrow"><span>▸</span> Per organizzatori</div>' +
+        '<h2 style="font-size:clamp(24px,3vw,34px);line-height:1.14">Emetti, vendi e validi.<br/>Tutto da una console.</h2>' +
+        '<p style="font-size:14px;color:var(--mut);margin-top:16px;line-height:1.6;max-width:48ch">Carica l’artwork, TINFT lo converte in titolo NFT e lo mette in vendita sull’e-commerce. Incassi, royalty sul secondario e accessi live, in un’unica dashboard.</p>' +
+        '<div class="hero-cta">' +
+          '<span class="btn" onclick="openAuth(\'org\',\'register\')">Registra la tua organizzazione</span>' +
+          '<a href="console.html" class="btn ghost">Vedi la console →</a>' +
+        '</div>' +
+      '</div>' +
+      '<div class="org-perks">' + perks.map(function(p){
+        return '<div class="perk"><div class="perk-ic">' + esc(p.icon) + '</div><div><div style="font-weight:700;font-size:13.5px;letter-spacing:.02em">' + esc(p.title) + '</div><div style="font-size:11.5px;color:var(--mut);margin-top:2px">' + esc(p.body) + '</div></div></div>';
+      }).join('') + '</div>' +
+    '</div>' +
+  '</div></section>';
+}
+
+function footerHtml(){
+  return '<footer><div class="container footin">' +
+    '<div style="display:flex;align-items:center;gap:11px;color:var(--mut)">' +
+      '<img src="assets/tinft-logo.png" alt="TINFT" style="height:26px;width:26px;object-fit:contain" onerror="this.style.display=\'none\'" />' +
+      '<span style="font-size:11px;letter-spacing:.06em">© 2026 TINFT · ticketing NFT, solo da app</span>' +
+    '</div>' +
+    '<div class="footlinks"><a href="#come">Come funziona</a><a href="#organizzatori">Organizzatori</a><span style="cursor:pointer" onclick="openAuth(\'cliente\',\'login\')">Accedi</span></div>' +
+  '</div></footer>';
+}
+
+/* =========================================================================
+   EVENT DETAIL — fetch tiers, tier selector + quantity + price breakdown.
+   Fee = round(price * 0.10) per unit; total = (price + fee) * qty.
+   No real order is created here (showcase only).
+   ========================================================================= */
+function openEvent(eventId){
+  ctx.detail = { loading:true, event:null, tiers:[], tierIdx:0, qty:1 };
+  render();
+  Promise.all([
+    api('/events/'+eventId),
+    api('/events/'+eventId+'/tiers').catch(function(){ return []; })
+  ]).then(function(res){
+    var e = res[0], tiers = res[1] || [];
+    var idx = 0;
+    for(var i=0;i<tiers.length;i++){ if(!tiers[i].soldOut){ idx=i; break; } }
+    ctx.detail = { loading:false, event:e, tiers:tiers, tierIdx:idx, qty:1 };
+    render();
+  }).catch(function(err){
+    toast(err.message||String(err), 'err');
+    ctx.detail = null; render();
+  });
+}
+function closeEvent(){ ctx.detail = null; render(); }
+function pickTier(i){
+  var d = ctx.detail; if(!d) return;
+  var t = d.tiers[i]; if(t && t.soldOut) return;
+  d.tierIdx = i; render();
+}
+function stepQty(delta){
+  var d = ctx.detail; if(!d) return;
+  d.qty = Math.max(1, Math.min(4, (d.qty||1) + delta)); render();
+}
+
+function detailHtml(){
+  var d = ctx.detail; if(!d) return '';
+  if(d.loading || !d.event){
+    return '<div class="detail"><div class="detail-inner"><div style="padding:80px 24px"><div class="muted"><span class="spin"></span>Carico l’evento…</div></div></div></div>';
+  }
+  var e = d.event, tiers = d.tiers || [];
+  // unit price from selected tier, else base price
+  var unit = e.priceCents;
+  if(tiers.length){
+    var idx = Math.max(0, Math.min(d.tierIdx, tiers.length-1));
+    var selTier = tiers[idx]; unit = selTier ? selTier.priceCents : e.priceCents;
+  }
+  var q = Math.max(1, Math.min(4, d.qty||1));
+  var fee = Math.round(unit*0.10);
+  var subtotal = unit*q, feeTotal = fee*q, total = (unit+fee)*q;
+
+  var soldPct = e.capacity>0 ? Math.min(100, Math.round((e.sold/e.capacity)*100)) : 0;
+  var scarcity = soldPct>=80 ? 'Ultimi biglietti rimasti' : (soldPct>=50 ? ((100-soldPct)+'% ancora disponibile') : 'Buona disponibilità');
+
+  var tierRows;
+  if(tiers.length){
+    tierRows = tiers.map(function(t, i){
+      var on = (i === Math.max(0, Math.min(d.tierIdx, tiers.length-1))) && !t.soldOut;
+      return '<div class="tier' + (on?' on':'') + '" style="' + (t.soldOut?'opacity:.45;cursor:not-allowed':'') + '" onclick="pickTier(' + i + ')">' +
+        '<div><div class="tn">' + esc(t.name) + '</div><div class="tnote">' + esc(t.soldOut ? 'Esaurito' : (t.note||'Disponibile')) + '</div></div>' +
+        '<div class="tp">' + eur(t.priceCents) + '</div></div>';
+    }).join('');
+  } else {
+    tierRows = '<div class="tier on"><div><div class="tn">Biglietto intero</div><div class="tnote">Disponibile</div></div><div class="tp">' + eur(e.priceCents) + '</div></div>';
+  }
+
+  return '<div class="detail scr"><div class="detail-inner">' +
+    '<div class="detail-hero" style="background:' + cover(e.id) + '">' +
+      '<div class="grad"></div>' +
+      '<div class="detail-back" onclick="closeEvent()">‹ Eventi</div>' +
+      '<div class="detail-title"><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge">' + esc(eventTypeLabel(e)) + '</span></div>' +
+        '<h2>' + esc(e.title) + '</h2></div>' +
+    '</div>' +
+    '<div class="detail-cols" style="grid-template-columns:1.35fr 0.95fr">' +
+      '<div style="min-width:0">' +
+        '<div class="meta">' +
+          '<div><div class="ml">Data</div><div class="mv">' + esc(e.date||'—') + '</div></div>' +
+          '<div><div class="ml">Luogo</div><div class="mv">' + esc(e.venue||'—') + '</div></div>' +
+          '<div><div class="ml">Venduti</div><div class="mv">' + esc(e.sold) + '/' + esc(e.capacity) + '</div></div>' +
+        '</div>' +
+        '<div style="margin-top:16px;height:6px;background:var(--surf2);border:1px solid var(--border);border-radius:9px;overflow:hidden"><div style="height:100%;width:' + soldPct + '%;background:var(--orange)"></div></div>' +
+        '<div style="font-size:11px;color:var(--orange-l);margin-top:6px">' + esc(scarcity) + '</div>' +
+        '<p style="font-size:14px;color:var(--mut);margin-top:16px;line-height:1.6">Titolo NFT nominativo emesso da TINFT. L’acquisto si completa nell’app o nell’area personale: il biglietto viene coniato a tuo nome e compare nel tuo wallet.</p>' +
+      '</div>' +
+      '<div class="buybox" style="position:sticky;top:18px">' +
+        '<div class="eyebrow sm accent" style="display:block">Scegli il biglietto</div>' +
+        '<div style="margin-top:12px">' + tierRows + '</div>' +
+        '<div class="row" style="margin-top:14px"><span style="font-size:12.5px;color:var(--mut)">Quantità (max 4)</span>' +
+          '<div class="stepper"><button onclick="stepQty(-1)"' + (q<=1?' disabled':'') + '>−</button><span class="q">' + q + '</span><button onclick="stepQty(1)"' + (q>=4?' disabled':'') + '>+</button></div>' +
+        '</div>' +
+        '<div class="bk">' +
+          '<div class="ln"><span>Prezzo' + (q>1?(' × '+q):'') + '</span><span>' + eur(subtotal) + '</span></div>' +
+          '<div class="ln"><span>Commissione di prevendita (10%)</span><span>' + eur(feeTotal) + '</span></div>' +
+          '<div class="tot"><span>Totale</span><span>' + eur(total) + '</span></div>' +
+        '</div>' +
+        '<span class="btn" style="width:100%;margin-top:14px" onclick="openAuth(\'cliente\',\'register\')">Acquista · ' + eur(total) + '</span>' +
+        '<div class="faint" style="margin-top:10px;line-height:1.5;text-align:center">L’acquisto si completa nell’app / area personale</div>' +
+      '</div>' +
+    '</div>' +
+  '</div></div>';
+}
+
+/* =========================================================================
+   ARTIST FOLLOW (public)
+   ========================================================================= */
+function followArtist(id){
+  api('/artists/'+id+'/follow','POST',{}).then(function(a){
+    toast('Ora segui ' + (a && a.name ? a.name : 'questo artista'), 'ok');
+  }).catch(function(e){ toast(e.message||String(e), 'err'); });
+}
+
+/* =========================================================================
+   AUTH MODAL
+   - role toggle: Cliente / Organizzatore
+   - mode: Accedi / Registrati
+   - registration collects nome, cognome, codice fiscale, data di nascita,
+     email, telefono, indirizzo residenza, (fatturazione toggle), username,
+     password.
+   - two paths:
+       SPID   -> prefilled demo data, no code, completes immediately.
+       Email  -> POST /auth/register/email -> shows returned devCode -> enter
+                 6-digit code -> POST /auth/register/email/verify.
+   - login is demo (password 1234) — real sessions live in the Web App.
+   - falls back to MOCK if API down (OTP simulated locally).
+   ========================================================================= */
+function openAuth(role, mode){
+  ctx.detail = null; // close any event detail underneath
+  ctx.auth = {
+    open:true, role:role||'cliente', mode:mode||'register', step:'form',
+    nome:'', cognome:'', cf:'', nascita:'', email: role==='org'?'astra@club.it':'marco.b@email.it',
+    telefono:'', residenza:'', fatturazione:'', billSame:true, username:'', pwd:'',
+    sentCode:'', code:'', error:'', done:false, doneTitle:'', doneBody:'', loading:false
+  };
+  render();
+}
+function closeAuth(){ ctx.auth = null; render(); }
+function authSetRole(r){ if(!ctx.auth) return; ctx.auth.role=r; ctx.auth.email = r==='org'?'astra@club.it':'marco.b@email.it'; ctx.auth.error=''; render(); }
+function authSetMode(m){ if(!ctx.auth) return; ctx.auth.mode=m; ctx.auth.step='form'; ctx.auth.error=''; render(); }
+function authToggleBill(){ if(!ctx.auth) return; ctx.auth.billSame=!ctx.auth.billSame; ctx.auth.error=''; render(); }
+
+// read input value back into state (called from oninput) — no re-render so the
+// field keeps focus while typing.
+function authInput(field, val){ if(!ctx.auth) return; ctx.auth[field] = field==='cf' ? String(val||'').toUpperCase() : val; }
+
+function authValid(){
+  var A = ctx.auth; if(!A) return false;
+  var emailOk = /.+@.+\..+/.test(A.email);
+  var pwdOk = (A.pwd||'').length>=4;
+  if(A.mode==='register' && A.step==='verify') return (A.code||'').trim().length>=6;
+  var ok = emailOk && pwdOk;
+  if(A.mode==='register'){
+    ok = ok && A.nome.trim() && A.cognome.trim() && A.cf.trim() && A.nascita.trim() &&
+      A.telefono.trim() && A.username.trim() && A.residenza.trim() &&
+      (A.billSame ? true : !!A.fatturazione.trim());
+  }
+  return !!ok;
+}
+
+// pull current DOM input values into state before acting (oninput keeps it in
+// sync, but we re-read on submit to be safe under fast typing)
+function syncAuthFromDom(){
+  var A = ctx.auth; if(!A) return;
+  var ids = ['nome','cognome','cf','nascita','email','telefono','residenza','fatturazione','username','pwd','code'];
+  ids.forEach(function(f){ var el=$('f_'+f); if(el && el.value!=null){ A[f] = f==='cf' ? String(el.value).toUpperCase() : el.value; } });
+}
+
+function submitAuth(){
+  var A = ctx.auth; if(!A) return;
+  syncAuthFromDom();
+  if(A.mode==='register' && A.step==='verify'){ return verifyEmail(); }
+  if(!authValid()){
+    var msg = 'Compila i campi richiesti';
+    if(!/.+@.+\..+/.test(A.email)) msg = 'Inserisci un’email valida';
+    else if((A.pwd||'').length<4) msg = 'Password troppo corta (min 4)';
+    A.error = msg; render(); return;
+  }
+  if(A.mode==='login'){
+    // demo login — real sessions live in the Web App
+    if(A.pwd!=='1234'){ A.error = 'Credenziali non valide · password demo: 1234'; render(); return; }
+    finishAuth('Accesso effettuato', A.role==='org'
+      ? 'Bentornato. Apri la console per gestire club, eventi e incassi.'
+      : 'Bentornato. Apri la tua area personale TINFT per biglietti, mercato e profilo.');
+    return;
+  }
+  // register via email -> start OTP
+  startEmail();
+}
+
+function startEmail(){
+  var A = ctx.auth;
+  A.loading = true; A.error = ''; render();
+  var body = {
+    nome:A.nome.trim(), cognome:A.cognome.trim(), cf:A.cf.trim(), email:A.email.trim(),
+    dateOfBirth:A.nascita.trim(), address:A.residenza.trim(), phone:A.telefono.trim(),
+    username:A.username.trim(), password:A.pwd
+  };
+  api('/auth/register/email','POST',body).then(function(r){
+    A.loading = false; A.step = 'verify'; A.sentCode = (r && r.devCode) ? String(r.devCode) : ''; A.code = ''; A.error = '';
+    render();
+  }).catch(function(e){
+    A.loading = false; A.error = e.message||String(e); render();
+  });
+}
+
+function verifyEmail(){
+  var A = ctx.auth;
+  if((A.code||'').trim().length<6){ A.error = 'Inserisci il codice a 6 cifre'; render(); return; }
+  A.loading = true; A.error = ''; render();
+  api('/auth/register/email/verify','POST',{ email:A.email.trim(), code:(A.code||'').trim() }).then(function(){
+    A.loading = false;
+    finishAuth('Account verificato', 'Il tuo account TINFT è attivo. Apri l’area personale per comprare biglietti, accedere agli eventi e rivendere — tutto dal tuo telefono.');
+  }).catch(function(e){
+    A.loading = false; A.error = e.message||String(e); render();
+  });
+}
+
+// SPID path: prefilled, verified demo data, no OTP. Creates the account
+// straight away (via email register+verify under the hood so it works on both
+// the live API and MOCK), then shows the success screen.
+function spidStart(){
+  var A = ctx.auth;
+  var d = { nome:'Alessandro', cognome:'Russo', cf:'RSSLSN90A01F205X', nascita:'1990-01-01',
+    email: 'a.russo' + uid('') + '@spid.it', telefono:'+39 348 11 22 334',
+    residenza:'Via Garibaldi 18, 20121 Milano (MI)', username:'a.russo', pwd:'spid' + uid('') };
+  A.loading = true; A.error = ''; render();
+  api('/auth/register/email','POST',{
+    nome:d.nome, cognome:d.cognome, cf:d.cf, email:d.email,
+    dateOfBirth:d.nascita, address:d.residenza, phone:d.telefono, username:d.username, password:d.pwd
+  }).then(function(r){
+    return api('/auth/register/email/verify','POST',{ email:d.email, code:(r&&r.devCode)?r.devCode:'' });
+  }).then(function(){
+    A.loading = false;
+    finishAuth('Account creato con SPID', 'Identità verificata tramite SPID. Apri l’area personale TINFT per iniziare — tutto avviene sul tuo telefono.');
+  }).catch(function(e){
+    A.loading = false; A.error = e.message||String(e); render();
+  });
+}
+
+function finishAuth(title, bodyTxt){
+  var A = ctx.auth; if(!A) return;
+  A.done = true; A.doneTitle = title; A.doneBody = bodyTxt; render();
+}
+
+function authHtml(){
+  var A = ctx.auth; if(!A || !A.open) return '';
+  var isCli = A.role==='cliente', isOrg = A.role==='org';
+  var isLogin = A.mode==='login', isReg = A.mode==='register';
+  var isVerify = isReg && A.step==='verify';
+  var canSubmit = authValid();
+
+  if(A.done){
+    var href = isOrg ? 'console.html' : 'app-live.html';
+    var cta = isOrg ? 'Vai alla console' : 'Apri la tua area TINFT';
+    return '<div class="scrim"><div class="modal scr">' +
+      '<span class="modal-x" onclick="closeAuth()">✕</span>' +
+      '<div class="done">' +
+        '<div class="ck">✓</div>' +
+        '<div style="font-weight:700;font-size:20px;margin-top:18px;letter-spacing:.02em">' + esc(A.doneTitle||'Fatto') + '</div>' +
+        '<div style="font-size:13px;color:var(--mut);margin-top:10px;line-height:1.55;max-width:36ch">' + esc(A.doneBody||'') + '</div>' +
+        '<a href="' + attr(href) + '" class="btn" style="margin-top:22px">' + esc(cta) + '</a>' +
+        '<span style="margin-top:14px;font-size:11px;letter-spacing:.06em;color:var(--faint);cursor:pointer" onclick="closeAuth()">Torna al sito</span>' +
+      '</div>' +
+    '</div></div>';
+  }
+
+  var head = '<div class="modal-head">' +
+    '<div class="modal-ic" style="background:' + (isCli?'var(--blue)':'var(--surf2)') + '">' + (isCli?'◆':'⬢') + '</div>' +
+    '<div><h3>' + (isLogin ? (isCli?'Bentornato':'Accedi alla console') : (isCli?'Crea il tuo account':'Registra l’organizzazione')) + '</h3>' +
+    '<div class="k">' + (isCli?'Profilo cliente':'Profilo organizzatore') + '</div></div>' +
+  '</div>';
+
+  var toggles = '';
+  if(!isVerify){
+    toggles =
+      '<div class="seg-label" style="margin:20px 0 9px">Chi sei</div>' +
+      '<div class="role2">' +
+        '<div class="role-card' + (isCli?' on':'') + '" onclick="authSetRole(\'cliente\')"><div class="t">Cliente</div><div class="d">Compra · accedi · rivendi</div></div>' +
+        '<div class="role-card' + (isOrg?' on':'') + '" onclick="authSetRole(\'org\')"><div class="t">Organizzatore</div><div class="d">Vendi · gestisci eventi</div></div>' +
+      '</div>' +
+      '<div class="mode2">' +
+        '<div class="m' + (isLogin?' on':'') + '" onclick="authSetMode(\'login\')">Accedi</div>' +
+        '<div class="m' + (isReg?' on':'') + '" onclick="authSetMode(\'register\')">Registrati</div>' +
+      '</div>';
+  }
+
+  // field helper
+  function field(id, label, val, ph, type){
+    return '<div class="field"><div class="fl">' + esc(label) + '</div>' +
+      '<input id="f_' + id + '"' + (type?(' type="'+type+'"'):'') + ' value="' + attr(val||'') + '" placeholder="' + attr(ph||'') + '" oninput="authInput(\'' + id + '\',this.value)" /></div>';
+  }
+
+  var body = '';
+  if(isVerify){
+    body = '<div class="otp-box">' +
+      '<div style="font-size:13px;color:#cfcdc8;line-height:1.5">Codice inviato a <b style="color:#fff">' + esc(A.email) + '</b>. Inseriscilo per verificare l’indirizzo.</div>' +
+      (A.sentCode ? ('<div class="demo-code">Modalità demo · codice: <b>' + esc(A.sentCode) + '</b></div>') : '') +
+      '<div class="otp-input"><input id="f_code" value="' + attr(A.code||'') + '" placeholder="000000" maxlength="6" oninput="authInput(\'code\',this.value)" /></div>' +
+      '<div class="err" style="margin-top:8px">' + esc(A.error||'') + '</div>' +
+    '</div>';
+  } else {
+    var rows = '';
+    if(isReg){
+      rows += '<div class="frow">' + field('nome','NOME',A.nome,'Nome') + field('cognome','COGNOME',A.cognome,'Cognome') + '</div>';
+      rows += field('cf','CODICE FISCALE',A.cf,'RSSMRA90A01H501Z');
+      rows += field('nascita','DATA DI NASCITA',A.nascita,'GG/MM/AAAA');
+    }
+    rows += field('email','EMAIL',A.email,'email@esempio.it');
+    if(isReg){
+      rows += field('telefono','TELEFONO',A.telefono,'+39 ...');
+      rows += field('residenza','INDIRIZZO DI RESIDENZA',A.residenza,'Via, civico, CAP, città (Prov)');
+      rows += '<div class="checkrow" onclick="authToggleBill()"><div class="checkbox' + (A.billSame?' on':'') + '">' + (A.billSame?'✓':'') + '</div><span style="font-size:12px;color:var(--mut)">Fatturazione uguale alla residenza</span></div>';
+      if(!A.billSame) rows += field('fatturazione','INDIRIZZO DI FATTURAZIONE',A.fatturazione,'Via, civico, CAP, città (Prov)');
+      rows += field('username','NOME UTENTE',A.username,'es. mario.rossi');
+    }
+    rows += field('pwd','PASSWORD',A.pwd,'••••••••','password');
+    rows += '<div class="err">' + esc(A.error||'') + '</div>';
+    body = '<div class="fields">' + rows + '</div>';
+  }
+
+  var btnLabel = A.loading ? '…' : (isVerify ? 'Verifica e crea account' : (isLogin ? 'Accedi' : 'Invia codice di verifica'));
+  var submitBtn = '<div class="btn" style="width:100%;margin-top:16px;' + (canSubmit && !A.loading ? '' : 'opacity:.55;') + '" onclick="submitAuth()">' +
+    (A.loading?'<span class="spin"></span>':'') + esc(btnLabel) + '</div>';
+
+  var spid = '';
+  if(!isVerify){
+    spid = '<div class="or"><div class="ln"></div><span>oppure</span><div class="ln"></div></div>' +
+      '<div class="spid" onclick="spidStart()"><div class="id">ID</div><span>Entra con SPID</span></div>';
+  }
+
+  return '<div class="scrim"><div class="modal scr">' +
+    '<span class="modal-x" onclick="closeAuth()">✕</span>' +
+    head + toggles + body + submitBtn + spid +
+    '<div style="text-align:center;font-size:10px;letter-spacing:.04em;color:var(--faint);margin-top:14px;line-height:1.5">Stessa registrazione per cliente e organizzatore · identità verificata · password demo 1234</div>' +
+  '</div></div>';
+}
+
+/* =========================================================================
+   START
+   ========================================================================= */
+if(typeof document!=='undefined' && document.getElementById){
+  boot();
+}
+</script>
+</body>
+</html>

@@ -10,37 +10,44 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /*__rounded__*/
+  [style*="border:1px solid"]:not([style*="border-radius"]){border-radius:13px;overflow:hidden}
+  [style*="background:#4472c4"]:not([style*="border-radius"]),[style*="background:#6f9eff"]:not([style*="border-radius"]),[style*="background:#00cc88"]:not([style*="border-radius"]),[style*="background:#0a8a5c"]:not([style*="border-radius"]){border-radius:13px}
+  img:not([style*="border-radius"]):not([style*="object-fit:cover"]){border-radius:9px}
+
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{background:#06070c;font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:#0a0a0a;font-family:'Quicksand',sans-serif;-webkit-font-smoothing:antialiased}
   .scr::-webkit-scrollbar{width:8px;height:8px}
-  .scr::-webkit-scrollbar-thumb{background:oklch(0.28 0.02 265);border-radius:4px}
+  .scr::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:4px}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 </style>
 </helmet>
 
-<div style="display:flex;flex-direction:{{ rootDir }};height:100vh;width:100%;color:oklch(0.96 0.005 262);background:#06070c;position:relative;overflow:hidden">
-  <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(900px 500px at 18% -8%,oklch(0.5 0.2 264/.14),transparent 60%)"></div>
+<div style="display:flex;flex-direction:{{ rootDir }};height:100vh;width:100%;color:#e8e6e0;background:#0a0a0a;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;pointer-events:none;background:transparent"></div>
 
   <!-- WIDE SIDEBAR -->
   <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
-    <aside style="width:248px;flex-shrink:0;border-right:1px solid oklch(0.2 0.02 265);background:oklch(0.09 0.01 265);display:flex;flex-direction:column;padding:22px 16px;position:relative;z-index:1">
-      <div style="display:flex;align-items:center;gap:10px;padding:0 8px 4px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:30px;border-radius:7px"/><div><div style="font-family:'Space Grotesk';font-weight:600;font-size:16px;letter-spacing:0.02em">TINFT</div><div style="font-family:'IBM Plex Mono';font-size:9px;letter-spacing:0.16em;color:oklch(0.58 0.02 265)">CONSOLE</div></div></div>
-      <div style="height:1px;background:oklch(0.2 0.02 265);margin:18px 6px"></div>
+    <aside style="width:248px;flex-shrink:0;border-right:1px solid #222222;background:#0a0a0a;display:flex;flex-direction:column;padding:22px 16px;position:relative;z-index:1">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 8px 4px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:30px;border-radius:13px"/><div><div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:16px;letter-spacing:0.02em">TINFT</div><div style="font-family:'Quicksand',sans-serif;font-size:9px;letter-spacing:0.09em;color:#6a6764">CONSOLE</div></div></div>
+      <div style="height:1px;background:#222222;margin:18px 6px"></div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
-          <div onClick="{{ n.go }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }};font-weight:{{ n.weight }};font-size:13.5px">
+          <div onClick="{{ n.go }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:13px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }};font-weight:{{ n.weight }};font-size:13.5px">
             <span style="width:20px;text-align:center;font-size:15px">{{ n.icon }}</span>{{ n.label }}
           </div>
         </sc-for>
       </div>
       <div style="flex:1"></div>
-      <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.24 0.02 265);border-radius:15px;padding:13px;display:flex;align-items:center;gap:11px">
-        <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,oklch(0.55 0.16 264),oklch(0.35 0.1 280));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:14px;color:#fff;flex-shrink:0">CA</div>
-        <div style="flex:1;min-width:0"><div style="font-family:'Space Grotesk';font-weight:600;font-size:13px">Club Astra</div><div style="font-size:10.5px;color:oklch(0.58 0.02 265)">Organizzatore</div></div>
-        <span style="color:oklch(0.5 0.02 265);font-size:16px;cursor:pointer">⎋</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:13px;display:flex;align-items:center;gap:11px">
+          <div style="width:38px;height:38px;border-radius:13px;background:{{ orgColor }};display:flex;align-items:center;justify-content:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">{{ orgInitials }}</div>
+          <div style="flex:1;min-width:0"><div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ orgName }}</div><div style="font-size:10.5px;color:#6a6764">{{ orgSub }}</div></div>
+        </div>
+        <a href="TINFT - Web App.dc.html" onClick="{{ orgLogout }}" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:transparent;border:1px solid #2a2a2a;border-radius:13px;padding:10px;font-family:'Quicksand',sans-serif;font-size:11.5px;font-weight:600;color:#8a8682">Esci</a>
       </div>
     </aside>
   </sc-if>
@@ -50,14 +57,14 @@
 
     <!-- NARROW TOPBAR -->
     <sc-if value="{{ narrow }}">
-      <div style="border-bottom:1px solid oklch(0.2 0.02 265);background:oklch(0.09 0.01 265)">
+      <div style="border-bottom:1px solid #222222;background:#0a0a0a">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px">
-          <div style="display:flex;align-items:center;gap:9px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:26px;border-radius:6px"/><span style="font-family:'Space Grotesk';font-weight:600;font-size:15px">TINFT <span style="font-family:'IBM Plex Mono';font-size:9px;color:oklch(0.58 0.02 265);letter-spacing:0.14em">CONSOLE</span></span></div>
-          <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,oklch(0.55 0.16 264),oklch(0.35 0.1 280));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:12px;color:#fff">CA</div>
+          <div style="display:flex;align-items:center;gap:9px"><img src="assets/tinft-logo.png" alt="TINFT" style="height:26px;border-radius:13px"/><span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px">TINFT <span style="font-family:'Quicksand',sans-serif;font-size:9px;color:#6a6764;letter-spacing:0.14em">CONSOLE</span></span></div>
+          <div style="width:32px;height:32px;border-radius:13px;background:{{ orgColor }};display:flex;align-items:center;justify-content:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:12px;color:#fff">{{ orgInitials }}</div>
         </div>
         <div class="scr" style="display:flex;gap:6px;padding:0 14px 12px;overflow-x:auto">
           <sc-for list="{{ nav }}" as="n">
-            <div onClick="{{ n.go }}" style="white-space:nowrap;padding:8px 14px;border-radius:10px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }};font-weight:{{ n.weight }};font-size:12.5px">{{ n.label }}</div>
+            <div onClick="{{ n.go }}" style="white-space:nowrap;padding:8px 14px;border-radius:13px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }};font-weight:{{ n.weight }};font-size:12.5px">{{ n.label }}</div>
           </sc-for>
         </div>
       </div>
@@ -66,12 +73,12 @@
     <!-- HEADER -->
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 28px 16px;flex-wrap:wrap">
       <div>
-        <div style="font-family:'Space Grotesk';font-weight:600;font-size:clamp(22px,2.4vw,28px)">{{ pageTitle }}</div>
-        <div style="font-size:12.5px;color:oklch(0.6 0.02 265);margin-top:3px">{{ pageSub }}</div>
+        <div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:clamp(22px,2.4vw,28px)">{{ pageTitle }}</div>
+        <div style="font-size:12.5px;color:#6a6764;margin-top:3px">{{ pageSub }}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:11px;padding:9px 14px;font-size:12.5px;color:oklch(0.56 0.02 265);min-width:200px">Cerca eventi, holder…</div>
-        <div onClick="{{ goCreate }}" style="background:linear-gradient(135deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264));color:#fff;font-weight:600;font-size:12.5px;padding:10px 16px;border-radius:11px;cursor:pointer;white-space:nowrap;box-shadow:0 0 20px oklch(0.55 0.2 264/.3)">+ Crea evento</div>
+        <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:9px 14px;font-size:12.5px;color:#5a5754;min-width:200px">Cerca eventi, holder…</div>
+        <div onClick="{{ goCreate }}" style="background:#6f9eff;color:#fff;font-weight:600;font-size:12.5px;padding:10px 16px;border-radius:13px;cursor:pointer;white-space:nowrap;box-shadow:0 0 20px rgba(68,114,196,.3)">+ Crea evento</div>
       </div>
     </div>
 
@@ -79,44 +86,44 @@
 
       <!-- DASHBOARD -->
       <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,oklch(0.22 0.07 264),oklch(0.15 0.04 280));border:1px solid oklch(0.4 0.12 264);border-radius:18px;padding:16px 20px;margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:7px"><div style="width:8px;height:8px;border-radius:50%;background:oklch(0.74 0.16 158);box-shadow:0 0 8px oklch(0.74 0.18 158)"></div><span style="font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.12em;color:oklch(0.78 0.1 158)">LIVE · DAL MONDO TINFT</span></div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#131313;border:1px solid #2a2a2a;border-left:3px solid #4472c4;border-radius:13px;padding:16px 20px;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:7px"><div style="width:8px;height:8px;border-radius:50%;background:#5fe0b0;box-shadow:0 0 8px #5fe0b0"></div><span style="font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.12em;color:#5fe0b0">LIVE · DAL MONDO TINFT</span></div>
           <div style="display:flex;gap:24px;flex-wrap:wrap;margin-left:auto">
-            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px">{{ liveValidated }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">validati (app)</div></div>
-            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px;color:oklch(0.8 0.13 264)">{{ liveP2PCount }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">scambi P2P</div></div>
-            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px;color:oklch(0.82 0.12 70)">{{ liveP2PRoyalty }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">tua royalty P2P</div></div>
-            <div><div style="font-family:'Space Grotesk';font-weight:700;font-size:20px;color:oklch(0.78 0.1 300)">{{ liveExported }}</div><div style="font-size:10px;color:oklch(0.66 0.04 264)">NFT esportati</div></div>
+            <div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:20px">{{ liveValidated }}</div><div style="font-size:10px;color:#6a6764">validati (app)</div></div>
+            <div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:20px;color:#aac3f5">{{ liveP2PCount }}</div><div style="font-size:10px;color:#6a6764">scambi P2P</div></div>
+            <div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:20px;color:#ffcf80">{{ liveP2PRoyalty }}</div><div style="font-size:10px;color:#6a6764">tua royalty P2P</div></div>
+            <div><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:20px;color:#aac3f5">{{ liveExported }}</div><div style="font-size:10px;color:#6a6764">NFT esportati</div></div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
           <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
-            <div style="background:{{ k.bg }};border:1px solid {{ k.border }};border-radius:18px;padding:18px 20px;position:relative;overflow:hidden">
-              <div style="font-family:'IBM Plex Mono';font-size:9.5px;letter-spacing:0.12em;color:{{ k.kickerColor }}">{{ k.kicker }}</div>
-              <div style="font-family:'Space Grotesk';font-weight:700;font-size:clamp(22px,2vw,28px);margin-top:10px;color:{{ k.valColor }}">{{ k.value }}</div>
-              <div style="font-size:11px;color:oklch(0.62 0.02 265);margin-top:6px">{{ k.note }}</div>
+            <div style="background:{{ k.bg }};border:1px solid {{ k.border }};border-radius:13px;padding:18px 20px;position:relative;overflow:hidden">
+              <div style="font-family:'Quicksand',sans-serif;font-size:9.5px;letter-spacing:0.12em;color:{{ k.kickerColor }}">{{ k.kicker }}</div>
+              <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(22px,2vw,28px);margin-top:10px;color:{{ k.valColor }}">{{ k.value }}</div>
+              <div style="font-size:11px;color:#6a6764;margin-top:6px">{{ k.note }}</div>
             </div>
           </sc-for>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:18px">
-          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><span style="font-family:'Space Grotesk';font-weight:600;font-size:15px">Vendite · ultimi 7 giorni</span><span style="font-family:'IBM Plex Mono';font-size:10px;color:oklch(0.6 0.02 265)">€ totali</span></div>
+          <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px">Vendite · ultimi 7 giorni</span><span style="font-family:'Quicksand',sans-serif;font-size:10px;color:#6a6764">€ totali</span></div>
             <div style="display:flex;align-items:flex-end;justify-content:space-between;height:150px;gap:12px">
               <sc-for list="{{ salesBars }}" as="b">
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px">
-                  <div style="width:100%;height:{{ b.h }};border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,oklch(0.62 0.17 264),oklch(0.4 0.13 264))"></div>
-                  <span style="font-size:10px;color:oklch(0.5 0.02 265);font-family:'IBM Plex Mono'">{{ b.day }}</span>
+                  <div style="width:100%;height:{{ b.h }};border-radius:13px 7px 3px 3px;background:#6f9eff"></div>
+                  <span style="font-size:10px;color:#5a5754;font-family:'Quicksand',sans-serif">{{ b.day }}</span>
                 </div>
               </sc-for>
             </div>
           </div>
-          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:20px">
-            <div style="font-family:'Space Grotesk';font-weight:600;font-size:15px;margin-bottom:14px">Vendite recenti</div>
+          <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:20px">
+            <div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px;margin-bottom:14px">Vendite recenti</div>
             <sc-for list="{{ recentSales }}" as="r">
-              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid oklch(0.18 0.02 265)">
-                <div style="width:34px;height:34px;border-radius:9px;background:{{ r.art }};flex-shrink:0"></div>
-                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">{{ r.who }}</div><div style="font-size:10.5px;color:oklch(0.58 0.02 265)">{{ r.what }}</div></div>
-                <div style="text-align:right"><div style="font-family:'Space Grotesk';font-weight:600;font-size:13px;color:oklch(0.78 0.14 264)">{{ r.amount }}</div><div style="font-size:9.5px;color:oklch(0.5 0.02 265)">{{ r.when }}</div></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #222222">
+                <div style="width:34px;height:34px;border-radius:13px;background:{{ r.art }};flex-shrink:0"></div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">{{ r.who }}</div><div style="font-size:10.5px;color:#6a6764">{{ r.what }}</div></div>
+                <div style="text-align:right"><div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;color:#aac3f5">{{ r.amount }}</div><div style="font-size:9.5px;color:#5a5754">{{ r.when }}</div></div>
               </div>
             </sc-for>
           </div>
@@ -125,17 +132,17 @@
 
       <!-- EVENTI -->
       <sc-if value="{{ isEventi }}">
-        <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
-          <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;gap:12px;padding:14px 22px;font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.08em;color:oklch(0.56 0.02 265);border-bottom:1px solid oklch(0.2 0.02 265);min-width:640px">
+        <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;gap:12px;padding:14px 22px;font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.08em;color:#5a5754;border-bottom:1px solid #222222;min-width:640px">
             <span>EVENTO</span><span>DATA</span><span>VENDUTI</span><span>INCASSO</span><span>STATO</span>
           </div>
           <sc-for list="{{ eventRows }}" as="e" hint-placeholder-count="4">
-            <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;gap:12px;align-items:center;padding:15px 22px;border-bottom:1px solid oklch(0.16 0.02 265);min-width:640px">
-              <div><div style="font-family:'Space Grotesk';font-weight:600;font-size:13.5px">{{ e.title }}</div><div style="font-size:10.5px;color:oklch(0.56 0.02 265);margin-top:1px">{{ e.type }}</div></div>
-              <span style="font-size:12.5px;color:oklch(0.7 0.02 265)">{{ e.date }}</span>
-              <div><div style="font-size:11.5px;color:oklch(0.7 0.02 265);margin-bottom:5px">{{ e.soldLabel }}</div><div style="height:6px;border-radius:4px;background:oklch(0.24 0.02 265);overflow:hidden"><div style="height:100%;width:{{ e.pct }};background:linear-gradient(90deg,oklch(0.62 0.17 264),oklch(0.5 0.15 264))"></div></div></div>
-              <span style="font-family:'Space Grotesk';font-weight:600;font-size:13px;color:oklch(0.78 0.14 264)">{{ e.revenue }}</span>
-              <span style="font-family:'IBM Plex Mono';font-size:9.5px;color:{{ e.statusColor }};border:1px solid {{ e.statusBorder }};padding:4px 8px;border-radius:6px;justify-self:start;white-space:nowrap">{{ e.status }}</span>
+            <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr 1fr;gap:12px;align-items:center;padding:15px 22px;border-bottom:1px solid #1c1c1c;min-width:640px">
+              <div><div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13.5px">{{ e.title }}</div><div style="font-size:10.5px;color:#5a5754;margin-top:1px">{{ e.type }}</div></div>
+              <span style="font-size:12.5px;color:#6a6764">{{ e.date }}</span>
+              <div><div style="font-size:11.5px;color:#6a6764;margin-bottom:5px">{{ e.soldLabel }}</div><div style="height:6px;border-radius:4px;background:#2a2a2a;overflow:hidden"><div style="height:100%;width:{{ e.pct }};background:#6f9eff"></div></div></div>
+              <span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;color:#aac3f5">{{ e.revenue }}</span>
+              <span style="font-family:'Quicksand',sans-serif;font-size:9.5px;color:{{ e.statusColor }};border:1px solid {{ e.statusBorder }};padding:4px 8px;border-radius:13px;justify-self:start;white-space:nowrap">{{ e.status }}</span>
             </div>
           </sc-for>
         </div>
@@ -144,40 +151,40 @@
       <!-- INCASSI -->
       <sc-if value="{{ isIncassi }}">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
-          <div style="border-radius:20px;padding:22px;background:linear-gradient(135deg,oklch(0.28 0.09 158),oklch(0.18 0.05 170));border:1px solid oklch(0.4 0.1 158)">
-            <div style="font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.12em;color:oklch(0.85 0.1 158)">PROSSIMO BONIFICO</div>
-            <div style="font-family:'Space Grotesk';font-weight:700;font-size:32px;margin-top:10px">{{ nextPayout }}</div>
-            <div style="font-size:11.5px;color:oklch(0.85 0.06 158);margin-top:8px">Entro 72h dalla fine evento · IBAN ••• 8841</div>
+          <div style="border-radius:13px;padding:22px;background:#0a3f30;border:1px solid #0a8a5c">
+            <div style="font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.12em;color:#5fe0b0">PROSSIMO BONIFICO</div>
+            <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:32px;margin-top:10px">{{ nextPayout }}</div>
+            <div style="font-size:11.5px;color:#5fe0b0;margin-top:8px">Entro 72h dalla fine evento · IBAN ••• 8841</div>
           </div>
-          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
+          <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
             <sc-for list="{{ payoutLines }}" as="p">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid oklch(0.18 0.02 265)"><div><div style="font-size:13px;font-weight:500">{{ p.label }}</div><div style="font-size:10.5px;color:oklch(0.56 0.02 265);margin-top:1px">{{ p.note }}</div></div><div style="font-family:'Space Grotesk';font-weight:600;font-size:15px;color:{{ p.color }}">{{ p.value }}</div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #222222"><div><div style="font-size:13px;font-weight:500">{{ p.label }}</div><div style="font-size:10.5px;color:#5a5754;margin-top:1px">{{ p.note }}</div></div><div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px;color:{{ p.color }}">{{ p.value }}</div></div>
             </sc-for>
           </div>
         </div>
-        <div style="margin-top:14px;font-family:'IBM Plex Mono';font-size:10.5px;color:oklch(0.5 0.02 265);line-height:1.7;max-width:70ch">TINFT riconosce il “prezzo prevendita” per ogni biglietto venduto e una quota delle royalty sul mercato secondario, al netto delle commissioni di servizio.</div>
+        <div style="margin-top:14px;font-family:'Quicksand',sans-serif;font-size:10.5px;color:#5a5754;line-height:1.7;max-width:70ch">TINFT riconosce il “prezzo prevendita” per ogni biglietto venduto e una quota delle royalty sul mercato secondario, al netto delle commissioni di servizio.</div>
       </sc-if>
 
       <!-- HOLDER -->
       <sc-if value="{{ isHolders }}">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
           <sc-for list="{{ holderStats }}" as="s">
-            <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:16px;padding:16px 18px"><div style="font-family:'Space Grotesk';font-weight:700;font-size:24px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:11px;color:oklch(0.62 0.02 265);margin-top:3px">{{ s.label }}</div></div>
+            <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:16px 18px"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:24px;color:{{ s.color }}">{{ s.value }}</div><div style="font-size:11px;color:#6a6764;margin-top:3px">{{ s.label }}</div></div>
           </sc-for>
         </div>
-        <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;overflow:hidden">
-          <div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;gap:12px;padding:14px 22px;font-family:'IBM Plex Mono';font-size:10px;letter-spacing:0.08em;color:oklch(0.56 0.02 265);border-bottom:1px solid oklch(0.2 0.02 265);min-width:660px">
+        <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;gap:12px;padding:14px 22px;font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.08em;color:#5a5754;border-bottom:1px solid #222222;min-width:660px">
             <span>HOLDER</span><span>EMAIL</span><span>BIGLIETTI</span><span>SPESO</span><span>STATO</span>
           </div>
           <sc-for list="{{ holderRows }}" as="h" hint-placeholder-count="6">
-            <div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid oklch(0.16 0.02 265);min-width:660px">
+            <div style="display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 1.2fr;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #1c1c1c;min-width:660px">
               <div style="display:flex;align-items:center;gap:11px;min-width:0">
-                <div style="width:34px;height:34px;border-radius:10px;background:{{ h.art }};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:600;font-size:12px;color:#fff;flex-shrink:0">{{ h.initials }}</div>
-                <div style="min-width:0"><div style="display:flex;align-items:center;gap:7px"><span style="font-family:'Space Grotesk';font-weight:600;font-size:13px">{{ h.name }}</span><sc-if value="{{ h.hasTag }}"><span style="font-size:8px;font-family:'IBM Plex Mono';color:{{ h.tagColor }};background:{{ h.tagBg }};padding:2px 6px;border-radius:5px">{{ h.tag }}</span></sc-if></div><div style="font-size:10px;color:oklch(0.52 0.02 265)">{{ h.city }}</div></div>
+                <div style="width:34px;height:34px;border-radius:13px;background:{{ h.art }};display:flex;align-items:center;justify-content:center;font-family:'Quicksand',sans-serif;font-weight:600;font-size:12px;color:#fff;flex-shrink:0">{{ h.initials }}</div>
+                <div style="min-width:0"><div style="display:flex;align-items:center;gap:7px"><span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px">{{ h.name }}</span><sc-if value="{{ h.hasTag }}"><span style="font-size:8px;font-family:'Quicksand',sans-serif;color:{{ h.tagColor }};background:{{ h.tagBg }};padding:2px 6px;border-radius:11px">{{ h.tag }}</span></sc-if></div><div style="font-size:10px;color:#5a5754">{{ h.city }}</div></div>
               </div>
-              <span style="font-size:12px;color:oklch(0.62 0.02 265);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.email }}</span>
+              <span style="font-size:12px;color:#6a6764;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.email }}</span>
               <span style="font-size:12.5px">{{ h.tickets }}</span>
-              <span style="font-family:'Space Grotesk';font-weight:600;font-size:12.5px;color:oklch(0.78 0.14 264)">{{ h.spent }}</span>
+              <span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:12.5px;color:#aac3f5">{{ h.spent }}</span>
               <div style="display:flex;align-items:center;gap:7px"><div style="width:7px;height:7px;border-radius:50%;background:{{ h.dot }}"></div><span style="font-size:11.5px;color:{{ h.presentColor }}">{{ h.presentLabel }}</span></div>
             </div>
           </sc-for>
@@ -186,36 +193,127 @@
 
       <!-- ACCESSI -->
       <sc-if value="{{ isAccessi }}">
-        <div style="border:1px solid oklch(0.4 0.1 75);background:oklch(0.15 0.03 75);border-radius:14px;padding:14px 18px;font-size:12px;color:oklch(0.85 0.1 75);margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;max-width:80ch">
+        <div style="border:1px solid #9c5e00;background:#1c1c1c;border-radius:13px;padding:14px 18px;font-size:12px;color:#ffcf80;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;max-width:80ch">
           <span style="font-size:16px;line-height:1">⛨</span>
           <span style="line-height:1.55"><b>Sola lettura.</b> La validazione degli accessi avviene esclusivamente dall'app TINFT sullo smartphone dello staff. Questa console rispecchia i dati in tempo reale ma non può validare ingressi.</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
-          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.45 0.14 264);border-radius:20px;padding:22px;box-shadow:0 0 36px oklch(0.5 0.18 264/.12)">
-            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Space Grotesk';font-weight:600;font-size:15px">Notte Elettronica · Vol.4</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:oklch(0.74 0.16 158);box-shadow:0 0 8px oklch(0.74 0.18 158);animation:pulse 1.6s infinite"></span><span style="font-size:11px;color:oklch(0.74 0.12 158)">LIVE</span></span></div>
-            <div style="display:flex;align-items:flex-end;gap:10px;margin-top:18px"><span style="font-family:'Space Grotesk';font-weight:700;font-size:46px;color:oklch(0.78 0.14 264)">{{ validated }}</span><span style="font-size:13px;color:oklch(0.6 0.02 265);padding-bottom:10px">/ {{ capacity }} ingressi</span></div>
-            <div style="margin-top:14px;height:9px;border-radius:5px;background:oklch(0.24 0.02 265);overflow:hidden"><div style="height:100%;width:{{ validatedPct }};background:linear-gradient(90deg,oklch(0.62 0.17 264),oklch(0.74 0.16 158))"></div></div>
+          <div style="background:#1c1c1c;border:1px solid #4472c4;border-radius:13px;padding:22px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px">Notte Elettronica · Vol.4</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#5fe0b0;box-shadow:0 0 8px #5fe0b0;animation:pulse 1.6s infinite"></span><span style="font-size:11px;color:#5fe0b0">LIVE</span></span></div>
+            <div style="display:flex;align-items:flex-end;gap:10px;margin-top:18px"><span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:46px;color:#aac3f5">{{ validated }}</span><span style="font-size:13px;color:#6a6764;padding-bottom:10px">/ {{ capacity }} ingressi</span></div>
+            <div style="margin-top:14px;height:9px;border-radius:11px;background:#2a2a2a;overflow:hidden"><div style="height:100%;width:{{ validatedPct }};background:#6f9eff"></div></div>
           </div>
-          <div style="background:oklch(0.14 0.013 265);border:1px solid oklch(0.26 0.02 265);border-radius:20px;padding:20px">
-            <div style="font-family:'Space Grotesk';font-weight:600;font-size:15px;margin-bottom:12px">Ultimi ingressi</div>
+          <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:20px">
+            <div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px;margin-bottom:12px">Ultimi ingressi</div>
             <sc-for list="{{ recentEntries }}" as="r">
-              <div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid oklch(0.18 0.02 265)">
-                <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.5 0.13 158);display:flex;align-items:center;justify-content:center;color:#062;font-size:13px;font-weight:700">✓</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid #222222">
+                <div style="width:28px;height:28px;border-radius:50%;background:#00cc88;display:flex;align-items:center;justify-content:center;color:#062;font-size:13px;font-weight:700">✓</div>
                 <span style="flex:1;font-size:12.5px;font-weight:500">{{ r.name }}</span>
-                <span style="font-size:10.5px;color:oklch(0.56 0.02 265);font-family:'IBM Plex Mono'">{{ r.time }}</span>
+                <span style="font-size:10.5px;color:#5a5754;font-family:'Quicksand',sans-serif">{{ r.time }}</span>
               </div>
             </sc-for>
           </div>
         </div>
       </sc-if>
 
+      <!-- CLUB → EVENTI -->
+      <sc-if value="{{ isClub }}">
+        <sc-if value="{{ clubInList }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+            <sc-for list="{{ clubCards }}" as="c" hint-placeholder-count="2">
+              <div onClick="{{ c.open }}" style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden;cursor:pointer">
+                <div style="height:84px;background:{{ c.color }};display:flex;align-items:flex-end;padding:12px 14px"><span style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:#fff">{{ c.name }}</span></div>
+                <div style="padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <div style="min-width:0;flex:1"><div style="font-size:12px;color:#8a8682;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.city }} · {{ c.genre }}</div><div style="font-size:11px;color:#5a5754;margin-top:4px">{{ c.evCount }}</div></div>
+                  <span style="font-size:18px;color:#6f9eff;flex-shrink:0">›</span>
+                </div>
+              </div>
+            </sc-for>
+            <div onClick="{{ openClubForm }}" style="border:1px dashed #3a3a38;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;cursor:pointer;color:#6f9eff">
+              <span style="font-size:30px;line-height:1">+</span><span style="font-size:12.5px;font-weight:600">Crea pagina club</span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ clubOpen }}">
+          <div onClick="{{ openClubList }}" style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#8a8682;cursor:pointer;margin-bottom:14px">‹ Tutti i club</div>
+          <div style="display:flex;align-items:center;gap:14px;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:16px 18px;margin-bottom:16px;flex-wrap:wrap">
+            <div style="width:46px;height:46px;border-radius:11px;background:{{ selClubColor }};display:flex;align-items:center;justify-content:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">{{ selClubInitials }}</div>
+            <div style="flex:1;min-width:140px"><div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:18px">{{ selClubName }}</div><div style="font-size:12px;color:#8a8682;margin-top:2px">{{ selClubCity }} · {{ selClubGenre }}</div></div>
+            <sc-if value="{{ canCreateEvent }}"><div onClick="{{ openEventForm }}" style="background:#6f9eff;color:#fff;font-weight:600;font-size:12.5px;padding:10px 16px;border-radius:13px;cursor:pointer;white-space:nowrap;box-shadow:0 0 20px rgba(68,114,196,.3)">+ Crea evento</div></sc-if>
+          </div>
+          <sc-if value="{{ selClubIsDemo }}"><div style="font-size:11.5px;color:#ffcf80;background:#1c1c1c;border:1px solid #9c5e00;border-radius:13px;padding:10px 13px;margin-bottom:14px">Club dimostrativo · sola lettura. Crea un tuo club per aggiungere eventi.</div></sc-if>
+          <sc-if value="{{ selHasEvents }}">
+            <div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;overflow:hidden">
+              <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr;gap:12px;padding:14px 22px;font-family:'Quicksand',sans-serif;font-size:10px;letter-spacing:0.08em;color:#5a5754;border-bottom:1px solid #222222;min-width:560px">
+                <span>EVENTO</span><span>DATA</span><span>VENDUTI</span><span>INCASSO</span>
+              </div>
+              <sc-for list="{{ selEvents }}" as="e" hint-placeholder-count="2">
+                <div style="display:grid;grid-template-columns:2.2fr 1fr 1.6fr 1.2fr;gap:12px;align-items:center;padding:15px 22px;border-bottom:1px solid #1c1c1c;min-width:560px">
+                  <div><div style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13.5px">{{ e.title }}</div><div style="font-size:10.5px;color:#5a5754;margin-top:1px">{{ e.type }} · {{ e.priceLabel }}</div></div>
+                  <span style="font-size:12.5px;color:#6a6764">{{ e.date }}</span>
+                  <div><div style="font-size:11.5px;color:#6a6764;margin-bottom:5px">{{ e.soldLabel }}</div><div style="height:6px;border-radius:4px;background:#2a2a2a;overflow:hidden"><div style="height:100%;width:{{ e.pct }};background:#6f9eff"></div></div></div>
+                  <span style="font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;color:#aac3f5">{{ e.revenue }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ selNoEvents }}"><div style="background:#1c1c1c;border:1px solid #2a2a2a;border-radius:13px;padding:30px;text-align:center;font-size:13px;color:#8a8682">Nessun evento in questo club. Tocca <b style="color:#6f9eff">+ Crea evento</b> per aggiungerne uno.</div></sc-if>
+        </sc-if>
+      </sc-if>
+
     </div>
   </div>
+
+  <!-- MODAL: crea club -->
+  <sc-if value="{{ clubFormOpen }}">
+    <div style="position:fixed;inset:0;z-index:60;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div class="scr" style="width:460px;max-width:100%;max-height:92vh;overflow-y:auto;background:#131313;border:1px solid #2a2a2a;border-radius:13px;padding:24px;position:relative">
+        <span onClick="{{ closeForms }}" style="position:absolute;top:16px;right:18px;font-size:18px;color:#8a8682;cursor:pointer">✕</span>
+        <div style="font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.1em;color:#6f9eff">NUOVA PAGINA CLUB</div>
+        <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:19px;margin-top:8px">Crea il tuo club</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+          <sc-for list="{{ clubFields }}" as="f">
+            <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:13px;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">{{ f.label }}</div><input value="{{ f.value }}" onInput="{{ f.on }}" placeholder="{{ f.ph }}" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+          </sc-for>
+          <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:13px;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">DESCRIZIONE</div><input value="{{ clubDescVal }}" onInput="{{ onClubDesc }}" placeholder="Due righe sul club" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+          <div><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:9px">COLORE COPERTINA</div>
+            <div style="display:flex;gap:10px">
+              <sc-for list="{{ colorSwatches }}" as="c"><div onClick="{{ c.on }}" style="width:30px;height:30px;border-radius:50%;background:{{ c.color }};cursor:pointer;border:2px solid {{ c.ring }};box-shadow:0 0 0 1px #2a2a2a"></div></sc-for>
+            </div>
+          </div>
+        </div>
+        <div onClick="{{ submitClub }}" style="margin-top:20px;background:#6f9eff;color:#fff;text-align:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;padding:13px;border-radius:13px;cursor:pointer">Crea club</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- MODAL: crea evento -->
+  <sc-if value="{{ evFormOpen }}">
+    <div style="position:fixed;inset:0;z-index:60;background:rgba(5,5,5,.82);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px">
+      <div class="scr" style="width:460px;max-width:100%;max-height:92vh;overflow-y:auto;background:#131313;border:1px solid #2a2a2a;border-radius:13px;padding:24px;position:relative">
+        <span onClick="{{ closeForms }}" style="position:absolute;top:16px;right:18px;font-size:18px;color:#8a8682;cursor:pointer">✕</span>
+        <div style="font-family:'Quicksand',sans-serif;font-size:11px;letter-spacing:0.1em;color:#6f9eff">NUOVO EVENTO · {{ selClubName }}</div>
+        <div style="font-family:'Quicksand',sans-serif;font-weight:700;font-size:19px;margin-top:8px">Crea evento</div>
+        <div style="display:flex;gap:1px;margin-top:18px;background:#222222;border:1px solid #222222;border-radius:13px;overflow:hidden">
+          <sc-for list="{{ evTypeOpts }}" as="t"><div onClick="{{ t.on }}" style="flex:1;text-align:center;padding:10px;font-family:'Quicksand',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.06em;background:{{ t.bg }};color:{{ t.color }};cursor:pointer">{{ t.label }}</div></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+          <sc-for list="{{ evFields }}" as="f">
+            <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:13px;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">{{ f.label }}</div><input value="{{ f.value }}" onInput="{{ f.on }}" placeholder="{{ f.ph }}" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+          </sc-for>
+          <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:13px;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">PREZZO (€)</div><input value="{{ evPriceVal }}" onInput="{{ onEvPrice }}" placeholder="0,00" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:15px;font-weight:700;font-family:inherit"/></div>
+          <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:13px;padding:11px 14px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">DESCRIZIONE (FACOLT.)</div><input value="{{ evDescVal }}" onInput="{{ onEvDesc }}" placeholder="Line-up, note…" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit"/></div>
+        </div>
+        <div onClick="{{ submitEvent }}" style="margin-top:20px;background:#6f9eff;color:#fff;text-align:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;padding:13px;border-radius:13px;cursor:pointer">Pubblica evento</div>
+      </div>
+    </div>
+  </sc-if>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { route:'dash', narrow:false, now:Date.now(), D:null, world:null };
+  state = { route:'dash', narrow:false, now:Date.now(), D:null, world:null, session:null, club:null, clubForm:null, evForm:null };
 
   componentDidMount(){
     this.onResize = ()=>{ const n = window.innerWidth < 880; if(n!==this.state.narrow) this.setState({ narrow:n }); };
@@ -223,9 +321,10 @@ class Component extends DCLogic {
     // mondo condiviso (stesso di App e Banco di Prova)
     try{
       const raw=localStorage.getItem('tinft_world'); if(raw) this.setState({ world:JSON.parse(raw) });
+      try{ const sid=localStorage.getItem('tinft_session'); if(sid) this.setState({ session:sid }); }catch(_){}
       this._bc=new BroadcastChannel('tinft_world');
       this._bc.onmessage=(e)=>{ if(e.data&&e.data.t==='world') this.setState({ world:e.data }); };
-      this._onStorage=(ev)=>{ if(ev.key==='tinft_world'&&ev.newValue){ try{ this.setState({ world:JSON.parse(ev.newValue) }); }catch(_){} } };
+      this._onStorage=(ev)=>{ if(ev.key==='tinft_world'&&ev.newValue){ try{ this.setState({ world:JSON.parse(ev.newValue) }); }catch(_){} } if(ev.key==='tinft_session'){ this.setState({ session: ev.newValue||null }); } };
       window.addEventListener('storage', this._onStorage);
     }catch(e){}
     window.addEventListener('resize', this.onResize);
@@ -235,97 +334,206 @@ class Component extends DCLogic {
   componentWillUnmount(){ window.removeEventListener('resize', this.onResize); clearInterval(this.t); if(this._bc){try{this._bc.close();}catch(e){}} if(this._onStorage) window.removeEventListener('storage', this._onStorage); }
 
   eur(n){ return '€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+  _num(v){ return Number(String(v==null?'':v).replace(',','.'))||0; }
+  _saveWorld(patch){
+    const cur=this.state.world||{};
+    const world={ t:'world', tickets:cur.tickets||[], transfers:cur.transfers||[], accounts:cur.accounts||{}, clubs:cur.clubs||[], ...patch };
+    try{ localStorage.setItem('tinft_world', JSON.stringify(world)); if(this._bc) this._bc.postMessage(world); }catch(e){}
+    this.setState({ world });
+  }
+  openClubForm(){ this.setState({ clubForm:{ name:'', ragione:'', piva:'', city:'', sede:'', genre:'', pec:'', sdi:'', iban:'', desc:'', color:'#4472c4' } }); }
+  openEventForm(){ this.setState({ evForm:{ title:'', date:'', time:'', type:'Ticket NFT', price:'', capacity:'', desc:'' } }); }
+  closeForms(){ this.setState({ clubForm:null, evForm:null }); }
+  patchClubForm(p){ this.setState(s=>({ clubForm:{...s.clubForm, ...p} })); }
+  patchEvForm(p){ this.setState(s=>({ evForm:{...s.evForm, ...p} })); }
+  submitClub(){
+    const f=this.state.clubForm; if(!f||!f.name.trim()) return;
+    const id='club'+Date.now();
+    const club={ id, owner:this.state.session||'demo', name:f.name.trim(), ragione:(f.ragione||'').trim(), piva:(f.piva||'').trim(), city:f.city.trim(), sede:(f.sede||'').trim(), genre:f.genre.trim(), pec:(f.pec||'').trim(), sdi:(f.sdi||'').trim(), iban:(f.iban||'').trim(), desc:f.desc.trim(), color:f.color||'#4472c4', events:[], createdAt:Math.floor(Date.now()/1000) };
+    this._saveWorld({ clubs:[ club, ...((this.state.world||{}).clubs||[]) ] });
+    this.setState({ clubForm:null, club:id });
+  }
+  submitEvent(){
+    const f=this.state.evForm, cid=this.state.club; if(!f||!cid||cid==='demo'||!f.title.trim()) return;
+    const ev={ id:'ce'+Date.now(), title:f.title.trim(), date:f.date.trim(), time:f.time.trim(), type:f.type||'Ticket NFT', price:this._num(f.price), capacity:Math.round(this._num(f.capacity))||0, desc:f.desc.trim() };
+    const clubs=((this.state.world||{}).clubs||[]).map(c=> c.id===cid?{...c, events:[ev, ...(c.events||[])]}:c );
+    this._saveWorld({ clubs });
+    this.setState({ evForm:null });
+  }
 
   renderVals(){
     const S=this.state, R=S.route;
     const D=S.D||{HOLDERS:[],ORG_EVENTS:[],ROYALTY:0};
     // ---- LIVE dal mondo condiviso (App / Banco di Prova) ----
     const W=S.world||{tickets:[],transfers:[],accounts:{}};
+    // ---- identità unificata: chi è loggato nell'area cliente gestisce questa org ----
+    const PCOL={marco:'#2f4f8a',giulia:'#0a8a5c',luca:'#9c5e00',sara:'#7a3550'};
+    const sAcc=(W.accounts||{})[S.session];
+    const hasSession=!!sAcc;
+    const orgName=sAcc?(sAcc.nome+' '+sAcc.cognome):'Club Astra';
+    const orgInitials=sAcc?sAcc.initials:'CA';
+    const orgColor=sAcc?(PCOL[S.session]||'#4472c4'):'#4472c4';
+    const orgSub=sAcc?'Club Astra · Organizzatore':'Organizzatore';
+    const backLabel=sAcc?"‹ Torna all'area cliente":'‹ Area cliente';
     const eur2=(n)=>'\u20AC '+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
     const liveValidated=(W.tickets||[]).filter(t=>t.status==='usato').length;
     const p2pDoneC=(W.transfers||[]).filter(x=>x.status==='done' && x.mode==='pagamento');
     const liveP2PCount=p2pDoneC.length;
-    const liveP2PRoyalty=p2pDoneC.reduce((a,x)=> a + (x.royC!=null? x.royC : (x.royalty||0)/2), 0);
+    const liveP2PRoyalty=p2pDoneC.reduce((a,x)=> a + (x.royT!=null? x.royT : (x.royalty||0)/2), 0);
     const liveExported=(W.tickets||[]).filter(t=>t.status==='exported').length;
-    const ACT='oklch(0.76 0.14 264)', MUT='oklch(0.62 0.02 265)';
+    const ACT='#6f9eff', MUT='#6a6764';
     const go=r=>()=>this.setState({ route:r });
     const nav=[
       {key:'dash',label:'Dashboard',icon:'◫'},
+      {key:'club',label:'Club',icon:'❖'},
       {key:'eventi',label:'Eventi',icon:'◆'},
       {key:'incassi',label:'Incassi',icon:'€'},
       {key:'accessi',label:'Accessi',icon:'⛨'},
       {key:'holders',label:'Holder',icon:'◉'}
     ].map(n=>({ ...n, go:go(n.key),
-      bg: R===n.key? 'oklch(0.22 0.06 264)':'transparent',
+      bg: R===n.key? '#1f3358':'transparent',
       color: R===n.key? '#fff':MUT,
       weight: R===n.key? '600':'500' }));
 
-    const titles={ dash:['Dashboard','Panoramica della stagione in corso'], eventi:['Eventi','Gestisci titoli, capienze e stato vendite'], incassi:['Incassi & payout','Bonifici, commissioni e royalty'], accessi:['Accessi live','Validazioni in tempo reale dallo staff'], holders:['Holder & community','Chi possiede i tuoi titoli NFT'] };
+    const titles={ dash:['Dashboard','Panoramica della stagione in corso'], club:['Club & eventi','Le tue pagine club e gli eventi che contengono'], eventi:['Eventi','Gestisci titoli, capienze e stato vendite'], incassi:['Incassi & payout','Bonifici, commissioni e royalty'], accessi:['Accessi live','Validazioni in tempo reale dallo staff'], holders:['Holder & community','Chi possiede i tuoi titoli NFT'] };
     const [pageTitle,pageSub]=titles[R]||titles.dash;
 
+    // ====== METRICHE LIVE: baseline demo + contributo reale dal mondo condiviso ======
+    const _tickets=W.tickets||[], _trans=W.transfers||[];
+    const tms=(t)=>{ const m=String(t.id||'').match(/^t(\d{10,})/); return m?Number(m[1].slice(0,13)):0; };
+    const startOf=(ms)=>{ const d=new Date(ms); d.setHours(0,0,0,0); return d.getTime(); };
+    const relTime=(ms)=>{ if(!ms) return 'poco fa'; const s=Math.max(0,Math.floor((S.now-ms)/1000)); if(s<60) return s+' s fa'; const mn=Math.floor(s/60); if(mn<60) return mn+' min fa'; const h=Math.floor(mn/60); if(h<24) return h+' h fa'; return Math.floor(h/24)+' g fa'; };
+    const acctColor=(k)=>({marco:'#2f4f8a',giulia:'#0a8a5c',luca:'#9c5e00',sara:'#7a3550'}[k]||'#4472c4');
+    const EVID={'Notte Elettronica · Vol.4':'vol4','Stagione Live · Fidelity':'live','Blue Room · Jazz':'jazz'};
+    const realCountEv=(ev)=>_tickets.filter(t=>t.eventId===ev).length;
+    const realGross=_tickets.reduce((a,t)=>a+(t.price||0),0);
+    const realCount=_tickets.length;
+    const realValidated=_tickets.filter(t=>t.status==='usato').length;
+    const doneP2P=_trans.filter(x=>x.status==='done'&&x.mode==='pagamento');
+    const orgRoyalty=doneP2P.reduce((a,x)=>a+(x.royT!=null?x.royT:(x.royalty||0)/2),0);
+
     const kpis=[
-      { kicker:'INCASSO · STAGIONE', value:this.eur(34224), note:'▲ +12,4% vs mese scorso', bg:'linear-gradient(135deg,oklch(0.34 0.13 264),oklch(0.2 0.07 285))', border:'oklch(0.45 0.12 264)', kickerColor:'oklch(0.86 0.06 264)', valColor:'#fff' },
-      { kicker:'BIGLIETTI VENDUTI', value:'932', note:'su 4 eventi attivi', bg:'oklch(0.14 0.013 265)', border:'oklch(0.26 0.02 265)', kickerColor:MUT, valColor:'#fff' },
-      { kicker:'EVENTI IN VENDITA', value:'3', note:'1 concluso in archivio', bg:'oklch(0.14 0.013 265)', border:'oklch(0.26 0.02 265)', kickerColor:MUT, valColor:'#fff' },
-      { kicker:'VALIDATI · LIVE', value:'312', note:'Vol.4 · 62% capienza', bg:'oklch(0.14 0.013 265)', border:'oklch(0.26 0.02 265)', kickerColor:MUT, valColor:ACT }
+      { kicker:'INCASSO · STAGIONE', value:this.eur(34224+Math.round(realGross)), note: realGross>0?('include € '+Math.round(realGross)+' live'):'▲ +12,4% vs mese scorso', bg:'#131313', border:'#4472c4', kickerColor:'#6f9eff', valColor:'#6f9eff' },
+      { kicker:'BIGLIETTI VENDUTI', value:String(932+realCount), note: realCount>0?('+'+realCount+' live · 4 eventi'):'su 4 eventi attivi', bg:'#1c1c1c', border:'#2a2a2a', kickerColor:MUT, valColor:'#fff' },
+      { kicker:'EVENTI IN VENDITA', value:'3', note:'1 concluso in archivio', bg:'#1c1c1c', border:'#2a2a2a', kickerColor:MUT, valColor:'#fff' },
+      { kicker:'VALIDATI · LIVE', value:String(312+realValidated), note: realValidated>0?('+'+realValidated+' dall\u2019app ora'):'Vol.4 · 62% capienza', bg:'#1c1c1c', border:'#2a2a2a', kickerColor:MUT, valColor:ACT }
     ];
-    const barH=[46,62,38,72,55,84,68], days=['L','M','M','G','V','S','D'];
-    const salesBars=barH.map((h,i)=>({ h:h+'%', day:days[i] }));
-    const recentSales=[
-      { who:'Marco B.', what:'Ticket NFT · Vol.4', amount:'€ 31,50', when:'2 min fa', art:'linear-gradient(135deg,oklch(0.5 0.16 264),oklch(0.35 0.1 285))' },
-      { who:'Giulia V.', what:'Fidelity · Stagione', amount:'€ 120', when:'18 min fa', art:'linear-gradient(135deg,oklch(0.5 0.12 75),oklch(0.34 0.08 55))' },
-      { who:'Luca R.', what:'Ticket NFT · Jazz', amount:'€ 24,00', when:'41 min fa', art:'linear-gradient(135deg,oklch(0.5 0.12 200),oklch(0.34 0.08 235))' },
-      { who:'Sara C.', what:'Special · Location Ed.', amount:'€ 65,00', when:'1 h fa', art:'linear-gradient(135deg,oklch(0.5 0.13 320),oklch(0.34 0.09 350))' }
-    ];
+    const baseBar=[46,62,38,72,55,84,68], dayInit=['D','L','M','M','G','V','S'];
+    const days7=[]; for(let i=6;i>=0;i--){ days7.push(dayInit[new Date(S.now-i*86400000).getDay()]); }
+    const dayGross=[0,0,0,0,0,0,0], today0=startOf(S.now);
+    _tickets.forEach(t=>{ const ms=tms(t); if(!ms) return; const diff=Math.round((today0-startOf(ms))/86400000); if(diff>=0&&diff<=6) dayGross[6-diff]+=(t.price||0); });
+    const salesBars=baseBar.map((h,i)=>({ h:Math.min(100, Math.round(h*0.9 + dayGross[i]*2.2))+'%', day:days7[i] }));
+
+    const realSales=[..._tickets].filter(t=>tms(t)).sort((a,b)=>tms(b)-tms(a)).slice(0,5).map(t=>{ const a=(W.accounts||{})[t.owner]||{}; return { who:(a.nome?(a.nome+' '+((a.cognome||'')[0]||'')+'.'):(t.holder||'Cliente')), what:(t.type||'Ticket NFT')+' · '+String(t.title||'').split(' · ')[0], amount:eur2(t.paid!=null?t.paid:(t.price||0)), when:relTime(tms(t)), art:acctColor(t.owner) }; });
+    const recentSales=[...realSales,
+      { who:'Marco B.', what:'Ticket NFT · Vol.4', amount:'€ 31,50', when:'2 min fa', art:'#4472c4' },
+      { who:'Giulia V.', what:'Fidelity · Stagione', amount:'€ 120', when:'18 min fa', art:'#ff9900' },
+      { who:'Luca R.', what:'Ticket NFT · Jazz', amount:'€ 24,00', when:'41 min fa', art:'#00cc88' },
+      { who:'Sara C.', what:'Special · Location Ed.', amount:'€ 65,00', when:'1 h fa', art:'#4472c4' }
+    ].slice(0,5);
 
     const eventsData=D.ORG_EVENTS;
     const eventRows=eventsData.map(e=>{
       const inSale=e.status==='in vendita';
-      return { title:e.title, type:e.type, date:e.date, soldLabel:e.sold+' / '+e.capacity, pct:Math.round(e.sold/e.capacity*100)+'%', revenue:this.eur(e.sold*e.payout), status:e.status, statusColor:inSale?'oklch(0.78 0.13 264)':'oklch(0.7 0.04 158)', statusBorder:inSale?'oklch(0.42 0.12 264)':'oklch(0.4 0.08 158)' };
+      const extra=EVID[e.title]?realCountEv(EVID[e.title]):0;
+      const sold=e.sold+extra, cap=Math.max(e.capacity, sold);
+      return { title:e.title, type:e.type, date:e.date, soldLabel:sold+' / '+cap, pct:Math.round(sold/cap*100)+'%', revenue:this.eur(sold*e.payout), status:e.status, statusColor:inSale?'#aac3f5':'#6a6764', statusBorder:inSale?'#2f4f8a':'#0a8a5c' };
     });
-    const totalRevenue=eventsData.reduce((a,e)=>a+e.sold*e.payout,0), royalty=D.ROYALTY;
-    const nextPayout=this.eur(9360);
+    const totalRevenue=eventsData.reduce((a,e)=>{ const extra=EVID[e.title]?realCountEv(EVID[e.title]):0; return a+(e.sold+extra)*e.payout; },0);
+    const royalty=D.ROYALTY+Math.round(orgRoyalty);
+    const nettoMat=totalRevenue-Math.round(totalRevenue*0.04)+royalty;
+    const nextPayout=this.eur(Math.round(nettoMat*0.35));
     const payoutLines=[
       { label:'Incasso lordo eventi', note:'somma prezzi prevendita', value:this.eur(totalRevenue), color:'#fff' },
-      { label:'Commissioni TINFT', note:'servizio e-commerce', value:'– '+this.eur(Math.round(totalRevenue*0.04)), color:'oklch(0.7 0.1 25)' },
-      { label:'Royalty mercato secondario', note:'Re-Selling + Collection', value:'+ '+this.eur(royalty), color:'oklch(0.78 0.13 264)' },
-      { label:'Netto maturato', note:'pronto al payout', value:this.eur(totalRevenue-Math.round(totalRevenue*0.04)+royalty), color:'oklch(0.78 0.16 158)' }
+      { label:'Commissioni TINFT', note:'servizio e-commerce 4%', value:'– '+this.eur(Math.round(totalRevenue*0.04)), color:'#ff8aa0' },
+      { label:'Royalty mercato secondario', note:'P2P live + Re-Selling', value:'+ '+this.eur(royalty), color:'#aac3f5' },
+      { label:'Netto maturato', note:'pronto al payout', value:this.eur(nettoMat), color:'#5fe0b0' }
     ];
 
-    const holders=D.HOLDERS;
+    // ---- Holder: dati reali dal mondo condiviso, scoped sull'operatore loggato ----
+    const liveAccts=W.accounts||{}, allTk=W.tickets||[];
+    const CITY={marco:'Milano',giulia:'Milano',luca:'Torino',sara:'Milano'};
+    const countOf=(k)=>allTk.filter(t=>t.owner===k).length;
+    const spentOf=(k)=>allTk.filter(t=>t.owner===k).reduce((a,t)=>a+(t.paid!=null?t.paid:(t.price||0)),0);
+    const presentOf=(k)=>allTk.some(t=>t.owner===k && t.status==='usato');
+    const liveHolders=Object.keys(liveAccts).map(k=>{
+      const a=liveAccts[k], isYou=k===S.session;
+      return { id:k, nome:a.nome, cognome:a.cognome, email:a.email, city:CITY[k]||'—',
+        tickets:countOf(k), spent:spentOf(k), present:presentOf(k), isYou,
+        tag: isYou?'Tu':((a.goodwill||0)>=300?'Top fan':'') };
+    });
+    const liveMails=new Set(liveHolders.map(h=>h.email.toLowerCase()));
+    const demoExtra=D.HOLDERS.filter(h=>!liveMails.has((h.email||'').toLowerCase()));
+    const holders=Object.keys(liveAccts).length ? [...liveHolders, ...demoExtra] : D.HOLDERS;
     const holderRows=holders.map((h,i)=>({
       name:h.nome+' '+h.cognome, initials:(h.nome[0]+h.cognome[0]).toUpperCase(), email:h.email, city:h.city,
       tickets:h.tickets, spent:this.eur(h.spent), tag:h.tag, hasTag:!!h.tag,
-      tagColor:h.tag==='Top fan'?'oklch(0.8 0.13 75)':h.tag==='Nuovo'?'oklch(0.74 0.14 158)':'oklch(0.74 0.1 264)',
-      tagBg:h.tag==='Top fan'?'oklch(0.22 0.06 75)':h.tag==='Nuovo'?'oklch(0.2 0.05 158)':'oklch(0.2 0.05 264)',
-      art:'linear-gradient(135deg,oklch(0.5 0.14 '+(200+i*40)+'),oklch(0.34 0.09 '+(230+i*35)+'))',
-      dot:h.present?'oklch(0.74 0.16 158)':'oklch(0.3 0.02 265)',
-      presentColor:h.present?'oklch(0.74 0.13 158)':'oklch(0.5 0.02 265)',
+      tagColor:h.tag==='Top fan'?'#ffcf80':h.tag==='Nuovo'?'#5fe0b0':'#6f9eff',
+      tagBg:h.tag==='Top fan'?'#3a2a00':h.tag==='Nuovo'?'#0a3f30':'#1f3358',
+      art:['#2f4f8a','#0a8a5c','#9c5e00','#7a3550','#3a3a38'][i%5],
+      dot:h.present?'#5fe0b0':'#3a3a38',
+      presentColor:h.present?'#5fe0b0':'#5a5754',
       presentLabel:h.present?'In sala':'Non in sala'
     }));
     const holderStats=[
       { value:holders.length, label:'Holder totali', color:'#fff' },
-      { value:holders.filter(h=>h.present).length, label:'In sala ora', color:'oklch(0.78 0.14 158)' },
-      { value:holders.filter(h=>h.tag==='Top fan').length, label:'Top fan', color:'oklch(0.8 0.13 75)' },
+      { value:holders.filter(h=>h.present).length, label:'In sala ora', color:'#5fe0b0' },
+      { value:holders.filter(h=>h.tag==='Top fan').length, label:'Top fan', color:'#ffcf80' },
       { value:this.eur(holders.reduce((a,h)=>a+h.spent,0)), label:'Speso aggregato', color:ACT }
     ];
 
-    const recentEntries=[
+    const validated=312+realValidated;
+    const capacity=500;
+    const validatedPct=Math.min(100,Math.round(validated/capacity*100))+'%';
+    const realEntries=[..._tickets].filter(t=>t.status==='usato').sort((a,b)=>tms(b)-tms(a)).slice(0,5).map(t=>{ const a=(W.accounts||{})[t.owner]||{}; return { name:(a.nome?a.nome+' '+(a.cognome||''):(t.holder||'Cliente')), time:tms(t)?new Date(tms(t)).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'live' }; });
+    const recentEntries=[...realEntries,
       { name:'Marco Bianchi', time:'23:14' },{ name:'Sara Conti', time:'23:11' },{ name:'Davide Neri', time:'23:09' },{ name:'Elisa Fabbri', time:'23:06' },{ name:'Giulia Verdi', time:'23:02' }
-    ];
+    ].slice(0,6);
+
+    // ====== CLUB → EVENTI ======
+    const demoClub={ id:'demo', name:'Club Astra', city:'Milano', genre:'Live · Club', color:'#4472c4', demo:true,
+      events:(D.ORG_EVENTS||[]).map(e=>({ id:e.id, title:e.title, date:e.date, type:e.type, price:e.price, capacity:e.capacity, sold:e.sold })) };
+    const ownClubs=((W.clubs)||[]).filter(c=>!S.session || c.owner===S.session || c.owner==='demo');
+    const allClubs=[demoClub, ...ownClubs.filter(c=>c.id!=='demo')];
+    const selClub=S.club? allClubs.find(c=>c.id===S.club) : null;
+    const clubCards=allClubs.map(c=>({ id:c.id, name:c.name, city:c.city||'—', genre:c.genre||'eventi', color:c.color||'#4472c4', demo:!!c.demo, evCount:(c.events||[]).length+' eventi', open:()=>this.setState({ club:c.id }) }));
+    const selEvents=selClub? (selClub.events||[]).map(e=>{ const realSold=realCountEv(e.id); const sold=(e.sold||0)+realSold; const cap=e.capacity||0; return { title:e.title, date:e.date||'—', type:e.type||'Ticket NFT', priceLabel:this.eur(e.price||0), soldLabel: cap? (sold+' / '+cap) : (sold+' venduti'), pct: cap? Math.min(100,Math.round(sold/cap*100))+'%':(sold?'100%':'0%'), revenue:this.eur(sold*(e.price||0)) }; }) : [];
+    const CF=S.clubForm, EF=S.evForm;
+    const clubFlds=[['name','NOME CLUB','es. Magazzino Generali'],['ragione','RAGIONE SOCIALE','Magazzino Generali S.r.l.'],['piva','PARTITA IVA','IT01234567890'],['city','CITTÀ','Milano'],['sede','SEDE LEGALE','Via, civico, CAP, città (Prov)'],['genre','GENERE','Techno · House'],['pec','PEC / EMAIL FATTURAZIONE','fatture@club.it'],['sdi','CODICE DESTINATARIO SDI','ABCDEF1'],['iban','IBAN (per i pagamenti)','IT60 X054 2811 0100 0000 0123 456']];
+    const evFlds=[['title','TITOLO EVENTO','es. Notte Elettronica Vol.5'],['date','DATA','Sab 12 LUG'],['time','ORARIO','23:00'],['capacity','CAPIENZA','500']];
 
     return {
+      isClub:R==='club',
+      clubCards, clubInList:!S.club, clubOpen:!!selClub,
+      selClubName:selClub?selClub.name:'', selClubCity:selClub?(selClub.city||'—'):'', selClubGenre:selClub?(selClub.genre||'—'):'',
+      selClubColor:selClub?(selClub.color||'#4472c4'):'#4472c4', selClubIsDemo:!!(selClub&&selClub.demo),
+      selClubInitials:selClub?(selClub.name||'?').slice(0,2).toUpperCase():'',
+      selEvents, selHasEvents:selEvents.length>0, selNoEvents:!!(selClub&&selEvents.length===0),
+      canCreateEvent:!!(selClub&&!selClub.demo),
+      openClubList:()=>this.setState({club:null}),
+      openClubForm:()=>this.openClubForm(), openEventForm:()=>this.openEventForm(), closeForms:()=>this.closeForms(),
+      clubFormOpen:!!CF, clubFields:clubFlds.map(([k,l,ph])=>({label:l,ph,value:(CF&&CF[k])||'',on:(e)=>this.patchClubForm({[k]:e.target.value})})),
+      clubDescVal:CF?CF.desc:'', onClubDesc:(e)=>this.patchClubForm({desc:e.target.value}),
+      colorSwatches:['#4472c4','#0a8a5c','#9c5e00','#7a3550','#6f4fb0'].map(c=>({ color:c, on:()=>this.patchClubForm({color:c}), ring:(CF&&CF.color===c)?'#fff':'transparent' })),
+      submitClub:()=>this.submitClub(),
+      evFormOpen:!!EF, evFields:evFlds.map(([k,l,ph])=>({label:l,ph,value:(EF&&EF[k])||'',on:(e)=>this.patchEvForm({[k]:e.target.value})})),
+      evPriceVal:EF?EF.price:'', onEvPrice:(e)=>this.patchEvForm({price:e.target.value}),
+      evDescVal:EF?EF.desc:'', onEvDesc:(e)=>this.patchEvForm({desc:e.target.value}),
+      evTypeOpts:['Ticket NFT','Fidelity','Special'].map(t=>({ label:t, on:()=>this.patchEvForm({type:t}), bg:(EF&&EF.type===t)?'#1f3358':'#0d0d0d', color:(EF&&EF.type===t)?'#aac3f5':'#8a8682' })),
+      submitEvent:()=>this.submitEvent(),
       rootDir: S.narrow? 'column':'row',
       wide: !S.narrow, narrow: S.narrow,
       nav, pageTitle, pageSub,
-      goCreate: ()=>this.setState({ route:'eventi' }),
+      goCreate: ()=>this.setState({ route:'club', club:null }),
       isDash:R==='dash', isEventi:R==='eventi', isIncassi:R==='incassi', isHolders:R==='holders', isAccessi:R==='accessi',
       kpis, salesBars, recentSales,
       eventRows,
       nextPayout, payoutLines,
       holderRows, holderStats,
-      validated:312, capacity:500, validatedPct:'62%', recentEntries,
-      liveValidated, liveP2PCount, liveP2PRoyalty:eur2(liveP2PRoyalty), liveExported
+      validated, capacity, validatedPct, recentEntries,
+      liveValidated, liveP2PCount, liveP2PRoyalty:eur2(liveP2PRoyalty), liveExported,
+      hasSession, orgName, orgInitials, orgColor, orgSub, backLabel,
+      orgLogout:()=>{ try{ localStorage.removeItem('tinft_session'); }catch(e){} }
     };
   }
 }

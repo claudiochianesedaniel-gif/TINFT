@@ -1,0 +1,28 @@
+# Render Blueprint — pubblica l'API TINFT (con i frontend e la test-app) online.
+# Uso: su https://dashboard.render.com → New → Blueprint → collega il repo GitHub.
+# Render legge questo file, builda il Dockerfile e crea il servizio web.
+# I valori "sync: false" vanno inseriti a mano nella dashboard (sono segreti).
+services:
+  - type: web
+    name: tinft-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /ready
+    envVars:
+      # --- pubblici (deploy attuale su Base Sepolia) ---
+      - key: TICKET_ADDRESS
+        value: "0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37"
+      - key: CHAIN_ID
+        value: "84532"
+      - key: SEED_DEMO
+        value: "1"
+      # --- generato da Render ---
+      - key: AUTH_SECRET
+        generateValue: true
+      # --- SEGRETI: inseriscili nella dashboard (non finiscono nel repo) ---
+      - key: CHAIN_RPC_URL
+        sync: false # = il tuo Alchemy Base Sepolia
+      - key: CHAIN_PRIVATE_KEY
+        sync: false # = chiave OWNER del contratto (deployer)

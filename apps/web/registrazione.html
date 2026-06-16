@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TINFT · Registrazione</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#06070c" />
+<link rel="stylesheet" href="tinft.css" />
+<script src="i18n.js"></script>
+<style>
+  /* design system inline (così la pagina è stilizzata anche aperta da sola) */
+  :root{--bg:#06070c;--bg2:#0a0c12;--surf:oklch(0.16 0.015 265);--surf2:oklch(0.12 0.013 265);
+    --border:oklch(0.26 0.02 265);--txt:oklch(0.96 0.005 262);--mut:oklch(0.62 0.02 265);
+    --acc:oklch(0.66 0.17 264);--acc2:oklch(0.52 0.15 264);--ok:oklch(0.74 0.16 158);--warn:oklch(0.8 0.13 70);--err:oklch(0.72 0.13 25);--gold:oklch(0.8 0.13 75);
+    --r-card:16px;--r-pill:999px;--font:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;--mono:ui-monospace,'IBM Plex Mono',monospace;--display:'Space Grotesk',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.01em}
+  .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
+  code{font-family:var(--mono);color:oklch(0.82 0.08 264);font-size:11px}
+  .muted{color:var(--mut);font-size:12px}
+  .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700}
+  .btn,button.btn{font-family:inherit;cursor:pointer;border:none;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));transition:transform .05s}
+  .btn:active{transform:scale(.98)}.btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border)}
+  .btn.sm{padding:8px 12px;font-size:13px}.btn.lg{padding:13px 20px;font-size:15px}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r-card);padding:18px}
+  .input,select.input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:11px;padding:11px 12px;color:var(--txt);font-size:14px}
+  .input:focus{outline:none;border-color:var(--acc)}
+  label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+  .field{margin-bottom:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .badge,.pill{display:inline-block;font-size:10px;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--mut)}
+  .pill.ok{color:var(--ok);border-color:oklch(0.4 0.1 158);background:oklch(0.17 0.04 158)}
+  .stepper{display:flex;gap:8px;align-items:center;margin:14px 0 18px}
+  .stepper .st{display:flex;align-items:center;gap:8px;flex:1}
+  .stepper .n{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-family:var(--mono);color:var(--mut);flex-shrink:0}
+  .stepper .st.on .n{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent}
+  .stepper .st.done .n{border-color:var(--ok);color:var(--ok)}
+  .stepper .lbl{font-size:12px;color:var(--mut)}.stepper .st.on .lbl{color:var(--txt)}
+  .stepper .ln{height:1px;background:var(--border);flex:1;min-width:14px}
+  .lang{display:flex;gap:4px;border:1px solid var(--border);border-radius:var(--r-pill);padding:3px}
+  .lang button{border:none;background:transparent;color:var(--mut);font-size:12px;font-weight:600;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer}
+  .lang button.on{background:var(--acc);color:#fff}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--surf);border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:60;max-width:90vw}
+  .toast.err{border-color:oklch(0.5 0.12 25);color:oklch(0.85 0.08 25)}.toast.ok{border-color:oklch(0.4 0.1 158);color:oklch(0.85 0.06 158)}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}.stepper .lbl{display:none}}
+  body{display:flex;align-items:flex-start;justify-content:center;min-height:100vh;padding:28px 16px;
+    background:radial-gradient(900px 500px at 80% -10%,oklch(0.22 0.08 285),var(--bg))}
+  .shell{width:640px;max-width:100%}
+  .head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:13px;margin-top:10px}
+  .kv div:nth-child(odd){color:var(--mut)}
+  .scanic{width:60px;height:60px;border-radius:50%;border:3px solid var(--ok);color:var(--ok);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px}
+  .consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mut);margin-top:8px}
+  pre{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;overflow:auto;font-size:11px;margin-top:10px}
+  .apibar{margin-top:14px;display:flex;gap:8px;align-items:center}.apibar .input{flex:1}
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="head">
+      <div class="logo">◆</div>
+      <div style="flex:1"><b style="font-family:var(--display);font-size:16px" data-brand></b><div class="muted" data-sub></div></div>
+      <div class="lang"><button data-l="it" onclick="setLang('it')">IT</button><button data-l="en" onclick="setLang('en')">EN</button></div>
+    </div>
+    <div class="card">
+      <div class="stepper" id="stepper"></div>
+      <div id="content"></div>
+    </div>
+    <div class="apibar"><span class="kicker">API</span><input class="input" id="api" value="http://localhost:3001"><span class="muted" id="apihint"></span></div>
+  </div>
+  <div id="toast"></div>
+<script>
+"use strict";
+// i18n opzionale: se i18n.js non è presente (file aperto da solo) usa un fallback IT completo → nessun crash.
+if(typeof window.t!=='function'){var _IT={brand:"TINFT",reg_title:"Crea il tuo account",reg_sub:"Identità verificata, tutto in app. I dati in chiaro restano off-chain; on-chain solo l'hash del codice fiscale.",step_account:"Account",step_identity:"Dati SPID",step_confirm:"Conferma",email:"Email",email_ph:"nome@esempio.it",consent:"Acconsento al trattamento dei dati (GDPR) per identità e anti-bagarinaggio.",spid_fill:"Compila con SPID (demo)",nome:"Nome",cognome:"Cognome",cf:"Codice fiscale",dob:"Data di nascita",pob:"Luogo di nascita",gender:"Sesso",address:"Indirizzo di residenza",city:"Città",zip:"CAP",province:"Provincia",phone:"Telefono",next:"Continua",back:"Indietro",register:"Registrati",required:"Compila i campi obbligatori",review_title:"Riepilogo",done:"Account creato e verificato",done_msg:"Il tuo wallet è pronto. On-chain è registrato solo l'hash del codice fiscale.",verified:"Identità verificata",hash_cf:"Hash CF (on-chain)",residence:"Residenza",api_hint:"Avvia il backend con  pnpm --filter @tinft/api dev  (porta 3001) per salvare davvero.",api_down:"Backend non raggiungibile. Avvia l'API e riprova. Dati che verrebbero inviati:",consent_required:"Devi accettare il trattamento dei dati per continuare.",optional:"facoltativo"};window.tinftLang='it';window.t=function(k){return _IT[k]||k};window.setLang=function(){};window.applyI18n=function(){};}
+var $=function(i){return document.getElementById(i)};
+var state={step:1,result:null,data:{nome:"",cognome:"",email:"",cf:"",dateOfBirth:"",placeOfBirth:"",gender:"",address:"",city:"",zip:"",province:"",phone:"",consent:false}};
+var SPID=[["nome"],["cognome"],["cf"],["dateOfBirth","dob","date"],["placeOfBirth","pob"],["gender","gender","select"],["address","address","full"],["city"],["zip"],["province"],["phone","phone","full"]];
+function base(){return $('api').value.replace(/\/$/,'')}
+function toast(m,cls){var t=$('toast');t.innerHTML='<div class="toast '+(cls||'')+'">'+m+'</div>';clearTimeout(window.__t);window.__t=setTimeout(function(){t.innerHTML=''},3200)}
+function upd(k,v){state.data[k]=v}
+function emailOk(){return /.+@.+\..+/.test(state.data.email)}
+function step1Ok(){return emailOk()&&state.data.consent}
+function step2Ok(){return state.data.nome.trim()&&state.data.cognome.trim()&&state.data.cf.trim().length>=6}
+
+function prefillSpid(){
+  Object.assign(state.data,{nome:"Marco",cognome:"Bianchi",cf:"BNCMRC90A01F205X",dateOfBirth:"1990-01-01",placeOfBirth:"Roma",gender:"M",address:"Via Roma 1",city:"Milano",zip:"20100",province:"MI",phone:"+39 333 1234567"});
+  if(!state.data.email)state.data.email="marco.bianchi@email.it";
+  render();
+}
+function go(n){
+  if(n===2&&!step1Ok()){toast(state.data.consent?t('required'):t('consent_required'),'err');return}
+  if(n===3&&!step2Ok()){toast(t('required'),'err');return}
+  state.step=n;render();
+}
+function fieldInput(key){
+  var f=key[0],lk=key[1]||key[0],type=key[2]||"text",full=type==="full";
+  var cls=full?'field':'field';
+  if(type==="select"){
+    return '<div class="'+cls+(full?'':'')+'"><label>'+t(lk)+'</label><select class="input" onchange="upd(\''+f+'\',this.value)">'+
+      ['','M','F','Altro'].map(function(o){return '<option value="'+o+'"'+(state.data[f]===o?' selected':'')+'>'+(o||'—')+'</option>'}).join('')+'</select></div>';
+  }
+  var it=(type==="date")?"date":"text";
+  return '<div class="field"><label>'+t(lk)+(f==='cf'?' *':(f==='nome'||f==='cognome'?' *':''))+'</label><input class="input" type="'+it+'" value="'+(state.data[f]||'')+'" oninput="upd(\''+f+'\',this.value)"></div>';
+}
+function render(){
+  document.documentElement.lang=window.tinftLang;
+  document.querySelector('[data-brand]').textContent=t('brand');
+  document.querySelector('[data-sub]').textContent=t('reg_title');
+  $('apihint').textContent=t('api_hint');
+  document.querySelectorAll('.lang button').forEach(function(b){b.classList.toggle('on',b.dataset.l===window.tinftLang)});
+  // stepper
+  var steps=[t('step_account'),t('step_identity'),t('step_confirm')];
+  $('stepper').innerHTML=steps.map(function(s,i){var n=i+1,st=n<state.step?'done':n===state.step?'on':'';
+    return '<div class="st '+st+'"><div class="n">'+(n<state.step?'✓':n)+'</div><span class="lbl">'+s+'</span></div>'+(i<2?'<div class="ln"></div>':'')}).join('');
+  var c=$('content');
+  if(state.result){
+    var a=state.result;
+    c.innerHTML='<div class="center"><div class="scanic">✓</div><h2 style="font-size:20px">'+t('done')+'</h2><span class="pill ok" style="margin-top:8px">'+t('verified')+'</span>'+
+      '<div class="kv" style="text-align:left;max-width:460px;margin:14px auto 0">'+
+      '<div>'+t('nome')+'</div><div>'+a.nome+' '+a.cognome+'</div>'+
+      '<div>'+t('email')+'</div><div>'+a.email+'</div>'+
+      '<div>'+t('cf')+'</div><div>'+(a.cf||'')+'</div>'+
+      '<div>'+t('hash_cf')+'</div><div><code>'+(a.cfHash||'').slice(0,22)+'…</code></div>'+
+      '<div>'+t('dob')+'</div><div>'+(a.dateOfBirth||'—')+'</div>'+
+      '<div>'+t('residence')+'</div><div>'+[a.address,a.zip,a.city,a.province].filter(Boolean).join(', ')+'</div>'+
+      '<div>'+t('phone')+'</div><div>'+(a.phone||'—')+'</div></div>'+
+      '<div class="muted" style="margin-top:12px">'+t('done_msg')+'</div></div>';
+    return;
+  }
+  if(state.step===1){
+    c.innerHTML='<div class="muted" style="margin-bottom:14px">'+t('reg_sub')+'</div>'+
+      '<div class="field"><label>'+t('email')+' *</label><input class="input" type="email" placeholder="'+t('email_ph')+'" value="'+(state.data.email||'')+'" oninput="upd(\'email\',this.value)"></div>'+
+      '<label class="consent"><input type="checkbox" '+(state.data.consent?'checked':'')+' onchange="upd(\'consent\',this.checked)"> <span>'+t('consent')+'</span></label>'+
+      '<div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" '+(step1Ok()?'':'disabled')+' onclick="go(2)">'+t('next')+' →</button></div>';
+  } else if(state.step===2){
+    c.innerHTML='<div class="row" style="justify-content:space-between;margin-bottom:10px"><div class="kicker">'+t('step_identity')+'</div><button class="btn ghost sm" onclick="prefillSpid()">'+t('spid_fill')+'</button></div>'+
+      '<div class="grid2">'+SPID.map(function(k){return (k[2]==='full')?'':fieldInput(k)}).join('')+'</div>'+
+      SPID.filter(function(k){return k[2]==='full'}).map(fieldInput).join('')+
+      '<div class="row" style="margin-top:16px;justify-content:space-between"><button class="btn ghost" onclick="go(1)">← '+t('back')+'</button><button class="btn" '+(step2Ok()?'':'disabled')+' onclick="go(3)">'+t('next')+' →</button></div>';
+  } else {
+    var d=state.data;
+    c.innerHTML='<div class="kicker">'+t('review_title')+'</div>'+
+      '<div class="kv" style="margin-top:12px">'+
+      [['nome',d.nome+' '+d.cognome],['email',d.email],['cf',d.cf],['dob',d.dateOfBirth||'—'],['pob',d.placeOfBirth||'—'],['residence',[d.address,d.zip,d.city,d.province].filter(Boolean).join(', ')||'—'],['phone',d.phone||'—']]
+        .map(function(r){return '<div>'+t(r[0])+'</div><div>'+r[1]+'</div>'}).join('')+'</div>'+
+      '<div class="row" style="margin-top:16px;justify-content:space-between"><button class="btn ghost" onclick="go(2)">← '+t('back')+'</button><button class="btn lg" onclick="register()">'+t('register')+'</button></div>';
+  }
+}
+function register(){
+  var d=state.data,p={nome:d.nome.trim(),cognome:d.cognome.trim(),email:d.email.trim(),cf:d.cf.trim().toUpperCase(),dateOfBirth:d.dateOfBirth,placeOfBirth:d.placeOfBirth.trim(),gender:d.gender,address:d.address.trim(),city:d.city.trim(),zip:d.zip.trim(),province:d.province.trim().toUpperCase(),phone:d.phone.trim()};
+  toast('…','');
+  fetch(base()+'/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})
+    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j}})})
+    .then(function(o){if(!o.ok){toast((o.j&&o.j.message)||'errore','err');return}state.result=o.j;render();toast(t('done'),'ok')})
+    .catch(function(e){$('content').innerHTML='<div class="card" style="border-color:oklch(0.5 0.12 25)">'+t('api_down')+'<pre>'+JSON.stringify(p,null,2)+'</pre><button class="btn ghost sm" onclick="render()" style="margin-top:10px">OK</button></div>'});
+}
+window.onLangChange=render;
+render();
+</script>
+</body>
+</html>

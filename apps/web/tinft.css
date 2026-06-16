@@ -1,0 +1,81 @@
+/* TINFT — design system condiviso (token + componenti). Usato dalle pagine apps/web. */
+:root{
+  --bg:#06070c; --bg2:#0a0c12; --surf:oklch(0.16 0.015 265); --surf2:oklch(0.12 0.013 265);
+  --border:oklch(0.26 0.02 265); --txt:oklch(0.96 0.005 262); --mut:oklch(0.62 0.02 265);
+  --acc:oklch(0.66 0.17 264); --acc2:oklch(0.52 0.15 264);
+  --ok:oklch(0.74 0.16 158); --warn:oklch(0.8 0.13 70); --err:oklch(0.72 0.13 25);
+  --plat:oklch(0.6 0.16 300); --gold:oklch(0.8 0.13 75);
+  --r-card:16px; --r-pill:999px; --r-lg:20px; --r-xl:26px;
+  --glow:0 0 30px oklch(0.55 0.2 264/.4); --shadow:0 30px 80px -30px rgba(20,30,120,.6);
+  --font:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --mono:ui-monospace,'IBM Plex Mono',monospace; --display:'Space Grotesk',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);line-height:1.5}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.01em}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+.kicker{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
+code{font-family:var(--mono);color:oklch(0.82 0.08 264);font-size:11px}
+.muted{color:var(--mut);font-size:12px}
+.row{display:flex;align-items:center;gap:10px}
+.center{text-align:center}
+.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700}
+
+/* bottoni */
+.btn,button.btn{font-family:inherit;cursor:pointer;border:none;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 10px 26px -12px oklch(0.55 0.2 264/.7);transition:transform .06s,filter .15s,box-shadow .15s}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:scale(.98)}
+.btn.ghost{box-shadow:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border)}
+.btn.sm{padding:8px 12px;font-size:13px}
+.btn.lg{padding:13px 20px;font-size:15px}
+
+/* superfici */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r-card);padding:18px}
+.input,select.input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:11px;padding:11px 12px;color:var(--txt);font-size:14px}
+.input:focus{outline:none;border-color:var(--acc)}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+.field{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.tile .v{font-family:var(--display);font-weight:700;font-size:22px;margin-top:4px}
+
+/* badge / pill */
+.badge,.pill{display:inline-block;font-size:10px;padding:3px 9px;border-radius:var(--r-pill);border:1px solid var(--border);color:var(--mut)}
+.pill.ok{color:var(--ok);border-color:oklch(0.4 0.1 158);background:oklch(0.17 0.04 158)}
+.pill.warn{color:var(--warn);border-color:oklch(0.45 0.1 70);background:oklch(0.2 0.05 70)}
+.pill.gold{color:var(--gold);border-color:oklch(0.5 0.12 75);background:oklch(0.2 0.05 75)}
+
+/* stepper */
+.stepper{display:flex;gap:8px;align-items:center;margin:14px 0 18px}
+.stepper .st{display:flex;align-items:center;gap:8px;flex:1}
+.stepper .n{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-family:var(--mono);color:var(--mut);flex-shrink:0}
+.stepper .st.on .n{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent}
+.stepper .st.done .n{border-color:var(--ok);color:var(--ok)}
+.stepper .lbl{font-size:12px;color:var(--mut)}
+.stepper .st.on .lbl{color:var(--txt)}
+.stepper .ln{height:1px;background:var(--border);flex:1;min-width:14px}
+
+/* toggle lingua */
+.lang{display:flex;gap:4px;border:1px solid var(--border);border-radius:var(--r-pill);padding:3px}
+.lang button{border:none;background:transparent;color:var(--mut);font-size:12px;font-weight:600;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer}
+.lang button.on{background:var(--acc);color:#fff}
+
+/* toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--surf);border:1px solid var(--border);padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:60;max-width:90vw}
+.toast.err{border-color:oklch(0.5 0.12 25);color:oklch(0.85 0.08 25)}
+.toast.ok{border-color:oklch(0.4 0.1 158);color:oklch(0.85 0.06 158)}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}.stepper .lbl{display:none}}
+
+/* helper condivisi (sito + future pagine) */
+.gradient-text{background:linear-gradient(120deg,oklch(0.82 0.14 264),oklch(0.72 0.16 300));-webkit-background-clip:text;background-clip:text;color:transparent}
+.glow{box-shadow:var(--glow)}
+.container{max-width:1180px;margin:0 auto;padding:0 24px}
+.section{padding:clamp(48px,7vw,86px) 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:oklch(0.7 0.12 264);text-transform:uppercase}
+.glass{backdrop-filter:blur(14px);background:oklch(0.07 0.01 265/.72)}
+a.link{color:oklch(0.72 0.02 265);transition:color .15s}a.link:hover{color:var(--txt)}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
