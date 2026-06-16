@@ -19,7 +19,7 @@
 
 ## 2 · TODO list
 ### ✓ Fatto
-- Smart contract M1–M5 (ERC-721 + 721C, royalty 1% 0,5/0,5, escrow, tetto +5%, max 2/evento via hash CF, export 25%/enforced) — 74 test, inclusi **fuzz** (royalty/fee/EIP-2981/tetto/anti-bagarino) e **invarianti stateful** (conservazione del valore nello split: 128k chiamate, 0 revert).
+- Smart contract M1–M5 (ERC-721 + 721C, royalty 1% 0,5/0,5, escrow, tetto +10%, max 3/evento via hash CF, export 25%/enforced) — 74 test, inclusi **fuzz** (royalty/fee/EIP-2981/tetto/anti-bagarino) e **invarianti stateful** (conservazione del valore nello split: 128k chiamate, 0 revert).
 - Backend v2: identità (hash CF) + OTP email; club + dati societari + KYC; eventi + tier; ordini con **prevendita 10%**; mercato secondario; validazione; contenuti; console org + piattaforma.
 - Auth & sessioni: JWT, scrypt, guardie ruolo/proprietà, rate-limit, security headers, body limit.
 - Persistenza: in-memory (snapshot file, default) **e** PostgreSQL relazionale (Prisma) — pagamenti/ledger/registrazioni/webhook su tabelle.
@@ -75,7 +75,7 @@
 ## 4 · Regole economiche
 - **Prevendita 10%** sul PRIMO acquisto → solo TINFT (a carico del compratore).
 - Rivendita: **royalty 1%** (0,5% TINFT + 0,5% organizzatore) sul prezzo originale.
-- **Tetto +5%** sul prezzo pagato · **max 2 biglietti/evento** per identità (hash CF).
+- **Tetto +10%** sul prezzo pagato · **max 3 biglietti/evento** per identità (hash CF).
 - Export libero: **fee d'uscita 25%** (oppure enforced: royalty per sempre).
 
 Account demo (password `demo123`): `org@tinft.io` (organizzatore) · `cli@tinft.io` · `cli2@tinft.io`.

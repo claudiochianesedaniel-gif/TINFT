@@ -9,7 +9,7 @@ export const openapiSpec = {
     title: "TINFT API",
     version: "1.0.0",
     description:
-      "Biglietteria con NFT nominativi su L2 (Base). Regole: prevendita 10% sul primo acquisto (solo TINFT), royalty 1% sul secondario (0,5/0,5), tetto rivendita +5%, max 2 biglietti/evento per identità, export libero con fee 25%."
+      "Biglietteria con NFT nominativi su L2 (Base). Regole: prevendita 10% sul primo acquisto (solo TINFT), royalty 1% sul secondario (0,5/0,5), tetto rivendita +10%, max 3 biglietti/evento per identità, export libero con fee 25%."
   },
   servers: [{url: "/", description: "stessa origin che serve anche il frontend"}],
   tags: [
@@ -17,7 +17,7 @@ export const openapiSpec = {
     {name: "auth", description: "account, login, registrazione email (OTP)"},
     {name: "eventi"},
     {name: "ordini", description: "checkout primario (prevendita 10%)"},
-    {name: "mercato", description: "rivendita secondaria (royalty 1%, tetto +5%)"},
+    {name: "mercato", description: "rivendita secondaria (royalty 1%, tetto +10%)"},
     {name: "biglietti", description: "QR rotante, validazione, export"},
     {name: "pagamenti", description: "webhook PSP, rimborsi, payout"}
   ],
@@ -104,7 +104,7 @@ export const openapiSpec = {
             }
           }
         },
-        responses: {"201": {description: "ordine PENDING con breakdown"}, "409": {description: "limite 2/evento o non in vendita"}}
+        responses: {"201": {description: "ordine PENDING con breakdown"}, "409": {description: "limite 3/evento o non in vendita"}}
       }
     },
     "/orders/{id}": {get: {tags: ["ordini"], summary: "Dettaglio ordine", security: [{bearerAuth: []}], responses: {"200": {description: "ordine"}}}},
@@ -129,10 +129,10 @@ export const openapiSpec = {
         tags: ["mercato"],
         summary: "Compra un biglietto in vendita (royalty 1% allo split, costo base trasferito)",
         security: [{bearerAuth: []}],
-        responses: {"200": {description: "{ ticket, royalty, paidByBuyerCents }"}, "409": {description: "limite 2/evento"}}
+        responses: {"200": {description: "{ ticket, royalty, paidByBuyerCents }"}, "409": {description: "limite 3/evento"}}
       }
     },
-    "/tickets/{id}/list": {post: {tags: ["mercato"], summary: "Metti in vendita (tetto +5%); solo il proprietario", security: [{bearerAuth: []}], responses: {"201": {description: "biglietto LISTED"}, "409": {description: "oltre il tetto o revocato"}}}},
+    "/tickets/{id}/list": {post: {tags: ["mercato"], summary: "Metti in vendita (tetto +10%); solo il proprietario", security: [{bearerAuth: []}], responses: {"201": {description: "biglietto LISTED"}, "409": {description: "oltre il tetto o revocato"}}}},
     "/tickets/{id}/access-token": {
       get: {tags: ["biglietti"], summary: "Token di accesso firmato (QR rotante ~30s); solo il proprietario", security: [{bearerAuth: []}], responses: {"200": {description: "{ token, exp, rotateSeconds }"}, "403": {description: "non sei il proprietario"}}}
     },

@@ -126,9 +126,12 @@ describe("API HTTP v2 (tier, ordini, mercato, OTP)", () => {
     const b = await buyer("b-lim@e.it", "idLim");
     const first = (await post("/orders", {buyerId: b.account.id, eventId: ev.id, quantity: 1}, b.headers)).json();
     await post(`/orders/${first.id}/pay`, {}, b.headers);
-    const tooMany = await post("/orders", {buyerId: b.account.id, eventId: ev.id, quantity: 2}, b.headers);
+    const tooMany = await post("/orders", {buyerId: b.account.id, eventId: ev.id, quantity: 3}, b.headers); // 1+3=4>3
     expect(tooMany.statusCode).toBe(409);
     expect(tooMany.json().error).toBe("EVENT_LIMIT");
+    // qty 1 rientra ancora (1+1=2≤3)
+    const ok = await post("/orders", {buyerId: b.account.id, eventId: ev.id, quantity: 1}, b.headers);
+    expect(ok.statusCode).toBe(201);
   });
 
   it("mercato: list, listing visibile, buy trasferisce e azzera il listino", async () => {

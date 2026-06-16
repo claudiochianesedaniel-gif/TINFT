@@ -8,7 +8,7 @@ import {TinftRoyaltySplit} from "../src/TinftRoyaltySplit.sol";
 import {TinftTransferValidator} from "../src/TinftTransferValidator.sol";
 
 /// @notice Test FUZZ delle regole economiche on-chain (royalty 1%, fee d'uscita 25%,
-///         EIP-2981, tetto rivendita +5%, limite 2/evento per identità). Verificano
+///         EIP-2981, tetto rivendita +10%, limite 3/evento per identità). Verificano
 ///         che gli invarianti valgano su TUTTO lo spazio degli input, non solo su
 ///         valori scelti a mano dai test unitari.
 contract TinftFuzzTest is Test {
@@ -65,11 +65,11 @@ contract TinftFuzzTest is Test {
         assertEq(split.pending(organizerPayee) - split.pending(tinftPayee), amount % 2);
     }
 
-    /// tetto rivendita +5%: al tetto si può listare, un wei sopra si rifiuta.
+    /// tetto rivendita +10%: al tetto si può listare, un wei sopra si rifiuta.
     function testFuzz_ResaleCapEnforced(uint256 paid) public {
         paid = bound(paid, 100, 1e24);
         uint256 id = ticket.mint(alice, 7, paid);
-        uint256 cap = (paid * 105) / 100;
+        uint256 cap = (paid * 110) / 100;
 
         vm.prank(alice);
         ticket.setApprovalForAll(address(escrow), true);
@@ -89,10 +89,11 @@ contract TinftFuzzTest is Test {
         assertEq(ticket.ownerOf(id), address(escrow));
     }
 
-    /// anti-bagarinaggio: con identità registrata, max 2 biglietti/evento; il 3° rivertisce.
+    /// anti-bagarinaggio: con identità registrata, max 3 biglietti/evento; il 4° rivertisce.
     function testFuzz_AntiScalpMaxPerEvent(uint256 eventId, bytes32 idHash) public {
         vm.assume(idHash != bytes32(0)); // 0 = wallet senza identità (esente)
         ticket.setIdentity(alice, idHash);
+        ticket.mint(alice, eventId, 1 ether);
         ticket.mint(alice, eventId, 1 ether);
         ticket.mint(alice, eventId, 1 ether);
         vm.expectRevert(abi.encodeWithSelector(TinftTicket.EventLimitReached.selector, idHash, eventId));
@@ -104,6 +105,7 @@ contract TinftFuzzTest is Test {
         vm.assume(idHash != bytes32(0));
         vm.assume(e1 != e2);
         ticket.setIdentity(alice, idHash);
+        ticket.mint(alice, e1, 1 ether);
         ticket.mint(alice, e1, 1 ether);
         ticket.mint(alice, e1, 1 ether);
         uint256 id = ticket.mint(alice, e2, 1 ether); // evento diverso → consentito

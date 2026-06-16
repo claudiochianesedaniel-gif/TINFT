@@ -23,12 +23,12 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
 4. **Regole economiche** (mostrarle con chiarezza nei flussi):
    - Prevendita **10%** sul **primo** acquisto (solo TINFT, a carico del compratore).
    - Rivendita: royalty **1%** (0,5% TINFT + 0,5% organizzatore) sul prezzo originale.
-   - Tetto rivendita **+5%** · **max 2 biglietti/evento** per identità · export libero **fee 25%**.
+   - Tetto rivendita **+10%** · **max 3 biglietti/evento** per identità · export libero **fee 25%**.
 5. Biglietto **nominativo** con **QR rotante** (~30s) — anti-screenshot.
 
 ## Aree da rifinire (suggerimenti UX/UI)
 - **Onboarding**: selezione ruolo chiara; form organizzatore con fatturazione (validazioni inline, P.IVA 11 cifre); SPID come opzione.
-- **Cliente**: lista biglietti + dettaglio con QR animato e countdown; flusso acquisto con breakdown prezzo+10%; mercato (vendi col tetto +5%, compra con royalty), stati vuoti curati.
+- **Cliente**: lista biglietti + dettaglio con QR animato e countdown; flusso acquisto con breakdown prezzo+10%; mercato (vendi col tetto +10%, compra con royalty), stati vuoti curati.
 - **Organizzatore (console)**: dashboard con metriche; club & dati fiscali; creazione evento/tier; incassi (lordo/commissioni/netto); accessi/varchi (con nota "validazione in app").
 - **Validatore (web)**: schermata che comunica "validazione solo nell'app", elenco varchi in sola lettura.
 - **Trasversale**: responsive/mobile, accessibilità (AgID/WCAG), microcopy IT (+ i18n), errori e loading, coerenza iconografica, motion del QR.

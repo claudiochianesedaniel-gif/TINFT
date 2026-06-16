@@ -7,7 +7,7 @@ import {TinftTicket} from "../src/TinftTicket.sol";
 import {TinftTransferValidator} from "../src/TinftTransferValidator.sol";
 import {TinftRoyaltySplit} from "../src/TinftRoyaltySplit.sol";
 
-/// @notice M4 — anti-bagarinaggio: tetto +5% e limite 2/evento per identità.
+/// @notice M4 — anti-bagarinaggio: tetto +10% e limite 3/evento per identità.
 contract TinftAntiScalpTest is Test {
     TinftEscrow internal escrow;
     TinftTicket internal ticket;
@@ -24,7 +24,7 @@ contract TinftAntiScalpTest is Test {
     bytes32 internal constant ID_CAROL = keccak256("CF_CAROL+salt");
 
     uint256 internal constant PRICE = 1 ether;
-    uint256 internal constant CAP = (PRICE * 105) / 100; // +5%
+    uint256 internal constant CAP = (PRICE * 110) / 100; // +10%
     uint256 internal constant ROYALTY = PRICE / 100;
     uint64 internal constant TTL = 1 hours;
     uint256 internal constant EVENT_X = 100;
@@ -57,7 +57,7 @@ contract TinftAntiScalpTest is Test {
         escrow.list(id, price, TTL);
     }
 
-    // ---------------- Tetto +5% (R2) ----------------
+    // ---------------- Tetto +10% (R2) ----------------
     function test_ListAboveCapReverts() public {
         uint256 id = _mint(alice, EVENT_X);
         vm.prank(alice);
@@ -81,7 +81,7 @@ contract TinftAntiScalpTest is Test {
         vm.prank(bob);
         escrow.pay{value: PRICE + ROYALTY}(id);
         assertEq(ticket.paidOf(id), PRICE);
-        // bob non può rilistare oltre PRICE*1.05
+        // bob non può rilistare oltre PRICE*1.10
         vm.prank(bob);
         ticket.setApprovalForAll(address(escrow), true);
         vm.prank(bob);
@@ -89,21 +89,23 @@ contract TinftAntiScalpTest is Test {
         escrow.list(id, CAP + 1, TTL);
     }
 
-    // ---------------- Limite 2/evento — primario (mint) ----------------
-    function test_MintThirdForSameEventReverts() public {
+    // ---------------- Limite 3/evento — primario (mint) ----------------
+    function test_MintFourthForSameEventReverts() public {
+        _mint(alice, EVENT_X);
         _mint(alice, EVENT_X);
         _mint(alice, EVENT_X);
         vm.prank(tinft);
         vm.expectRevert(abi.encodeWithSelector(TinftTicket.EventLimitReached.selector, ID_ALICE, EVENT_X));
         ticket.mint(alice, EVENT_X, PRICE);
-        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 2);
+        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 3);
     }
 
     function test_MintDifferentEventsOk() public {
         _mint(alice, EVENT_X);
         _mint(alice, EVENT_X);
+        _mint(alice, EVENT_X);
         _mint(alice, EVENT_Y); // evento diverso → conteggio separato
-        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 2);
+        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 3);
         assertEq(ticket.heldCount(ID_ALICE, EVENT_Y), 1);
     }
 
@@ -111,16 +113,18 @@ contract TinftAntiScalpTest is Test {
         address anon = makeAddr("anon"); // nessuna identità
         _mint(anon, EVENT_X);
         _mint(anon, EVENT_X);
+        _mint(anon, EVENT_X);
         _mint(anon, EVENT_X); // nessun limite per wallet non registrati (es. contratti di sistema)
-        assertEq(ticket.balanceOf(anon), 3);
+        assertEq(ticket.balanceOf(anon), 4);
     }
 
-    // ---------------- Limite 2/evento — secondario (escrow.pay) ----------------
-    function test_BuyingThirdForSameEventReverts() public {
-        // alice ha già 2 per EVENT_X
+    // ---------------- Limite 3/evento — secondario (escrow.pay) ----------------
+    function test_BuyingFourthForSameEventReverts() public {
+        // alice ha già 3 per EVENT_X
         _mint(alice, EVENT_X);
         _mint(alice, EVENT_X);
-        // carol vende un terzo biglietto EVENT_X
+        _mint(alice, EVENT_X);
+        // carol vende un quarto biglietto EVENT_X
         uint256 cId = _mint(carol, EVENT_X);
         _list(carol, cId, PRICE);
 
@@ -133,7 +137,7 @@ contract TinftAntiScalpTest is Test {
         // nessuno stato cambiato: token ancora in escrow, alice non ha pagato
         assertEq(ticket.ownerOf(cId), address(escrow));
         assertEq(alice.balance, total);
-        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 2);
+        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 3);
     }
 
     function test_SaleMovesCountBetweenIdentities() public {
@@ -156,11 +160,12 @@ contract TinftAntiScalpTest is Test {
     // niente bypass list→compra→reclaim, niente stuck
     function test_ListDoesNotEnableBypass_AndReclaimNeverStuck() public {
         uint256 a = _mint(alice, EVENT_X);
-        _mint(alice, EVENT_X); // alice: 2
-        _list(alice, a, PRICE); // lista A: conteggio resta 2
-        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 2);
+        _mint(alice, EVENT_X);
+        _mint(alice, EVENT_X); // alice: 3
+        _list(alice, a, PRICE); // lista A: conteggio resta 3
+        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 3);
 
-        // alice tenta di comprare un 3º (di carol) mentre A è in vendita → bloccato
+        // alice tenta di comprare un 4º (di carol) mentre A è in vendita → bloccato
         uint256 cId = _mint(carol, EVENT_X);
         _list(carol, cId, PRICE);
         uint256 total = PRICE + ROYALTY;
@@ -174,7 +179,7 @@ contract TinftAntiScalpTest is Test {
         vm.prank(alice);
         escrow.reclaim(a);
         assertEq(ticket.ownerOf(a), alice);
-        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 2);
+        assertEq(ticket.heldCount(ID_ALICE, EVENT_X), 3);
     }
 
     // ---------------- recordSale protetto ----------------

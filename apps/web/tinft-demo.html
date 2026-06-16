@@ -222,8 +222,8 @@ var RULES = {
   ROYALTY: 0.01,        // 1% sul secondario (0,5% TINFT + 0,5% organizzatore) sul prezzo originale
   ROYALTY_TINFT: 0.005,
   ROYALTY_ORG: 0.005,
-  RESALE_CAP: 0.05,     // tetto rivendita +5% sul prezzo pagato
-  MAX_PER_EVENT: 2,     // max 2 biglietti/evento per identità
+  RESALE_CAP: 0.10,     // tetto rivendita +10% sul prezzo pagato
+  MAX_PER_EVENT: 3,     // max 3 biglietti/evento per identità
   EXPORT_FEE: 0.25      // export libero fee 25%
 };
 
@@ -580,7 +580,7 @@ function listOnMarket(ticketId){
   var tk = DB.tickets.find(function(t){ return t.id===ticketId; });
   var cap = Math.round(tk.pricePaid*(1+RULES.RESALE_CAP));
   if(price > cap){
-    toast('Prezzo oltre il tetto: max +5% del pagato = '+eur(cap)+'.', true);
+    toast('Prezzo oltre il tetto: max +10% del pagato = '+eur(cap)+'.', true);
     return;
   }
   var acc = curAccount();
@@ -756,7 +756,7 @@ function viewHome(){
     '<span class="pill" style="margin-bottom:14px">Biglietteria NFT · anti-bagarinaggio</span>'+
     '<h1>Biglietti nominativi su blockchain. Niente frodi, niente secondario gonfiato.</h1>'+
     '<p class="lead">TINFT emette biglietti come NFT nominativi con QR rotante anti-screenshot, '+
-      'mercato secondario controllato (tetto +5%) e validazione sicura in app. '+
+      'mercato secondario controllato (tetto +10%) e validazione sicura in app. '+
       'Accedi per provare le tre aree: Cliente, Organizzatore, Validatore.</p>'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">'+
       '<button class="btn primary" onclick="openAuth(\'register\',\'cliente\')">Registrati</button>'+
@@ -765,7 +765,7 @@ function viewHome(){
 
     '<div class="feat-grid">'+
       featCard('🎫','QR rotante','Codice rigenerato ogni 12s: lo screenshot non vale.')+
-      featCard('🔁','Mercato +5%','Rivendita con tetto +5% sul pagato e royalty 1%.')+
+      featCard('🔁','Mercato +10%','Rivendita con tetto +10% sul pagato e royalty 1%.')+
       featCard('🏷️','Prevendita 10%','Fee TINFT al primo acquisto, a carico del compratore.')+
       featCard('🛡️','Validazione in app','La scansione avviene solo nell’app nativa.')+
     '</div>'+
@@ -920,7 +920,7 @@ function cliMercato(){
       return '<div class="card" style="margin-bottom:12px">'+
         '<div class="row" style="flex-wrap:wrap;gap:12px">'+
           '<div><h4 style="margin:0">'+esc(ev.titolo)+'</h4>'+
-            '<p class="muted" style="margin:2px 0 0;font-size:13px">Pagato '+eur(tk.pricePaid)+' · tetto rivendita '+eur(cap)+' (+5%)</p></div>'+
+            '<p class="muted" style="margin:2px 0 0;font-size:13px">Pagato '+eur(tk.pricePaid)+' · tetto rivendita '+eur(cap)+' (+10%)</p></div>'+
         '</div>'+
         '<div class="row" style="margin-top:10px;gap:10px">'+
           '<div style="flex:1"><span class="label">Prezzo (€)</span>'+
@@ -945,7 +945,7 @@ function cliMercato(){
   return ''+
     '<div class="note" style="margin-bottom:18px">Mercato secondario controllato: '+
       '<b>royalty 1%</b> (0,5% TINFT + 0,5% organizzatore) sul prezzo originale; '+
-      '<b>tetto rivendita +5%</b> sul prezzo pagato. Export libero con fee 25%.</div>'+
+      '<b>tetto rivendita +10%</b> sul prezzo pagato. Export libero con fee 25%.</div>'+
     '<h3 style="margin:0 0 12px">Annunci attivi</h3>'+
     '<div class="cards-grid">'+listingCards+'</div>'+
     '<hr class="divider" style="margin:26px 0">'+

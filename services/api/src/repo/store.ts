@@ -93,7 +93,7 @@ export interface Store {
   listedTickets(): Promise<Ticket[]>;
   /** Biglietti ACTIVE/LISTED controllati da un'identità (cfHash) per un evento (R4). */
   heldCountForIdentity(eventId: string, cfHash: string): Promise<number>;
-  /** Biglietti ACTIVE/LISTED del compratore + trasferimenti in entrata pendenti (limite 2/evento). */
+  /** Biglietti ACTIVE/LISTED del compratore + trasferimenti in entrata pendenti (limite 3/evento). */
   heldForEventByBuyer(eventId: string, buyerId: string): Promise<number>;
   createTicket(ticket: Ticket): Promise<Ticket>;
   updateTicket(ticket: Ticket): Promise<Ticket>;

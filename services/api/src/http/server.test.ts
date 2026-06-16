@@ -76,9 +76,10 @@ describe("API HTTP (Fastify inject)", () => {
     const buyer = await auth({nome: "L", cognome: "R", email: "l@e.it", cfHash: "idLuca"});
     await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
     await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
-    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
-    expect(third.statusCode).toBe(409);
-    expect(third.json().error).toBe("EVENT_LIMIT");
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id}); // buyer già a 3
+    const fourth = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
+    expect(fourth.statusCode).toBe(409);
+    expect(fourth.json().error).toBe("EVENT_LIMIT");
   });
 
   it("pagamento via HTTP: checkout → webhook idempotente → mint", async () => {
@@ -103,7 +104,7 @@ describe("API HTTP (Fastify inject)", () => {
     expect(tickets.json()).toHaveLength(1); // idempotenza: un solo biglietto
   });
 
-  it("SPID: verifica identità (hash CF) e abilita il limite 2/evento", async () => {
+  it("SPID: verifica identità (hash CF) e abilita il limite 3/evento", async () => {
     const org = await auth({role: "ORGANIZER", nome: "O", cognome: "X", email: "o4@e.it"});
     const event = (
       await post("/events", {organizerId: org.account.id, title: "E", venue: "V", date: "D", priceCents: 1000, capacity: 10}, org.headers)
@@ -117,9 +118,10 @@ describe("API HTTP (Fastify inject)", () => {
 
     await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
     await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
-    const third = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
-    expect(third.statusCode).toBe(409);
-    expect(third.json().error).toBe("EVENT_LIMIT");
+    await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id}); // buyer già a 3
+    const fourth = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
+    expect(fourth.statusCode).toBe(409);
+    expect(fourth.json().error).toBe("EVENT_LIMIT");
   });
 
   it("registrazione completa (dati SPID) crea account verificato con tutti i dati", async () => {

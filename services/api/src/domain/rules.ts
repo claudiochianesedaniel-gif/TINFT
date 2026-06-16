@@ -9,9 +9,9 @@
 
 export const BPS_DENOMINATOR = 10_000;
 export const ROYALTY_BPS = 100; // 1% del prezzo originale (R1)
-export const RESALE_CAP_BPS = 10_500; // tetto +5% sul costo base (R2)
+export const RESALE_CAP_BPS = 11_000; // tetto +10% sul costo base (R2)
 export const EXIT_FEE_BPS = 2_500; // fee d'uscita export libero 25% (R5)
-export const MAX_PER_EVENT = 2; // max biglietti per evento per identità (R4)
+export const MAX_PER_EVENT = 3; // max biglietti per evento per identità (R4)
 export const PRESALE_COMMISSION_BPS = 1_000; // commissione di prevendita 10% sul PRIMO acquisto, solo TINFT, a carico del compratore (R10)
 export const MAX_PER_ORDER = 4; // tetto quantità per singolo checkout (distinto da MAX_PER_EVENT)
 export const GOODWILL_PER_TICKET = 15; // punti goodwill accreditati per biglietto acquistato
@@ -34,7 +34,7 @@ export function royaltySplitCents(originalPriceCents: number): RoyaltySplit {
   return { tinftCents, organizerCents: royalty - tinftCents };
 }
 
-/** Prezzo massimo di rivendita = costo base · 1,05 (troncato). */
+/** Prezzo massimo di rivendita = costo base · 1,10 (troncato). */
 export function resaleCapCents(paidCents: number): number {
   return Math.floor((paidCents * RESALE_CAP_BPS) / BPS_DENOMINATOR);
 }
@@ -48,7 +48,7 @@ export function exitFeeCents(originalPriceCents: number): number {
   return Math.floor((originalPriceCents * EXIT_FEE_BPS) / BPS_DENOMINATOR);
 }
 
-/** Si può acquisire un altro biglietto per l'evento se se ne controllano meno di 2. */
+/** Si può acquisire un altro biglietto per l'evento se se ne controllano meno di 3. */
 export function canAcquireForEvent(currentHeld: number): boolean {
   return currentHeld < MAX_PER_EVENT;
 }

@@ -13,7 +13,7 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 ///         EIP-2981 + anti-bagarinaggio + uscita controllata (export).
 ///
 /// @dev    M1 transfer enforced · M2 royalty 1% / `originalPrice` · M3 costo base
-///         che viaggia col token · M4 limite 2/evento per identità (`hash(CF)`) ·
+///         che viaggia col token · M4 limite 3/evento per identità (`hash(CF)`) ·
 ///         M5 validazione (`markUsed`) ed export post-evento:
 ///         `exportFree` (fee 25% + sgancio dalla policy) / `exportEnforced`
 ///         (royalty 1% per sempre).
@@ -23,7 +23,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     /// @notice fee d'uscita per l'export libero (2500 = 25%)
     uint256 public constant EXIT_FEE_BPS = 2500;
     /// @notice massimo biglietti per evento per identità (R4)
-    uint256 public constant MAX_PER_EVENT = 2;
+    uint256 public constant MAX_PER_EVENT = 3;
 
     /// @notice regime d'uscita scelto dal cliente (definitivo)
     enum ExportMode {
@@ -36,7 +36,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     struct TicketData {
         uint256 eventId;
         uint256 originalPrice; // prezzo originale (face) — base immutabile della royalty 1% (R1)
-        uint256 paid; // costo base corrente — base del tetto +5% (R2/R3), aggiornato a ogni vendita
+        uint256 paid; // costo base corrente — base del tetto +10% (R2/R3), aggiornato a ogni vendita
     }
 
     /// @notice validator esterno consultato a ogni trasferimento reale
@@ -119,7 +119,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
 
     // ---------------------------------------------------------------------- mint
     /// @notice Conia un biglietto verso `to` al prezzo `price` (face). Applica il
-    ///         limite 2/evento per identità (R4).
+    ///         limite 3/evento per identità (R4).
     function mint(address to, uint256 eventId, uint256 price) external onlyOwner returns (uint256 tokenId) {
         bytes32 id = identityOf[to];
         if (id != bytes32(0)) {
@@ -158,7 +158,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
 
     // ------------------------------------------------------------- vendita (M3/M4)
     /// @notice Registra una vendita secondaria (solo moduli di vendita autorizzati):
-    ///         il costo base viaggia col token (R3) e il conteggio 2/evento si
+    ///         il costo base viaggia col token (R3) e il conteggio 3/evento si
     ///         sposta da venditore a compratore, applicando il limite al compratore.
     function recordSale(address from, address to, uint256 tokenId, uint256 newPaid) external {
         if (!isSaleOperator[msg.sender]) revert NotSaleOperator();

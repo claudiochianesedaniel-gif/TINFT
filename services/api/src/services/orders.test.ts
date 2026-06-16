@@ -78,13 +78,13 @@ describe("Ordini / checkout v2", () => {
     expect(s.store.tickets.get(paid.ticketIds[0]!)!.paidCents).toBe(3_150);
   });
 
-  it("rifiuta l'ordine se la quantità supera l'allowance residua (limite 2/evento)", async () => {
+  it("rifiuta l'ordine se la quantità supera l'allowance residua (limite 3/evento)", async () => {
     const buyer = await client(s.service, "marco", "idMarco");
     await s.service.payOrder((await s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 1})).id); // 1 controllato
-    await expect(s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 2})).rejects.toThrowError(/per evento/);
-    // qty 1 rientra ancora
-    const ok = await s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 1});
-    expect(ok.quantity).toBe(1);
+    await expect(s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 3})).rejects.toThrowError(/per evento/);
+    // qty 2 rientra ancora (1+2=3)
+    const ok = await s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 2});
+    expect(ok.quantity).toBe(2);
   });
 
   it("pay è idempotente: un secondo pagamento non concia di nuovo", async () => {
@@ -105,10 +105,10 @@ describe("Mercato secondario (v2)", () => {
     s = await setup();
   });
 
-  it("list rifiutato oltre il tetto +5%", async () => {
+  it("list rifiutato oltre il tetto +10%", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
-    const cap = resaleCapCents(3_150); // 3307
+    const cap = resaleCapCents(3_150); // 3465
     await expect(s.service.listTicket(t, seller.id, cap + 1)).rejects.toThrowError(/tetto/);
     const listed = await s.service.listTicket(t, seller.id, cap);
     expect(listed.status).toBe("LISTED");
@@ -144,11 +144,11 @@ describe("Mercato secondario (v2)", () => {
     expect(xfer.royaltyTinftCents).toBe(15);
   });
 
-  it("buy rispetta il limite 2/evento del compratore", async () => {
+  it("buy rispetta il limite 3/evento del compratore", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const buyer = await client(s.service, "luca", "idLuca");
-    // buyer porta già 2 biglietti dell'evento
-    await s.service.payOrder((await s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 2})).id);
+    // buyer porta già 3 biglietti dell'evento
+    await s.service.payOrder((await s.service.createOrder({buyerId: buyer.id, eventId: s.event.id, quantity: 3})).id);
     const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
     await s.service.listTicket(t, seller.id, 3_000);
     await expect(s.service.buyFromMarket(t, buyer.id)).rejects.toThrowError(/per evento/);

@@ -24,11 +24,11 @@ describe("regole economiche (mirror on-chain)", () => {
         expect(royaltySplitCents(3_150)).toEqual({tinftCents: 15, organizerCents: 16}); // 31 → 15+16
     });
 
-    it("tetto rivendita +5% sul costo base (R2)", () => {
-        expect(resaleCapCents(10_000)).toBe(10_500);
-        expect(resaleCapCents(3_150)).toBe(3_307);
-        expect(isResalePriceAllowed(3_307, 3_150)).toBe(true);
-        expect(isResalePriceAllowed(3_308, 3_150)).toBe(false);
+    it("tetto rivendita +10% sul costo base (R2)", () => {
+        expect(resaleCapCents(10_000)).toBe(11_000);
+        expect(resaleCapCents(3_150)).toBe(3_465);
+        expect(isResalePriceAllowed(3_465, 3_150)).toBe(true);
+        expect(isResalePriceAllowed(3_466, 3_150)).toBe(false);
     });
 
     it("fee d'uscita export libero 25% (R5)", () => {
@@ -36,7 +36,7 @@ describe("regole economiche (mirror on-chain)", () => {
         expect(exitFeeCents(3_150)).toBe(787); // 787,5 → 787 (troncato)
     });
 
-    it("limite 2 per evento per identità (R4)", () => {
+    it("limite 3 per evento per identità (R4)", () => {
         expect(canAcquireForEvent(0)).toBe(true);
         expect(canAcquireForEvent(MAX_PER_EVENT - 1)).toBe(true);
         expect(canAcquireForEvent(MAX_PER_EVENT)).toBe(false);

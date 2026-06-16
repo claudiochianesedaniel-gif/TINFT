@@ -33,18 +33,19 @@ describe("TicketingService", () => {
     expect((await s.service.getEvent(s.event.id)).sold).toBe(1);
   });
 
-  it("applica il limite 2/evento per identità (R4)", async () => {
+  it("applica il limite 3/evento per identità (R4)", async () => {
     const buyer = await client(s.service, "marco", "idMarco");
     await s.service.purchasePrimary(s.event.id, buyer.id);
     await s.service.purchasePrimary(s.event.id, buyer.id);
-    await expect(s.service.purchasePrimary(s.event.id, buyer.id)).rejects.toThrowError(/max 2/);
+    await s.service.purchasePrimary(s.event.id, buyer.id); // buyer già a 3
+    await expect(s.service.purchasePrimary(s.event.id, buyer.id)).rejects.toThrowError(/max 3/);
   });
 
-  it("rifiuta la rivendita oltre il tetto +5% e calcola la royalty (R2/R1)", async () => {
+  it("rifiuta la rivendita oltre il tetto +10% e calcola la royalty (R2/R1)", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const t = await s.service.purchasePrimary(s.event.id, seller.id); // paid = PRICE
-    await expect(s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 10_501})).rejects.toThrowError(/tetto/);
-    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 10_500});
+    await expect(s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 11_001})).rejects.toThrowError(/tetto/);
+    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 11_000});
     expect(xfer.status).toBe("ESCROW");
     expect(xfer.royaltyCents).toBe(100); // 1% di PRICE
     expect(xfer.royaltyTinftCents).toBe(50);
@@ -64,14 +65,15 @@ describe("TicketingService", () => {
     expect(updated.status).toBe("ACTIVE");
   });
 
-  it("la vendita rispetta il limite 2/evento del compratore", async () => {
+  it("la vendita rispetta il limite 3/evento del compratore", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const buyer = await client(s.service, "luca", "idLuca");
     await s.service.purchasePrimary(s.event.id, buyer.id);
-    await s.service.purchasePrimary(s.event.id, buyer.id); // buyer già a 2
+    await s.service.purchasePrimary(s.event.id, buyer.id);
+    await s.service.purchasePrimary(s.event.id, buyer.id); // buyer già a 3
     const t = await s.service.purchasePrimary(s.event.id, seller.id);
     const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 9_000});
-    await expect(s.service.acceptTransfer(xfer.id, buyer.id)).rejects.toThrowError(/max 2/);
+    await expect(s.service.acceptTransfer(xfer.id, buyer.id)).rejects.toThrowError(/max 3/);
   });
 
   it("reclaim: prima del ttl solo il venditore, dopo il ttl chiunque", async () => {

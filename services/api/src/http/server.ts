@@ -597,7 +597,7 @@ export function buildServer(
     }
   );
 
-  // -------- ordini / checkout v2 (commissione 4% + quantità + limite 2)
+  // -------- ordini / checkout v2 (commissione 4% + quantità + limite 3)
   app.post<{Body: {buyerId: string; eventId: string; tierId?: string; quantity: number}}>(
     "/orders",
     {

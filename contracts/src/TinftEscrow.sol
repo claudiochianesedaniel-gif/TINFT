@@ -9,11 +9,11 @@ import {TinftTicket} from "./TinftTicket.sol";
 
 /// @title TinftEscrow
 /// @notice Escrow P2P a pagamento per i biglietti TINFT (handoff §5).
-///         - `list()`   : il venditore mette in vendita (tetto +5%, R2); il token
+///         - `list()`   : il venditore mette in vendita (tetto +10%, R2); il token
 ///                        è bloccato qui.
 ///         - `pay()`    : in UN'UNICA transazione → token al compratore, prezzo al
 ///                        venditore, royalty 1% allo split (0,5/0,5); il costo base
-///                        viaggia col token (R3) e il limite 2/evento è applicato (R4).
+///                        viaggia col token (R3) e il limite 3/evento è applicato (R4).
 ///         - `reclaim()`: allo scadere del `ttl`, CHIUNQUE restituisce il token al
 ///                        venditore.
 ///         - `cancel()` : il venditore ritira l'offerta in qualsiasi momento.
@@ -71,8 +71,8 @@ contract TinftEscrow is Ownable2Step, Pausable, ReentrancyGuard {
         if (TICKET.ownerOf(tokenId) != msg.sender) revert NotOwner();
         if (ttl == 0) revert ZeroTtl();
 
-        // tetto rivendita +5% sul costo base (R2); il costo base viaggia col token (R3)
-        uint256 cap = (TICKET.paidOf(tokenId) * 105) / 100;
+        // tetto rivendita +10% sul costo base (R2); il costo base viaggia col token (R3)
+        uint256 cap = (TICKET.paidOf(tokenId) * 110) / 100;
         if (price > cap) revert PriceAboveCap(cap, price);
 
         listings[tokenId] =
@@ -108,7 +108,7 @@ contract TinftEscrow is Ownable2Step, Pausable, ReentrancyGuard {
         // 1) token al compratore (release atomico)
         TICKET.transferFrom(address(this), msg.sender, tokenId);
         // 2) costo base che viaggia col token (R3) + conteggio anti-bagarinaggio (R4):
-        //    sposta la quota evento da venditore a compratore e applica il limite 2/evento
+        //    sposta la quota evento da venditore a compratore e applica il limite 3/evento
         TICKET.recordSale(l.seller, msg.sender, tokenId, l.price);
         // 3) royalty 1% allo split (0,5/0,5) — receiver pull-payment, non si blocca
         if (royalty > 0) {

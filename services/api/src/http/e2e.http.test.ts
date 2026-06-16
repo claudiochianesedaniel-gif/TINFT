@@ -30,7 +30,7 @@ describe("E2E — percorso completo via HTTP", () => {
   }
 
   it("acquisto → validazione → rivendita → payout → rimborso, end-to-end", async () => {
-    // -- attori (identità distinte per non incrociare il limite 2/evento)
+    // -- attori (identità distinte per non incrociare il limite 3/evento)
     const org = await auth({role: "ORGANIZER", nome: "Org", email: "e2e-org@e.it"});
     const staff = await auth({role: "VALIDATOR", nome: "Gate", email: "e2e-staff@e.it"});
     const alice = await auth({nome: "Alice", email: "e2e-alice@e.it", cfHash: "idAlice"});

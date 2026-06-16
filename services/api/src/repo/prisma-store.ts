@@ -913,7 +913,7 @@ export class PrismaStore implements Store {
             id: this.id("post"),
             slug: "mercato-secondario-tetto-prezzo",
             tag: "MERCATO",
-            title: "Mercato secondario: il tetto +5% e la royalty",
+            title: "Mercato secondario: il tetto +10% e la royalty",
             excerpt: "Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.",
             readMins: 4
           }

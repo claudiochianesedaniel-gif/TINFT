@@ -56,7 +56,7 @@ export async function seedDemo(store: Store, ticketing: TicketingService): Promi
   const ord = await ticketing.createOrder({buyerId: cli.id, eventId: e1.id, quantity: 1});
   await ticketing.payOrder(ord.id);
 
-  // Giulia compra su e2 e lo rivende sul mercato (mercato secondario non vuoto, tetto +5%)
+  // Giulia compra su e2 e lo rivende sul mercato (mercato secondario non vuoto, tetto +10%)
   const ord2 = await ticketing.createOrder({buyerId: cli2.id, eventId: e2.id, quantity: 1});
   const paid2 = await ticketing.payOrder(ord2.id);
   const tId = paid2.ticketIds[0];

@@ -452,7 +452,7 @@ export class TicketingService {
   }
 
   // ----------------------------------------------------- ordini / checkout (v2)
-  /** Crea un ordine PENDING con il dettaglio completo (commissione 10% + quantità + limite 2). */
+  /** Crea un ordine PENDING con il dettaglio completo (commissione 10% + quantità + limite 3). */
   async createOrder(input: {buyerId: string; eventId: string; tierId?: string; quantity: number}): Promise<Order> {
     const event = await this.getEvent(input.eventId);
     await this.getAccount(input.buyerId);
@@ -618,7 +618,7 @@ export class TicketingService {
   }
 
   // -------------------------------------------------- mercato secondario (v2)
-  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +5%; solo il proprietario. */
+  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +10%; solo il proprietario. */
   async listTicket(ticketId: string, ownerId: string, priceCents: number): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
     if (ticket.revoked) throw new DomainError("TICKET_REVOKED", "biglietto revocato", 409);
@@ -626,7 +626,7 @@ export class TicketingService {
     if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non quotabile", 409);
     if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
     if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
-      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 400);
+      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +10%", 400);
     }
     ticket.status = "LISTED";
     ticket.askPriceCents = priceCents;
@@ -731,7 +731,7 @@ export class TicketingService {
     return {ticket, royalty: {tinftCents: split.tinftCents, organizerCents: split.organizerCents}, paidByBuyerCents};
   }
 
-  /** Lega un'identità SPID verificata al wallet (abilita il limite 2/evento). */
+  /** Lega un'identità SPID verificata al wallet (abilita il limite 3/evento). */
   async verifyIdentity(accountId: string, cfHash: string): Promise<Account> {
     const account = await this.getAccount(accountId);
     account.cfHash = cfHash;
@@ -766,7 +766,7 @@ export class TicketingService {
       priceCents = input.priceCents ?? 0;
       if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
       if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
-        throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 409);
+        throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +10%", 409);
       }
       royalty = royaltyCents(ticket.originalPriceCents);
       split = royaltySplitCents(ticket.originalPriceCents);
@@ -948,11 +948,11 @@ export class TicketingService {
   private async assertCanAcquire(eventId: string, buyer: Account): Promise<void> {
     if (!buyer.cfHash) return; // wallet non registrato: esente (il backend registra via SPID)
     const held = await this.store.heldCountForIdentity(eventId, buyer.cfHash);
-    if (!canAcquireForEvent(held)) throw new DomainError("EVENT_LIMIT", "max 2 biglietti per evento", 409);
+    if (!canAcquireForEvent(held)) throw new DomainError("EVENT_LIMIT", `max ${MAX_PER_EVENT} biglietti per evento`, 409);
   }
 
   /**
-   * Limite 2/evento per ordini e mercato: conta i biglietti del compratore (ACTIVE/LISTED)
+   * Limite 3/evento per ordini e mercato: conta i biglietti del compratore (ACTIVE/LISTED)
    * più i trasferimenti in entrata pendenti per l'evento; verifica che la quantità richiesta
    * rientri nell'allowance residua (MAX_PER_EVENT - controllati).
    */
