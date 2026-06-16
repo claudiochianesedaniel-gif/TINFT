@@ -1,0 +1,8 @@
+{
+  "chainId": 84532,
+  "owner": "0x62D33B415BCF37226a7c135403Ce3519f6434726",
+  "ticket": "0x87044b22dd89798e2ba15a38454f72aaf3ec1f37",
+  "escrow": "0xc6cf9e9b27cc82231bc7be7165ff76396775bee6",
+  "transferValidator": "0xbc9ba32631b9aec8f35aa512333a4d5532cdf5ba",
+  "royaltySplit": "0xb2af00f24caee8ece9a4cd11e6ce7f2d24193d1c"
+}
