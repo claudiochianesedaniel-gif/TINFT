@@ -316,6 +316,16 @@ export class TicketingService {
   }): Promise<Club> {
     await this.getAccount(input.organizerId);
     if (!input.name.trim()) throw new DomainError("INVALID_CLUB", "nome club obbligatorio");
+    // Dati di fatturazione OBBLIGATORI per l'organizzatore (regola prodotto): ragione
+    // sociale + P.IVA (11 cifre, con eventuale prefisso IT) + IBAN. Senza, niente club.
+    const piva = (input.piva ?? "").trim().toUpperCase();
+    if (!input.ragioneSociale?.trim() || !input.iban?.trim() || !/^(IT)?\d{11}$/.test(piva)) {
+      throw new DomainError(
+        "INVALID_BILLING",
+        "dati di fatturazione obbligatori per l'organizzatore: ragione sociale, P.IVA (11 cifre) e IBAN",
+        400
+      );
+    }
     const club: Club = {
       id: this.store.id("club"),
       organizerId: input.organizerId,

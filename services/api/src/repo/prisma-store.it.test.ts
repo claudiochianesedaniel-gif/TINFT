@@ -58,7 +58,7 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     // -------- club + evento + fascia
     const club = await ticketing.createClub({
       organizerId: org.id, name: "Astra", city: "Milano",
-      ragioneSociale: "Astra S.r.l.", piva: "ITPG123", iban: "ITPGIBAN", genre: "Techno", color: "#2f4f8a"
+      ragioneSociale: "Astra S.r.l.", piva: "01234567890", iban: "ITPGIBAN", genre: "Techno", color: "#2f4f8a"
     });
     expect((await store.getClub(club.id))?.iban).toBe("ITPGIBAN");
 

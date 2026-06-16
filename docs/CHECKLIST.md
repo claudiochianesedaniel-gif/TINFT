@@ -6,7 +6,7 @@
 | Componente | Esito |
 |---|---|
 | Smart contract (Foundry) | ✓ 74/74 (7 fuzz + 2 invarianti) · fmt+build ok |
-| Backend (vitest) | ✓ 146 pass + 3 skip (DB) · tsc pulito |
+| Backend (vitest) | ✓ 147 pass + 3 skip (DB) · tsc pulito |
 | Validazione firmata (backbone app) | ✓ token QR rotante ~30s + /validate/scan (5 esiti) |
 | App nativa (Expo React Native) | ⚙ scaffold buildabile (apps/mobile) · test su device |
 | Frontend (render harness) | ✓ 5/5 (sito, web app, console, registrazione, demo) |
@@ -53,7 +53,7 @@
 
 **B · Contratti** — `cd contracts && forge test` (74 passed, incl. fuzz+invarianti) · `forge fmt --check`.
 
-**C · Backend** — `cd services/api && pnpm test` (146 passed, +3 skip senza DB) · `pnpm typecheck`.
+**C · Backend** — `cd services/api && pnpm test` (147 passed, +3 skip senza DB) · `pnpm typecheck`.
 
 **D · Postgres** — `docker compose up -d db`; `export DATABASE_URL=postgresql://tinft:tinft@localhost:5432/tinft`; `pnpm prisma:deploy`; `DATABASE_URL=$DATABASE_URL pnpm dev` (→ store: PostgreSQL); `DATABASE_URL=$DATABASE_URL pnpm test src/repo/prisma-store.it.test.ts`.
 - [ ] i dati restano dopo il riavvio (tabelle Account/Event/Ticket/Order/Payment/Ledger)

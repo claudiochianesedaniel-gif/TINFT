@@ -490,7 +490,7 @@ export function buildServer(
             genre: STR,
             color: STR
           },
-          ["organizerId", "name"]
+          ["organizerId", "name", "ragioneSociale", "piva", "iban"]
         )
       }
     },

@@ -9,10 +9,13 @@ async function setup() {
   return {store, s, org};
 }
 
+// dati di fatturazione validi (obbligatori alla creazione club)
+const BILLING = {ragioneSociale: "Astra S.r.l.", piva: "01234567890", iban: "IT60X0542811101000000123456"};
+
 describe("Club & Fidelity", () => {
   it("crea club ed eventi del club, li elenca", async () => {
     const {s, org} = await setup();
-    const c = await s.createClub({organizerId: org.id, name: "Club Astra", city: "Milano", fidelityPriceCents: 12000, fidelityUses: 5});
+    const c = await s.createClub({organizerId: org.id, name: "Club Astra", city: "Milano", fidelityPriceCents: 12000, fidelityUses: 5, ...BILLING});
     expect(await s.listClubs()).toHaveLength(1);
     const e1 = await s.createEvent({organizerId: org.id, clubId: c.id, title: "Vol.4", venue: "V", date: "21 GIU", priceCents: 3150, capacity: 500});
     await s.createEvent({organizerId: org.id, clubId: c.id, title: "Jazz", venue: "A", date: "03 LUG", priceCents: 2400, capacity: 200});
@@ -22,7 +25,7 @@ describe("Club & Fidelity", () => {
 
   it("Fidelity del club: carnet multi-ingresso consumato dalla validazione", async () => {
     const {s, store, org} = await setup();
-    const c = await s.createClub({organizerId: org.id, name: "Astra", fidelityPriceCents: 12000, fidelityUses: 3});
+    const c = await s.createClub({organizerId: org.id, name: "Astra", fidelityPriceCents: 12000, fidelityUses: 3, ...BILLING});
     const buyer = await s.createAccount({nome: "M", cognome: "B", email: "m@e.it", cfHash: "idM"});
     const fid = await s.purchaseFidelity(c.id, buyer.id);
     expect(fid.kind).toBe("FIDELITY");
@@ -38,8 +41,25 @@ describe("Club & Fidelity", () => {
 
   it("un club senza Fidelity rifiuta l'acquisto del carnet", async () => {
     const {s, org} = await setup();
-    const c = await s.createClub({organizerId: org.id, name: "NoFid"});
+    const c = await s.createClub({organizerId: org.id, name: "NoFid", ...BILLING});
     const buyer = await s.createAccount({nome: "L", cognome: "R", email: "l@e.it"});
     await expect(s.purchaseFidelity(c.id, buyer.id)).rejects.toThrowError(/Fidelity/);
+  });
+
+  it("rifiuta la creazione del club senza dati di fatturazione (P.IVA obbligatoria)", async () => {
+    const {s, org} = await setup();
+    // manca tutto
+    await expect(s.createClub({organizerId: org.id, name: "Senza P.IVA"})).rejects.toThrowError(/fatturazione|P\.IVA/i);
+    // P.IVA non a 11 cifre
+    await expect(
+      s.createClub({organizerId: org.id, name: "P.IVA corta", ragioneSociale: "X S.r.l.", piva: "123", iban: "IT60X..."})
+    ).rejects.toThrowError(/fatturazione|P\.IVA/i);
+    // manca l'IBAN
+    await expect(
+      s.createClub({organizerId: org.id, name: "Senza IBAN", ragioneSociale: "X S.r.l.", piva: "01234567890"})
+    ).rejects.toThrowError(/fatturazione|IBAN|P\.IVA/i);
+    // completo (anche con prefisso IT) → ok
+    const ok = await s.createClub({organizerId: org.id, name: "Completo", ...BILLING, piva: "IT01234567890"});
+    expect(ok.piva).toBe("IT01234567890");
   });
 });

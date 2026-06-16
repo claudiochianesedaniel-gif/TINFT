@@ -35,7 +35,11 @@ export async function seedDemo(store: Store, ticketing: TicketingService): Promi
     ragioneSociale: "Club Astra S.r.l.", piva: "IT01234567890", sedeLegale: "Via Roma 1, 20121 Milano (MI)",
     pec: "astra@pec.it", sdi: "ABCDEF1", iban: "IT60X0542811101000000123456", genre: "Techno", color: "#4472c4"
   });
-  const c2 = await ticketing.createClub({organizerId: org.id, name: "Magazzino Generali", city: "Milano", genre: "House", color: "#0a8a5c"});
+  const c2 = await ticketing.createClub({
+    organizerId: org.id, name: "Magazzino Generali", city: "Milano",
+    ragioneSociale: "Magazzino Generali S.r.l.", piva: "IT09876543210", sedeLegale: "Via Pirelli 10, 20124 Milano (MI)",
+    pec: "magazzino@pec.it", sdi: "GHIJKL2", iban: "IT60X0542811101000000999888", genre: "House", color: "#0a8a5c"
+  });
 
   const e1 = await ticketing.createEvent({organizerId: org.id, clubId: c1.id, title: "Notte Elettronica · Vol.4", venue: "Magazzino Generali", date: "21 GIU", priceCents: 3150, capacity: 500, status: "ON_SALE"});
   const e2 = await ticketing.createEvent({organizerId: org.id, clubId: c1.id, title: "Blue Room · Jazz", venue: "Auditorium", date: "03 LUG", priceCents: 2400, capacity: 200, status: "ON_SALE"});
