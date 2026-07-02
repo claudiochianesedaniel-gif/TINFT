@@ -36,6 +36,7 @@ import {verifyAccessToken} from "../access/access-token";
 import type {ChainPort} from "../chain/port";
 import {FakeChain} from "../chain/fake";
 import {DevEmailSender, type EmailSender} from "../notifications/email";
+import {type ConnectPort, FakeConnect} from "../payments/provider";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 /** Scadenza del codice OTP di registrazione: 10 minuti. */
@@ -53,7 +54,11 @@ export class TicketingService {
     private readonly now: () => number = nowSeconds,
     private readonly verifier: IdentityVerifier = new FakeSpid(),
     private readonly chain: ChainPort = new FakeChain(),
-    private readonly email: EmailSender = new DevEmailSender()
+    private readonly email: EmailSender = new DevEmailSender(),
+    // Stripe Connect: con FakeConnect (default, sandbox/test) l'account è subito
+    // operativo; con l'adapter Stripe reale resta non-onboarded finché
+    // l'organizzatore non completa l'onboarding (webhook account.updated).
+    private readonly connectPort: ConnectPort = new FakeConnect()
   ) {}
 
   // -------------------------------------------------------------- account
@@ -212,6 +217,8 @@ export class TicketingService {
     if (input.priceCents < 0 || input.capacity <= 0) {
       throw new DomainError("INVALID_EVENT", "prezzo o capienza non validi");
     }
+    // un evento di club può andare IN VENDITA solo se il club incassa (onboarding Stripe)
+    if ((input.status ?? "ON_SALE") === "ON_SALE") await this.assertClubPayoutReady(input.clubId);
     const event: Event = {
       id: this.store.id("evt"),
       organizerId: input.organizerId,
@@ -297,9 +304,27 @@ export class TicketingService {
     }
     if (event.status === "ON_SALE") return event; // idempotente
     if (event.status !== "DRAFT") throw new DomainError("NOT_DRAFT", "evento non in bozza", 409);
+    await this.assertClubPayoutReady(event.clubId);
     event.status = "ON_SALE";
     await this.store.updateEvent(event);
     return event;
+  }
+
+  /**
+   * Blocco FASE 3: un evento legato a un club va in vendita solo se il club ha
+   * completato l'onboarding Stripe Connect (può incassare). Eventi senza club
+   * (percorso legacy/test) non sono soggetti al blocco.
+   */
+  private async assertClubPayoutReady(clubId?: string): Promise<void> {
+    if (!clubId) return;
+    const club = await this.getClub(clubId);
+    if (!club.stripeAccountId || !club.stripeOnboarded) {
+      throw new DomainError(
+        "STRIPE_ONBOARDING_REQUIRED",
+        "completa l'onboarding Stripe del club prima di mettere in vendita",
+        403
+      );
+    }
   }
 
   // ------------------------------------------------ varchi / validatori (B6)
@@ -399,6 +424,20 @@ export class TicketingService {
       genre: input.genre,
       color: input.color
     };
+
+    // Stripe Connect: l'organizzatore collega il suo account UNA volta. Se ha già
+    // un club con account connesso lo riusa; altrimenti ne crea uno nuovo (Express).
+    const org = await this.getAccount(input.organizerId);
+    const existing = (await this.store.listClubs()).find((c) => c.organizerId === input.organizerId && c.stripeAccountId);
+    if (existing) {
+      club.stripeAccountId = existing.stripeAccountId;
+      club.stripeOnboarded = existing.stripeOnboarded;
+    } else {
+      const acct = await this.connectPort.createConnectedAccount({clubId: club.id, email: org.email, name: input.ragioneSociale});
+      club.stripeAccountId = acct.accountId;
+      club.stripeOnboarded = acct.chargesEnabled;
+    }
+
     await this.store.createClub(club);
     return club;
   }

@@ -122,6 +122,12 @@ export const openapiSpec = {
         responses: {"200": {description: "evento agganciato"}, "404": {description: "codice sconosciuto o revocato"}}
       }
     },
+    "/clubs/{id}/stripe/onboarding-link": {
+      post: {tags: ["pagamenti"], summary: "Link di onboarding Stripe Connect del club (organizzatore); crea l'account connesso se il club non ne ha uno", security: [{bearerAuth: []}], responses: {"200": {description: "{ url }"}}}
+    },
+    "/clubs/{id}/stripe/refresh": {
+      post: {tags: ["pagamenti"], summary: "Rilegge lo stato dell'account connesso e aggiorna stripeOnboarded", security: [{bearerAuth: []}], responses: {"200": {description: "{ clubId, stripeAccountId, stripeOnboarded }"}}}
+    },
     "/orders": {
       post: {
         tags: ["ordini"],

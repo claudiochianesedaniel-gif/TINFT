@@ -148,6 +148,9 @@ model Club {
   iban               String?
   genre              String?
   color              String?
+  // Stripe Connect: account connesso dell'organizzatore (condivisibile tra i suoi club)
+  stripeAccountId    String?
+  stripeOnboarded    Boolean  @default(false)
   createdAt          DateTime @default(now())
 
   events Event[]

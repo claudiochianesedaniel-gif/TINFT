@@ -132,7 +132,9 @@ export class PrismaStore implements Store {
       sdi: r.sdi ?? undefined,
       iban: r.iban ?? undefined,
       genre: r.genre ?? undefined,
-      color: r.color ?? undefined
+      color: r.color ?? undefined,
+      stripeAccountId: r.stripeAccountId ?? undefined,
+      stripeOnboarded: r.stripeOnboarded
     };
   }
 
@@ -286,7 +288,9 @@ export class PrismaStore implements Store {
         sdi: club.sdi ?? null,
         iban: club.iban ?? null,
         genre: club.genre ?? null,
-        color: club.color ?? null
+        color: club.color ?? null,
+        stripeAccountId: club.stripeAccountId ?? null,
+        stripeOnboarded: club.stripeOnboarded ?? false
       }
     });
     return club;
@@ -307,10 +311,16 @@ export class PrismaStore implements Store {
         sdi: club.sdi ?? null,
         iban: club.iban ?? null,
         genre: club.genre ?? null,
-        color: club.color ?? null
+        color: club.color ?? null,
+        stripeAccountId: club.stripeAccountId ?? null,
+        stripeOnboarded: club.stripeOnboarded ?? false
       }
     });
     return club;
+  }
+
+  async clubsByStripeAccount(stripeAccountId: string): Promise<Club[]> {
+    return (await this.prisma.club.findMany({where: {stripeAccountId}})).map((r) => this.toClub(r));
   }
 
   // -------- eventi ------------------------------------------------------------

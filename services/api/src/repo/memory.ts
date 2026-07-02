@@ -117,6 +117,10 @@ export class MemoryStore implements Store {
     return club;
   }
 
+  async clubsByStripeAccount(stripeAccountId: string): Promise<Club[]> {
+    return [...this.clubs.values()].filter((c) => c.stripeAccountId === stripeAccountId);
+  }
+
   // -------- eventi ------------------------------------------------------------
   async getEvent(id: string): Promise<Event | undefined> {
     return this.events.get(id);

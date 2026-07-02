@@ -53,6 +53,10 @@ export interface Club {
   iban?: string;
   genre?: string; // genere musicale prevalente del locale
   color?: string; // colore identitario per la UI
+  // Stripe Connect (marketplace): account connesso dell'organizzatore, creato UNA
+  // volta all'onboarding del club (riusato tra i club dello stesso organizzatore).
+  stripeAccountId?: string;
+  stripeOnboarded?: boolean; // charges_enabled: senza, la messa in vendita è bloccata
 }
 
 export interface Event {

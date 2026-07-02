@@ -71,13 +71,13 @@
 
 **Modello scelto — Stripe Connect (NON un account per evento).** Ogni **organizzatore** collega il proprio account Stripe **una sola volta** (all'onboarding del club, non a ogni evento); poi ogni evento incassa in automatico sul suo conto e TINFT trattiene una **application fee**. TINFT non è merchant of record di ogni transazione.
 
-- [ ] **Stripe Connect onboarding** per organizzatore: creare account connesso (Express/Standard) al momento della creazione club; salvare `stripeAccountId` sul club (Prisma). Bloccare la pubblicazione eventi se il club non ha completato l'onboarding Stripe.
-- [ ] **Pagamenti con split**: al checkout, usare `payment_intent` con `application_fee_amount` + `transfer_data.destination = stripeAccountId` dell'organizzatore. File: `src/payments/service.ts` + `provider.ts`.
-- [ ] **Chiavi live** (solo in Render dashboard / secret manager, mai nel repo): `STRIPE_SECRET_KEY=sk_live_…`, `STRIPE_WEBHOOK_SECRET=whsec_…`. Webhook `POST /webhooks/psp`.
-- [ ] **3DS / SCA** abilitato; gestione esiti async.
+- [x] **Stripe Connect onboarding** per organizzatore: account connesso (Express) creato alla creazione club (riusato tra i club dello stesso organizzatore; lazy per i club pre-Connect), `stripeAccountId` + `stripeOnboarded` sul club (Prisma, migration `5_club_stripe_connect`). Messa in vendita (create ON_SALE / publish) BLOCCATA se il club non è onboarded (`STRIPE_ONBOARDING_REQUIRED`). Rotte: `POST /clubs/:id/stripe/onboarding-link` e `/refresh`; webhook `account.updated` → aggiorna `stripeOnboarded`.
+- [x] **Pagamenti con split**: il checkout ordini passa `application_fee_amount` (= prevendita 10%, resta a TINFT) + `transfer_data.destination` (account del club) in `payment_intent_data`. File: `src/payments/service.ts`, `provider.ts` (ConnectPort + FakeConnect), `stripe.ts`.
+- [ ] **Chiavi live** (solo in Render dashboard / secret manager, mai nel repo): `STRIPE_SECRET_KEY=sk_live_…`, `STRIPE_WEBHOOK_SECRET=whsec_…`. Webhook `POST /webhooks/psp` (già pronto). ⚠️ SOLO TITOLARE. Env aggiuntive: `CONNECT_RETURN_URL`, `CONNECT_REFRESH_URL`.
+- [ ] **3DS / SCA**: con Stripe Checkout è gestito da Stripe automaticamente quando richiesto; verificare in test-mode con carte 3DS prima del live.
 - [ ] **Fatturazione IVA + ricevute**; **rimborsi/chargeback con riconciliazione** (tabelle ledger già presenti). Con Connect gran parte di payout/timing la gestisce Stripe verso l'organizzatore.
 - [ ] `CHECKOUT_SUCCESS_URL` / `CHECKOUT_CANCEL_URL` di produzione.
-- [ ] Test: `src/payments/service.test.ts` + E2E ordine→checkout→webhook→mint con split fee.
+- [x] Test: `src/payments/connect.test.ts` — onboarding (riuso account, lazy), blocco/sblocco pubblicazione via webhook `account.updated` (idempotente), intent di checkout con fee+destinazione, no-split senza club, link/refresh.
 
 > Nota: le chiavi Stripe da procurare sono quelle della **piattaforma TINFT** (una volta). Gli organizzatori NON danno chiavi: fanno l'onboarding Connect guidato dall'app.
 

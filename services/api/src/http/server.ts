@@ -73,12 +73,13 @@ export function buildServer(
   const store: Store = opts.store ?? new MemoryStore();
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
-  // Stessa istanza `chain` passata a ticketing e payments: l'acquisto primario/ordini
-  // conia via TicketingService, il flusso PSP via PaymentsService (entrambi on-chain con ViemChain).
-  const ticketing = new TicketingService(store, undefined, verifier, chain, emailSenderFromEnv());
+  // Stesso provider per ticketing (onboarding Connect alla creazione club) e payments
+  // (checkout con split); stessa istanza `chain` per l'acquisto primario/ordini e il flusso PSP.
+  const provider = opts.provider ?? providerFromEnv() ?? new FakeProvider();
+  const ticketing = new TicketingService(store, undefined, verifier, chain, emailSenderFromEnv(), provider.connect);
   const content = new ContentService(store);
   const consoleSvc = new ConsoleService(store);
-  const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
+  const payments = new PaymentsService(store, ticketing, provider, chain);
 
   // Logging strutturato (pino, incluso in fastify) in esecuzione normale; silenzioso sotto test.
   // request-id: riusa l'header `x-request-id` in ingresso (tracciamento end-to-end) o ne genera uno;
@@ -524,6 +525,23 @@ export function buildServer(
       assertSelf(req, req.body.organizerId);
       await ticketing.getClub(req.params.id);
       return reply.status(201).send(await ticketing.createEvent({...req.body, clubId: req.params.id}));
+    }
+  );
+  // -------- Stripe Connect del club: link di onboarding + refresh stato (organizzatore)
+  app.post<{Params: {id: string}}>(
+    "/clubs/:id/stripe/onboarding-link",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam}},
+    async (req) => {
+      assertSelf(req, (await ticketing.getClub(req.params.id)).organizerId);
+      return payments.stripeOnboardingLink(req.params.id);
+    }
+  );
+  app.post<{Params: {id: string}}>(
+    "/clubs/:id/stripe/refresh",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam}},
+    async (req) => {
+      assertSelf(req, (await ticketing.getClub(req.params.id)).organizerId);
+      return payments.refreshClubStripe(req.params.id);
     }
   );
   app.post<{Params: {id: string}; Body: {buyerId: string}}>(

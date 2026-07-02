@@ -49,6 +49,8 @@ export interface Store {
   // -------- club --------------------------------------------------------------
   getClub(id: string): Promise<Club | undefined>;
   listClubs(): Promise<Club[]>;
+  /** Club che condividono un account Stripe connesso (per il webhook account.updated). */
+  clubsByStripeAccount(stripeAccountId: string): Promise<Club[]>;
   createClub(club: Club): Promise<Club>;
   updateClub(club: Club): Promise<Club>;
 
