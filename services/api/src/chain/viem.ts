@@ -55,7 +55,9 @@ export class ViemChain implements ChainPort {
     const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
 
     const to = getAddress((params.to ?? this.account.address) as string);
-    const eventId = BigInt(this.referenceToOnchainId(params.reference));
+    // eventId dal registro eventi (Event.onchainEventId): univoco e persistito —
+    // niente hash con collisioni, il limite 3/evento on-chain conta sull'evento giusto.
+    const eventId = BigInt(params.onchainEventId);
     const price = BigInt(params.priceCents);
 
     const txHash = await wallet.writeContract({
@@ -69,12 +71,5 @@ export class ViemChain implements ChainPort {
     const first = logs[0];
     if (!first) throw new DomainError("MINT_FAILED", "evento TicketMinted assente nel receipt", 502);
     return {tokenId: Number(first.args.tokenId), txHash};
-  }
-
-  /** Mappa stabile reference(off-chain)→uint on-chain (placeholder; in prod: registro eventi). */
-  private referenceToOnchainId(reference: string): number {
-    let h = 0;
-    for (let i = 0; i < reference.length; i++) h = (h * 31 + reference.charCodeAt(i)) >>> 0;
-    return h % 1_000_000;
   }
 }

@@ -1,32 +1,27 @@
 # ▶️ RIPRENDI QUI (nota per la prossima sessione)
 
-> Aggiornato: 2026-06-16. Branch di lavoro: **`claude/laughing-albattani-epjzap`** (tutto committato, CI verde).
+> Aggiornato: 2026-07-02. Branch di lavoro: **`claude/new-session-gbkhk3`** (tutto committato e pushato).
+> Piano di lavoro dettagliato: **`TODO-CLAUDE-CODE.md`** (root) — fasi spuntate man mano.
 
 ## Stato attuale (fatto e verificato)
-- **Contratti** Foundry: **74/74** (fuzz + invarianti). Regole on-chain: **tetto rivendita +10%**, **max 3 biglietti/evento**, royalty 1% (0,5% TINFT + 0,5% organizzatore), prevendita 10%, export 25%.
-- **Backend** (services/api): **147 test + 3 skip (DB)**, `tsc` pulito. Include: OTP email reale via **Resend** (Fase 3, dietro interfaccia `EmailSender`, fallback devCode), **P.IVA + dati di fatturazione OBBLIGATORI** per la creazione club organizzatore, affidabilità pagamento→mint, rimborsi/payout, `/metrics`, `/openapi.json` + `/docs`.
-- Demo web e documenti allineati a **+10%/3**.
+- **Contratti** Foundry: 74/74 (fuzz + invarianti), **già su Base Sepolia** (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
+- **Backend** (`services/api`): **190 test + 4 skip (DB)**, `tsc` pulito. In questa sessione:
+  - **FASE 1** — `gateCode` campo reale su Event (migration 4): generato/unico, `POST /gate/access` per l'aggancio staff, rotate/revoke. Seed: `NOTTE-7K2` / `JAZZ-9R3` / `OPEN-5X1`.
+  - **FASE 2** — validazione serializzata per biglietto (mai due VALID concorrenti); E2E su 5 esiti, finestra rotazione, token manomesso.
+  - **FASE 3** — **Stripe Connect**: account connesso per organizzatore alla creazione club (riuso + lazy per dati vecchi, migration 5), blocco messa in vendita senza onboarding, checkout ordini con `application_fee` + `transfer_data.destination`, webhook `account.updated`, rotte onboarding-link/refresh.
+  - **FASE 7** — **lock distribuito** (`Store.withLock`: advisory lock Postgres, verificato su PG 16 reale) per mint/validazione in scale-out; **`render.yaml`** (starter always-on + Postgres gestito + segreti sync:false).
+  - **FASE 8** — email di **conferma ordine** (best-effort al pagamento, mai doppia) e **promemoria evento** (`POST /events/:id/remind`).
+  - **FASE 5** — **login Apple/Google** (`POST /auth/oidc`): verifica id_token RS256 via JWKS lato server, collega/crea account (`appleSub`/`googleSub`, migration 6). Si accende con `APPLE_CLIENT_ID`/`GOOGLE_CLIENT_ID`.
+  - **FASE 4** — **registro eventi on-chain**: `Event.onchainEventId` sequenziale univoco al primo mint (sotto lock) al posto dell'hash con collisioni in `viem.ts`.
+  - **FASE 6 (parziale)** — `apps/web/app-live.html`: validatore agganciato per **codice varco** (`/gate/access`, niente picker) e scansione via **QR rotante + `/validate/scan`**; console org con gateCode (ruota/revoca) e promemoria. Verificato E2E in browser reale (Playwright).
 
-## COMPITO IMMEDIATO: Fase 1 — deploy dei contratti su Base Sepolia
-In questa nuova sessione la **rete verso Base Sepolia dovrebbe essere consentita** (l'utente ha cambiato "Accesso alla rete" dell'ambiente). Passi:
+## COMPITI per la prossima sessione (in ordine)
+1. **Prototipi `.dc.html` aggiornati**: NON sono in questo repo (in `design_handoff_tinft/` c'è una versione vecchia). Quando l'utente li carica: rimuovere il workaround `|VC:..|` nel `venue` (FASE 1) e il fallback HMAC locale (FASE 2), agganciare `/gate/access`, `/auth/oidc`, onboarding Stripe. Mantenere **sito↔app speculari**.
+2. **Verifica on-chain del registro eventi** su anvil/Base Sepolia (Foundry non era disponibile nel container): un acquisto pagato deve emettere `TicketMinted` con l'`onchainEventId` dell'evento; `cast call <ticket> 'ownerOf(uint256)(address)' <tokenId>` = wallet compratore.
+3. **Restano fasi "solo titolare"** (chiavi/account, mai nel repo): Stripe live + Connect attivo, Apple/Google client id, aggregatore SPID, RPC mainnet + audit, piano Render + Postgres gestito + rotazione `AUTH_SECRET`.
 
-1. **Verifica rete** (l'utente fornisce l'RPC Alchemy Base Sepolia — contiene una API key, NON salvarla nel repo):
-   `export PATH="$HOME/.foundry/bin:$PATH"; cast chain-id --rpc-url "<RPC_BASE_SEPOLIA>"` → deve dare **84532**. Se dà `403 Host not in allowlist`, la rete è ancora chiusa: dirlo all'utente.
-2. **Chiave deployer usa-e-getta** (mai in chat): genera con `cast wallet new`, salva SOLO la chiave in `/root/.tinft-deployer.key` (fuori dal repo), mostra all'utente l'**indirizzo** da finanziare con ~0,015 ETH su Base Sepolia.
-3. **Deploy** dalla root del repo:
-   ```bash
-   export BASE_SEPOLIA_RPC_URL="<RPC>"
-   export DEPLOYER_PRIVATE_KEY="$(cat /root/.tinft-deployer.key)"
-   export TINFT_PAYEE=0xDfCD3A96070C966CCE21DB6142aB25AD3879cc8e   # wallet dell'utente (incassa 0,5% royalty)
-   export ORGANIZER_PAYEE=<un indirizzo DIVERSO da TINFT_PAYEE>     # es. l'indirizzo deployer generato
-   cd contracts && forge test && cd ..        # atteso 74/74
-   ./scripts/deploy-base-sepolia.sh           # distribuisce i 4 contratti + salva deployments/84532.json
-   ```
-4. Riporta all'utente i **4 indirizzi** (TinftTicket/Escrow/RoyaltySplit/TransferValidator) + link `sepolia.basescan.org`.
-
-## Poi: Fase 2 — backend con mint reale
-Imposta nel backend (`services/api`, via env, NON committare): `CHAIN_RPC_URL=<RPC>`, `CHAIN_PRIVATE_KEY=<la stessa chiave deployer = owner>`, `TICKET_ADDRESS=<indirizzo TinftTicket>`. Poi un acquisto pagato deve coniare on-chain (verifica `cast call <ticket> 'ownerOf(uint256)(address)' <tokenId>` = wallet compratore). Guida completa: `docs/DEPLOY-BASE-SEPOLIA.md`.
-
-## Regole/sicurezza
-- Mai committare RPC con API key né chiavi private. La chiave deployer vive solo nel container effimero (rigenerala se la sessione è nuova).
-- Dettagli tecnici: `DEV-HANDOFF.md`. Per il design: `DESIGN-HANDOFF.md`. Prova locale: `PROVA.md`.
+## Regole/sicurezza (invarianti)
+- Mai committare segreti (chiavi private, API key, RPC con key): solo dashboard Render/secret manager.
+- Non rompere i test: `pnpm test` in `services/api`, `forge test` in `contracts`.
+- Validazione **solo-app** e **solo-online** (mai un VALID locale); sito↔app speculari.
+- Dettagli tecnici: `DEV-HANDOFF.md` · design: `DESIGN-HANDOFF.md` · prova locale: `PROVA.md`.

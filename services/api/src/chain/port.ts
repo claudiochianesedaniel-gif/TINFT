@@ -4,7 +4,11 @@
 
 export interface MintParams {
   to?: string; // smart account custodial del compratore
-  reference: string; // id evento off-chain (mappato all'eventId on-chain dall'adapter)
+  reference: string; // id evento off-chain (per log/determinismo dei fake)
+  // eventId on-chain dal REGISTRO eventi (FASE 4): assegnato una volta per evento
+  // (TicketingService.ensureOnchainEventId), persistito su Event.onchainEventId.
+  // È la chiave del limite anti-bagarino per-evento (heldCount) su TinftTicket.
+  onchainEventId: number;
   priceCents: number;
 }
 

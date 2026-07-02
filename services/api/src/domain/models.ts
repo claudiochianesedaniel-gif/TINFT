@@ -35,6 +35,9 @@ export interface Account {
   goodwill: number;
   // hash della password (scrypt, formato "salt:hash" hex); assente per account SPID-only
   passwordHash?: string;
+  // login veloce OIDC (FASE 5): `sub` stabile presso il provider, collegato all'account
+  appleSub?: string;
+  googleSub?: string;
 }
 
 export interface Club {
@@ -53,6 +56,10 @@ export interface Club {
   iban?: string;
   genre?: string; // genere musicale prevalente del locale
   color?: string; // colore identitario per la UI
+  // Stripe Connect (marketplace): account connesso dell'organizzatore, creato UNA
+  // volta all'onboarding del club (riusato tra i club dello stesso organizzatore).
+  stripeAccountId?: string;
+  stripeOnboarded?: boolean; // charges_enabled: senza, la messa in vendita è bloccata
 }
 
 export interface Event {
@@ -67,6 +74,12 @@ export interface Event {
   capacity: number;
   sold: number;
   status: EventStatus;
+  // codice varco per lo staff (es. "NOTTE-7K2"): unico tra gli eventi; assente = revocato,
+  // nessun validatore può agganciarsi. Generato alla creazione se non fornito.
+  gateCode?: string;
+  // registro eventi on-chain (FASE 4): eventId uint usato da TinftTicket.mint e dal
+  // limite anti-bagarino per-evento; assegnato UNA volta al primo mint, poi immutabile.
+  onchainEventId?: number;
 }
 
 export interface Ticket {

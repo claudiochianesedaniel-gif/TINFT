@@ -47,18 +47,36 @@ export interface Store {
   deleteAccount(id: string): Promise<void>;
 
   // -------- club --------------------------------------------------------------
+  /** Account collegato a un login OIDC (sub stabile del provider). */
+  getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined>;
+
   getClub(id: string): Promise<Club | undefined>;
   listClubs(): Promise<Club[]>;
+  /** Club che condividono un account Stripe connesso (per il webhook account.updated). */
+  clubsByStripeAccount(stripeAccountId: string): Promise<Club[]>;
   createClub(club: Club): Promise<Club>;
   updateClub(club: Club): Promise<Club>;
 
+  // -------- lock per-chiave ----------------------------------------------------
+  /**
+   * Esegue `fn` in mutua esclusione sulla chiave (es. `ord:<orderId>`, `val:<ticketId>`).
+   * MemoryStore: mutex in-processo (singola istanza). PrismaStore: advisory lock
+   * transazionale Postgres → serializza anche TRA istanze (scale-out): il punto 9
+   * di DEV-HANDOFF / FASE 7 del TODO.
+   */
+  withLock<T>(key: string, fn: () => Promise<T>): Promise<T>;
+
   // -------- eventi ------------------------------------------------------------
   getEvent(id: string): Promise<Event | undefined>;
+  /** Lookup per codice varco (già normalizzato); undefined se nessun evento lo usa. */
+  getEventByGateCode(code: string): Promise<Event | undefined>;
   listEvents(): Promise<Event[]>;
   eventsByOrganizer(organizerId: string): Promise<Event[]>;
   eventsByClub(clubId: string): Promise<Event[]>;
   createEvent(event: Event): Promise<Event>;
   updateEvent(event: Event): Promise<Event>;
+  /** Prossimo eventId on-chain libero (max assegnato + 1). Chiamare sotto withLock. */
+  nextOnchainEventId(): Promise<number>;
 
   // -------- tier --------------------------------------------------------------
   getTier(id: string): Promise<Tier | undefined>;
@@ -90,6 +108,7 @@ export interface Store {
   // -------- biglietti ---------------------------------------------------------
   getTicket(id: string): Promise<Ticket | undefined>;
   ticketsByOwner(ownerId: string): Promise<Ticket[]>;
+  ticketsByEvent(eventId: string): Promise<Ticket[]>;
   listedTickets(): Promise<Ticket[]>;
   /** Biglietti ACTIVE/LISTED controllati da un'identità (cfHash) per un evento (R4). */
   heldCountForIdentity(eventId: string, cfHash: string): Promise<number>;

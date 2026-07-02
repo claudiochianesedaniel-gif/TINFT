@@ -72,6 +72,30 @@ export const openapiSpec = {
         responses: {"200": {description: "{ token }"}, "401": {description: "credenziali errate"}}
       }
     },
+    "/auth/oidc": {
+      post: {
+        tags: ["auth"],
+        summary: "Login veloce Sign in with Apple / Google: verifica l'id_token lato server, collega/crea l'account → token di sessione",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["provider", "idToken"],
+                properties: {provider: {type: "string", enum: ["apple", "google"]}, idToken: {type: "string"}}
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {description: "{ token, account, created:false } — account esistente/collegato"},
+          "201": {description: "{ token, account, created:true } — account creato"},
+          "401": {description: "id_token non valido"},
+          "501": {description: "provider non configurato (APPLE_CLIENT_ID / GOOGLE_CLIENT_ID)"}
+        }
+      }
+    },
     "/auth/register/email": {
       post: {tags: ["auth"], summary: "Avvia registrazione email (invia OTP; in dev restituisce devCode)", responses: {"201": {description: "registrazione in attesa"}}}
     },
@@ -79,13 +103,57 @@ export const openapiSpec = {
       post: {tags: ["auth"], summary: "Verifica OTP → crea l'account verificato", responses: {"201": {description: "account verificato"}, "400": {description: "codice errato"}}}
     },
     "/events": {
-      get: {tags: ["eventi"], summary: "Elenco eventi", responses: {"200": {description: "lista eventi"}}},
+      get: {tags: ["eventi"], summary: "Elenco eventi (incluso gateCode)", responses: {"200": {description: "lista eventi"}}},
       post: {
         tags: ["eventi"],
-        summary: "Crea un evento (organizzatore)",
+        summary: "Crea un evento (organizzatore). gateCode opzionale: se assente viene generato unico",
         security: [{bearerAuth: []}],
-        responses: {"201": {description: "evento creato"}, "401": {description: "non autenticato"}}
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["organizerId", "title", "venue", "date", "priceCents", "capacity"],
+                properties: {
+                  organizerId: {type: "string"},
+                  title: {type: "string"},
+                  venue: {type: "string"},
+                  date: {type: "string"},
+                  priceCents: {type: "integer", minimum: 0},
+                  capacity: {type: "integer", minimum: 1},
+                  status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]},
+                  gateCode: {type: "string", description: "codice varco per lo staff; unico tra gli eventi"}
+                }
+              }
+            }
+          }
+        },
+        responses: {"201": {description: "evento creato (con gateCode)"}, "401": {description: "non autenticato"}, "409": {description: "gateCode già in uso"}}
       }
+    },
+    "/events/{id}/remind": {
+      post: {tags: ["eventi"], summary: "Invia il promemoria evento via email ai possessori dei biglietti validi (organizzatore)", security: [{bearerAuth: []}], responses: {"200": {description: "{ recipients, sent }"}, "403": {description: "non sei l'organizzatore"}}}
+    },
+    "/events/{id}/gate-code/rotate": {
+      post: {tags: ["eventi"], summary: "Rigenera il codice varco (il vecchio smette di valere); solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento con nuovo gateCode"}, "403": {description: "non sei l'organizzatore"}}}
+    },
+    "/events/{id}/gate-code/revoke": {
+      post: {tags: ["eventi"], summary: "Revoca il codice varco (nessun aggancio staff finché non si ruota); solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento senza gateCode"}, "403": {description: "non sei l'organizzatore"}}}
+    },
+    "/gate/access": {
+      post: {
+        tags: ["biglietti"],
+        summary: "Aggancio staff al varco: risolve il codice nell'evento (rate-limited)",
+        security: [{bearerAuth: []}],
+        requestBody: {required: true, content: {"application/json": {schema: {type: "object", required: ["code"], properties: {code: {type: "string"}}}}}},
+        responses: {"200": {description: "evento agganciato"}, "404": {description: "codice sconosciuto o revocato"}}
+      }
+    },
+    "/clubs/{id}/stripe/onboarding-link": {
+      post: {tags: ["pagamenti"], summary: "Link di onboarding Stripe Connect del club (organizzatore); crea l'account connesso se il club non ne ha uno", security: [{bearerAuth: []}], responses: {"200": {description: "{ url }"}}}
+    },
+    "/clubs/{id}/stripe/refresh": {
+      post: {tags: ["pagamenti"], summary: "Rilegge lo stato dell'account connesso e aggiorna stripeOnboarded", security: [{bearerAuth: []}], responses: {"200": {description: "{ clubId, stripeAccountId, stripeOnboarded }"}}}
     },
     "/orders": {
       post: {

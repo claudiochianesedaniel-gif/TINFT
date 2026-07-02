@@ -67,6 +67,26 @@ export class PrismaStore implements Store {
     return (max == null ? 0 : Number(max)) + 1;
   }
 
+  // -------- lock per-chiave (cross-istanza) -----------------------------------
+  /**
+   * Advisory lock TRANSAZIONALE di Postgres: `pg_advisory_xact_lock(hashtext(key))`
+   * viene preso sulla connessione della transazione e rilasciato automaticamente al
+   * commit/rollback — serializza gli entranti su TUTTE le istanze del backend.
+   * `fn` gira sul pool normale (il lock serializza, non richiede la stessa
+   * connessione). Timeout generoso: il corpo può includere mint on-chain lenti;
+   * dimensionare il pool tenendo conto che ogni lock trattiene 1 connessione.
+   */
+  async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // il cast a text evita l'errore di deserializzazione del tipo void di Postgres
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key})::bigint)::text`;
+        return fn();
+      },
+      {maxWait: 30_000, timeout: 120_000}
+    );
+  }
+
   // -------- mappers -----------------------------------------------------------
   private toAccount(r: PrismaAccount): Account {
     return {
@@ -89,7 +109,9 @@ export class PrismaStore implements Store {
       verified: r.verified,
       walletAddress: r.walletAddress ?? undefined,
       goodwill: r.goodwill,
-      passwordHash: r.passwordHash ?? undefined
+      passwordHash: r.passwordHash ?? undefined,
+      appleSub: r.appleSub ?? undefined,
+      googleSub: r.googleSub ?? undefined
     };
   }
 
@@ -113,7 +135,9 @@ export class PrismaStore implements Store {
       verified: a.verified,
       walletAddress: a.walletAddress ?? null,
       goodwill: a.goodwill,
-      passwordHash: a.passwordHash ?? null
+      passwordHash: a.passwordHash ?? null,
+      appleSub: a.appleSub ?? null,
+      googleSub: a.googleSub ?? null
     };
   }
 
@@ -132,7 +156,9 @@ export class PrismaStore implements Store {
       sdi: r.sdi ?? undefined,
       iban: r.iban ?? undefined,
       genre: r.genre ?? undefined,
-      color: r.color ?? undefined
+      color: r.color ?? undefined,
+      stripeAccountId: r.stripeAccountId ?? undefined,
+      stripeOnboarded: r.stripeOnboarded
     };
   }
 
@@ -148,7 +174,9 @@ export class PrismaStore implements Store {
       priceCents: r.priceCents,
       capacity: r.capacity,
       sold: r.sold,
-      status: r.status
+      status: r.status,
+      gateCode: r.gateCode ?? undefined,
+      onchainEventId: r.onchainEventId == null ? undefined : Number(r.onchainEventId)
     };
   }
 
@@ -228,6 +256,13 @@ export class PrismaStore implements Store {
     return r ? this.toAccount(r) : undefined;
   }
 
+  async getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined> {
+    const r = await this.prisma.account.findFirst({
+      where: provider === "apple" ? {appleSub: subject} : {googleSub: subject}
+    });
+    return r ? this.toAccount(r) : undefined;
+  }
+
   async getAccountByEmail(email: string): Promise<Account | undefined> {
     const target = email.trim().toLowerCase();
     const r = await this.prisma.account.findFirst({
@@ -285,7 +320,9 @@ export class PrismaStore implements Store {
         sdi: club.sdi ?? null,
         iban: club.iban ?? null,
         genre: club.genre ?? null,
-        color: club.color ?? null
+        color: club.color ?? null,
+        stripeAccountId: club.stripeAccountId ?? null,
+        stripeOnboarded: club.stripeOnboarded ?? false
       }
     });
     return club;
@@ -306,13 +343,24 @@ export class PrismaStore implements Store {
         sdi: club.sdi ?? null,
         iban: club.iban ?? null,
         genre: club.genre ?? null,
-        color: club.color ?? null
+        color: club.color ?? null,
+        stripeAccountId: club.stripeAccountId ?? null,
+        stripeOnboarded: club.stripeOnboarded ?? false
       }
     });
     return club;
   }
 
+  async clubsByStripeAccount(stripeAccountId: string): Promise<Club[]> {
+    return (await this.prisma.club.findMany({where: {stripeAccountId}})).map((r) => this.toClub(r));
+  }
+
   // -------- eventi ------------------------------------------------------------
+  async getEventByGateCode(code: string): Promise<Event | undefined> {
+    const r = await this.prisma.event.findUnique({where: {gateCode: code}});
+    return r ? this.toEvent(r) : undefined;
+  }
+
   async getEvent(id: string): Promise<Event | undefined> {
     const r = await this.prisma.event.findUnique({where: {id}});
     return r ? this.toEvent(r) : undefined;
@@ -344,7 +392,9 @@ export class PrismaStore implements Store {
         priceCents: event.priceCents,
         capacity: event.capacity,
         sold: event.sold,
-        status: event.status
+        status: event.status,
+        gateCode: event.gateCode ?? null,
+        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId)
       }
     });
     return event;
@@ -362,10 +412,18 @@ export class PrismaStore implements Store {
         priceCents: event.priceCents,
         capacity: event.capacity,
         sold: event.sold,
-        status: event.status
+        status: event.status,
+        gateCode: event.gateCode ?? null,
+        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId)
       }
     });
     return event;
+  }
+
+  async nextOnchainEventId(): Promise<number> {
+    const agg = await this.prisma.event.aggregate({_max: {onchainEventId: true}});
+    const max = agg._max.onchainEventId;
+    return (max == null ? 0 : Number(max)) + 1;
   }
 
   // -------- tier --------------------------------------------------------------
@@ -535,6 +593,10 @@ export class PrismaStore implements Store {
 
   async ticketsByOwner(ownerId: string): Promise<Ticket[]> {
     return (await this.prisma.ticket.findMany({where: {ownerId}})).map((r) => this.toTicket(r));
+  }
+
+  async ticketsByEvent(eventId: string): Promise<Ticket[]> {
+    return (await this.prisma.ticket.findMany({where: {eventId}})).map((r) => this.toTicket(r));
   }
 
   async listedTickets(): Promise<Ticket[]> {

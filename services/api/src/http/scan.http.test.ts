@@ -107,6 +107,55 @@ describe("API HTTP — access-token + /validate/scan (app nativa)", () => {
     expect(fake.json().outcome).toBe("FAKE");
   });
 
+  it("POST /validate/scan: scansioni CONCORRENTI dello stesso token → un solo VALID, l'altra DUPLICATE", async () => {
+    const buyer = await auth({nome: "C", cognome: "C", email: "scan_conc@e.it", cfHash: "idConc"});
+    const staffA = await auth({role: "VALIDATOR", nome: "Gate", cognome: "A", email: "scan_conc_a@e.it"});
+    const staffB = await auth({role: "VALIDATOR", nome: "Gate", cognome: "B", email: "scan_conc_b@e.it"});
+    const {ticket} = await ticketFor(buyer);
+    const token = (await get(`/tickets/${ticket.id}/access-token`, buyer.headers)).json().token as string;
+
+    // due varchi scansionano lo stesso QR nello stesso istante: mai due ingressi
+    const [a, b] = await Promise.all([
+      post("/validate/scan", {token}, staffA.headers),
+      post("/validate/scan", {token}, staffB.headers)
+    ]);
+    const outcomes = [a.json().outcome, b.json().outcome].sort();
+    expect(outcomes).toEqual(["DUPLICATE", "VALID"]);
+  });
+
+  it("finestra di rotazione: token entro il TTL → VALID; exp raggiunto → SCREENSHOT (mai VALID)", async () => {
+    const buyer = await auth({nome: "R", cognome: "W", email: "scan_rot@e.it", cfHash: "idRot"});
+    const staff = await auth({role: "VALIDATOR", nome: "Gate", cognome: "K", email: "scan_rot_s@e.it"});
+    const {ticket} = await ticketFor(buyer);
+
+    // il bordo esatto della finestra (exp == now) è già scaduto: screenshot
+    const atBoundary = await post("/validate/scan", {token: signAccessToken(ticket.id, 0)}, staff.headers);
+    expect(atBoundary.json().outcome).toBe("SCREENSHOT");
+
+    // un token dentro la finestra (TTL ridotto) è valido
+    const inWindow = await post("/validate/scan", {token: signAccessToken(ticket.id, 5)}, staff.headers);
+    expect(inWindow.json().outcome).toBe("VALID");
+  });
+
+  it("token MANOMESSO (payload alterato, firma originale) → FAKE, non SCREENSHOT", async () => {
+    const buyer = await auth({nome: "T", cognome: "M", email: "scan_tamper@e.it", cfHash: "idTamp"});
+    const staff = await auth({role: "VALIDATOR", nome: "Gate", cognome: "K", email: "scan_tamper_s@e.it"});
+    const {ticket} = await ticketFor(buyer);
+
+    const token = (await get(`/tickets/${ticket.id}/access-token`, buyer.headers)).json().token as string;
+    const [head, body, sig] = token.split(".") as [string, string, string];
+    // allunga la scadenza nel payload tenendo la firma originale: la firma non torna → FAKE
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    payload.exp += 3600;
+    const forged = `${head}.${Buffer.from(JSON.stringify(payload), "utf8").toString("base64url")}.${sig}`;
+
+    const res = await post("/validate/scan", {token: forged}, staff.headers);
+    expect(res.json().outcome).toBe("FAKE");
+    // il biglietto resta ACTIVE: nessun ingresso consumato dal tentativo
+    const tickets = await get(`/accounts/${buyer.account.id}/tickets`, buyer.headers);
+    expect(tickets.json()[0].status).toBe("ACTIVE");
+  });
+
   it("POST /validate/scan: token di un biglietto LISTED → ESCROW", async () => {
     const seller = await auth({nome: "S", cognome: "L", email: "scan_listed@e.it", cfHash: "idSara"});
     const staff = await auth({role: "VALIDATOR", nome: "Gate", cognome: "K", email: "scan_staff3@e.it"});

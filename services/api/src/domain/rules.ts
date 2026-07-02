@@ -78,6 +78,38 @@ export function clampOrderQuantity(quantity: number): number {
   return Math.max(1, Math.min(MAX_PER_ORDER, q));
 }
 
+// ---------------------------------------------------------------------------
+// Codice varco (gateCode) — non economico ma regola di dominio: ogni evento ha
+// un codice unico con cui lo staff si aggancia al SOLO suo varco (niente picker).
+// ---------------------------------------------------------------------------
+
+/** Alfabeto senza caratteri ambigui (niente 0/O, 1/I/L) per codici leggibili a voce. */
+const GATE_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+export const GATE_CODE_SUFFIX_LENGTH = 4;
+
+/** Normalizza un codice varco per confronto/persistenza: trim, maiuscole, niente spazi interni. */
+export function normalizeGateCode(code: string): string {
+  return code.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+/**
+ * Genera un codice varco leggibile dal titolo dell'evento: prefisso di max 5
+ * lettere/cifre del titolo (fallback "VARCO") + 4 caratteri casuali non ambigui,
+ * es. "Notte Elettronica" → "NOTTE-7K2M". L'unicità è garantita dal chiamante
+ * (retry sul lookup) e dal vincolo unique in persistenza.
+ */
+export function generateGateCode(title: string, random: () => number = Math.random): string {
+  const prefix = title
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 5) || "VARCO";
+  let suffix = "";
+  for (let i = 0; i < GATE_CODE_SUFFIX_LENGTH; i++) {
+    suffix += GATE_CODE_ALPHABET[Math.floor(random() * GATE_CODE_ALPHABET.length)];
+  }
+  return `${prefix}-${suffix}`;
+}
+
 /** Totale checkout primario: (prezzo + commissione di prevendita 10%) × quantità. */
 export function orderTotalCents(priceCents: number, quantity: number): OrderTotal {
   const q = clampOrderQuantity(quantity);

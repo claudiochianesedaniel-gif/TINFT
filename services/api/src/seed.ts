@@ -41,9 +41,10 @@ export async function seedDemo(store: Store, ticketing: TicketingService): Promi
     pec: "magazzino@pec.it", sdi: "GHIJKL2", iban: "IT60X0542811101000000999888", genre: "House", color: "#0a8a5c"
   });
 
-  const e1 = await ticketing.createEvent({organizerId: org.id, clubId: c1.id, title: "Notte Elettronica · Vol.4", venue: "Magazzino Generali", date: "21 GIU", priceCents: 3150, capacity: 500, status: "ON_SALE"});
-  const e2 = await ticketing.createEvent({organizerId: org.id, clubId: c1.id, title: "Blue Room · Jazz", venue: "Auditorium", date: "03 LUG", priceCents: 2400, capacity: 200, status: "ON_SALE"});
-  const e3 = await ticketing.createEvent({organizerId: org.id, clubId: c2.id, title: "Opening Night", venue: "Magazzino Generali", date: "28 GIU", priceCents: 2800, capacity: 300, status: "ON_SALE"});
+  // gateCode espliciti: allineati ai codici varco demo dei prototipi (staff/varco)
+  const e1 = await ticketing.createEvent({organizerId: org.id, clubId: c1.id, title: "Notte Elettronica · Vol.4", venue: "Magazzino Generali", date: "21 GIU", priceCents: 3150, capacity: 500, status: "ON_SALE", gateCode: "NOTTE-7K2"});
+  const e2 = await ticketing.createEvent({organizerId: org.id, clubId: c1.id, title: "Blue Room · Jazz", venue: "Auditorium", date: "03 LUG", priceCents: 2400, capacity: 200, status: "ON_SALE", gateCode: "JAZZ-9R3"});
+  const e3 = await ticketing.createEvent({organizerId: org.id, clubId: c2.id, title: "Opening Night", venue: "Magazzino Generali", date: "28 GIU", priceCents: 2800, capacity: 300, status: "ON_SALE", gateCode: "OPEN-5X1"});
 
   await ticketing.createTier(e1.id, {organizerId: org.id, name: "Intero", priceCents: 3150});
   await ticketing.createTier(e1.id, {organizerId: org.id, name: "Last Release", priceCents: 3800, note: "pochi rimasti"});
