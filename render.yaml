@@ -1,0 +1,60 @@
+# Blueprint Render — TINFT (FASE 7: hosting always-on + PostgreSQL gestito)
+# Spec: https://render.com/docs/blueprint-spec
+#
+# - `plan: starter` (a pagamento) = il servizio resta SEMPRE acceso: sparisce il
+#   cold start di ~50s del piano free.
+# - Il Postgres gestito è collegato via DATABASE_URL: il backend passa da
+#   in-memory a PrismaStore (i dati sopravvivono a deploy/riavvii); le migration
+#   girano allo start con `prisma migrate deploy`. L'advisory lock cross-istanza
+#   (Store.withLock) rende sicuro anche lo scale-out su più istanze.
+# - I SEGRETI non stanno in questo file né nel repo: `sync: false` li dichiara
+#   soltanto — i valori vanno inseriti nella dashboard Render (Environment).
+
+services:
+  - type: web
+    name: tinft-api
+    runtime: node
+    plan: starter # "free" dorme dopo 15 min di inattività; starter è always-on
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: cd services/api && pnpm prisma:deploy && pnpm exec tsx src/index.ts
+    healthCheckPath: /ready
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tinft-db
+          property: connectionString
+      # ---- segreti: SOLO in dashboard (sync: false = dichiarati, non valorizzati)
+      - key: AUTH_SECRET # ruotarlo al passaggio in produzione
+        sync: false
+      - key: ACCESS_SECRET # firma dei QR d'accesso (separato da AUTH_SECRET)
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: CHAIN_RPC_URL
+        sync: false
+      - key: CHAIN_PRIVATE_KEY
+        sync: false
+      - key: TICKET_ADDRESS
+        sync: false
+      # ---- URL di prodotto (non segreti ma per-ambiente)
+      - key: CHECKOUT_SUCCESS_URL
+        sync: false
+      - key: CHECKOUT_CANCEL_URL
+        sync: false
+      - key: CONNECT_RETURN_URL
+        sync: false
+      - key: CONNECT_REFRESH_URL
+        sync: false
+
+databases:
+  - name: tinft-db
+    plan: basic-256mb # dimensionare a crescita; abilitare i backup dalla dashboard
+    postgresMajorVersion: "16"

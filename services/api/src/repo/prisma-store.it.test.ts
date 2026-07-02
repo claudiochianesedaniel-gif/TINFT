@@ -274,4 +274,32 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     expect((await store.getAccount(buyer.id))!.goodwill).toBe(goodwillBefore + GOODWILL_PER_TICKET);
     expect((await ticketing.getOrder(order.id)).status).toBe("PAID");
   });
+
+  it("withLock su PG (advisory lock): sezioni critiche mai sovrapposte, chiavi diverse indipendenti", async () => {
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let inside = 0;
+    let maxInside = 0;
+    const critical = async () => {
+      inside++;
+      maxInside = Math.max(maxInside, inside);
+      await sleep(10);
+      inside--;
+    };
+    // stessa chiave: serializzate (anche tra istanze, qui simulato in-processo)
+    await Promise.all([1, 2, 3].map(() => store.withLock("it:lock", critical)));
+    expect(maxInside).toBe(1);
+
+    // chiavi diverse: nessun blocco incrociato
+    const order: string[] = [];
+    await Promise.all([
+      store.withLock("it:a", async () => {
+        await sleep(30);
+        order.push("a");
+      }),
+      store.withLock("it:b", async () => {
+        order.push("b");
+      })
+    ]);
+    expect(order).toEqual(["b", "a"]);
+  });
 });

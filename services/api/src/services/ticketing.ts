@@ -609,9 +609,9 @@ export class TicketingService {
    *    `store.settleOrder` (transazione + lock di riga su Postgres): tutto-o-niente,
    *    nessuna finestra di doppio accredito o crash a metà scrittura.
    *
-   * Nota prod (scale-out multi-istanza): per serializzare il mint anche tra processi
-   * diversi serve un lock distribuito (es. advisory lock Postgres / Redis) all'avvio
-   * di payOrder; oggi l'accredito è comunque protetto cross-processo dal lock di riga.
+   * Scale-out multi-istanza: su Postgres il mutex per-ordine È distribuito
+   * (advisory lock transazionale in PrismaStore.withLock) — il mint è serializzato
+   * anche tra processi; l'accredito resta protetto anche dal lock di riga.
    */
   async payOrder(orderId: string): Promise<Order> {
     return this.withLock(`ord:${orderId}`, () => this.fulfillOrder(orderId));
@@ -648,25 +648,13 @@ export class TicketingService {
   }
 
   /**
-   * Mutex asincrono per-chiave (in-processo): incatena le chiamate sulla stessa
-   * chiave così che eseguano una alla volta. Usato per gli ordini (`ord:<id>`) e per
-   * la validazione al varco (`val:<ticketId>`). La catena memorizzata ingoia gli
-   * errori per non propagarli ai successivi; il chiamante riceve comunque il proprio esito.
+   * Mutex per-chiave DELEGATO allo store: in-memory è un lock in-processo; su
+   * Postgres è un advisory lock transazionale che serializza anche TRA istanze
+   * (scale-out, FASE 7). Usato per gli ordini (`ord:<id>`) e per la validazione
+   * al varco (`val:<ticketId>`).
    */
-  private readonly locks = new Map<string, Promise<unknown>>();
   private withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
-    const prev = this.locks.get(key) ?? Promise.resolve();
-    const run = prev.then(fn, fn);
-    const tail = run.then(
-      () => {},
-      () => {}
-    );
-    this.locks.set(key, tail);
-    // pulizia: se nessun'altra chiamata si è accodata nel frattempo, libera la chiave
-    void tail.then(() => {
-      if (this.locks.get(key) === tail) this.locks.delete(key);
-    });
-    return run;
+    return this.store.withLock(key, fn);
   }
 
   async getOrder(id: string): Promise<Order> {
@@ -976,8 +964,8 @@ export class TicketingService {
    * SERIALIZZATA per biglietto: tra la lettura dello stato e la scrittura di USED
    * c'è un confine async; senza mutex due scansioni simultanee dello stesso token
    * leggerebbero entrambe ACTIVE → due VALID (doppio ingresso). Con il lock la
-   * seconda vede USED → DUPLICATE. In scale-out multi-istanza serve il lock
-   * distribuito (FASE 7), come per il mint.
+   * seconda vede USED → DUPLICATE. Su Postgres il lock è DISTRIBUITO (advisory
+   * lock in PrismaStore.withLock): vale anche tra istanze diverse.
    */
   async validate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
     return this.withLock(`val:${ticketId}`, () => this.doValidate(ticketId, validatorId, scenario));

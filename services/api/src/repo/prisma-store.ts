@@ -67,6 +67,26 @@ export class PrismaStore implements Store {
     return (max == null ? 0 : Number(max)) + 1;
   }
 
+  // -------- lock per-chiave (cross-istanza) -----------------------------------
+  /**
+   * Advisory lock TRANSAZIONALE di Postgres: `pg_advisory_xact_lock(hashtext(key))`
+   * viene preso sulla connessione della transazione e rilasciato automaticamente al
+   * commit/rollback — serializza gli entranti su TUTTE le istanze del backend.
+   * `fn` gira sul pool normale (il lock serializza, non richiede la stessa
+   * connessione). Timeout generoso: il corpo può includere mint on-chain lenti;
+   * dimensionare il pool tenendo conto che ogni lock trattiene 1 connessione.
+   */
+  async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // il cast a text evita l'errore di deserializzazione del tipo void di Postgres
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key})::bigint)::text`;
+        return fn();
+      },
+      {maxWait: 30_000, timeout: 120_000}
+    );
+  }
+
   // -------- mappers -----------------------------------------------------------
   private toAccount(r: PrismaAccount): Account {
     return {

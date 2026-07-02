@@ -115,9 +115,9 @@
 
 ## FASE 7 — Infra / Ops (produzione)
 
-- [ ] **Hosting always-on.** Oggi il server è su Render **piano gratuito che "dorme"** (i ~50s di attesa al primo colpo). Passare a un piano a pagamento (o altro hosting) che resta sempre acceso. È solo un cambio di piano + `render.yaml` (`plan`).
-- [ ] **DB gestito (PostgreSQL).** Oggi in demo i dati stanno in memoria e si perdono. Creare un Postgres gestito (Render Postgres, Supabase, Neon) e impostare `DATABASE_URL`. Il backend è già pronto (Prisma): eseguire `pnpm prisma:deploy`.
-- [ ] **Secret manager** per tutte le chiavi; ruotare `AUTH_SECRET`.
+- [x] **Blueprint `render.yaml`** in root: servizio web `plan: starter` (always-on), Postgres gestito collegato via `DATABASE_URL`, migration allo start (`prisma migrate deploy`), health check su `/ready`, segreti dichiarati con `sync: false` (valori SOLO in dashboard). ⚠️ L'attivazione (piano a pagamento + inserimento segreti) resta al titolare.
+- [x] **Lock distribuito (scale-out multi-istanza):** `Store.withLock` — mutex in-processo sul MemoryStore, **advisory lock transazionale Postgres** (`pg_advisory_xact_lock`) sul PrismaStore; mint ordini (`ord:<id>`) e validazione varco (`val:<ticketId>`) serializzati anche TRA istanze. Verificato su Postgres 16 reale (migration + IT test 4/4).
+- [ ] **Secret manager** per tutte le chiavi; ruotare `AUTH_SECRET` (⚠️ titolare, in dashboard Render).
 - [ ] **Monitoring/alerting** (Grafana su `/metrics`), **backup/restore** DB, **CI/CD** di deploy.
 
 ---

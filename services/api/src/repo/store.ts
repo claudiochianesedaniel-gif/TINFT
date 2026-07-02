@@ -54,6 +54,15 @@ export interface Store {
   createClub(club: Club): Promise<Club>;
   updateClub(club: Club): Promise<Club>;
 
+  // -------- lock per-chiave ----------------------------------------------------
+  /**
+   * Esegue `fn` in mutua esclusione sulla chiave (es. `ord:<orderId>`, `val:<ticketId>`).
+   * MemoryStore: mutex in-processo (singola istanza). PrismaStore: advisory lock
+   * transazionale Postgres → serializza anche TRA istanze (scale-out): il punto 9
+   * di DEV-HANDOFF / FASE 7 del TODO.
+   */
+  withLock<T>(key: string, fn: () => Promise<T>): Promise<T>;
+
   // -------- eventi ------------------------------------------------------------
   getEvent(id: string): Promise<Event | undefined>;
   /** Lookup per codice varco (già normalizzato); undefined se nessun evento lo usa. */

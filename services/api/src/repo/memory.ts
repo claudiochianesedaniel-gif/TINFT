@@ -121,6 +121,29 @@ export class MemoryStore implements Store {
     return [...this.clubs.values()].filter((c) => c.stripeAccountId === stripeAccountId);
   }
 
+  // -------- lock per-chiave ----------------------------------------------------
+  /**
+   * Mutex asincrono per-chiave in-processo: incatena le chiamate sulla stessa
+   * chiave così che eseguano una alla volta. La catena memorizzata ingoia gli
+   * errori per non propagarli ai successivi; il chiamante riceve il proprio esito.
+   * (Su Postgres l'equivalente cross-istanza è l'advisory lock del PrismaStore.)
+   */
+  private readonly keyedLocks = new Map<string, Promise<unknown>>();
+  withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.keyedLocks.get(key) ?? Promise.resolve();
+    const run = prev.then(fn, fn);
+    const tail = run.then(
+      () => {},
+      () => {}
+    );
+    this.keyedLocks.set(key, tail);
+    // pulizia: se nessun'altra chiamata si è accodata nel frattempo, libera la chiave
+    void tail.then(() => {
+      if (this.keyedLocks.get(key) === tail) this.keyedLocks.delete(key);
+    });
+    return run;
+  }
+
   // -------- eventi ------------------------------------------------------------
   async getEvent(id: string): Promise<Event | undefined> {
     return this.events.get(id);
