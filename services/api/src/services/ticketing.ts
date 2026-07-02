@@ -35,7 +35,7 @@ import {hashPassword} from "../auth/password";
 import {verifyAccessToken} from "../access/access-token";
 import type {ChainPort} from "../chain/port";
 import {FakeChain} from "../chain/fake";
-import {DevEmailSender, type EmailSender} from "../notifications/email";
+import {DevEmailSender, type EmailSender, eventReminderEmail, orderConfirmationEmail} from "../notifications/email";
 import {type ConnectPort, FakeConnect} from "../payments/provider";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
@@ -638,13 +638,68 @@ export class TicketingService {
     }
 
     // Accredito ATOMICO e idempotente (commissione + goodwill + stato PAID).
-    return this.store.settleOrder({
+    const settled = await this.store.settleOrder({
       orderId,
       ticketIds,
       presaleCommissionCents: order.feeTotalCents,
       buyerId: order.buyerId,
       goodwillDelta: GOODWILL_PER_TICKET * order.quantity
     });
+
+    // Email di conferma d'ordine (FASE 8): BEST-EFFORT, mai bloccante — un errore
+    // del provider email non deve far fallire un pagamento riuscito (il webhook
+    // verrebbe ritentato e l'ordine risulterebbe non evaso). Un ritento su ordine
+    // già PAID esce prima di arrivare qui → niente email doppie.
+    try {
+      const buyer = await this.getAccount(settled.buyerId);
+      const event = await this.getEvent(settled.eventId);
+      await this.email.send(
+        orderConfirmationEmail({
+          to: buyer.email,
+          buyerName: buyer.nome,
+          eventTitle: event.title,
+          venue: event.venue,
+          date: event.date,
+          quantity: settled.quantity,
+          totalCents: settled.totalCents
+        })
+      );
+    } catch {
+      // invio fallito: il pagamento resta valido; i biglietti sono comunque in app
+    }
+
+    return settled;
+  }
+
+  /**
+   * Promemoria evento (FASE 8): l'organizzatore lo invia ai possessori dei
+   * biglietti validi (ACTIVE/LISTED, non revocati), un'email per indirizzo.
+   * Gli invii falliti non interrompono gli altri; ritorna il conteggio.
+   */
+  async remindEvent(eventId: string, organizerId: string): Promise<{recipients: number; sent: number}> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+
+    const tickets = await this.store.ticketsByEvent(eventId);
+    const byEmail = new Map<string, string>(); // email → nome del possessore
+    for (const t of tickets) {
+      if (t.revoked || (t.status !== "ACTIVE" && t.status !== "LISTED")) continue;
+      const owner = await this.store.getAccount(t.ownerId);
+      if (owner && !byEmail.has(owner.email)) byEmail.set(owner.email, owner.nome);
+    }
+
+    let sent = 0;
+    for (const [to, holderName] of byEmail) {
+      try {
+        await this.email.send(
+          eventReminderEmail({to, holderName, eventTitle: event.title, venue: event.venue, date: event.date})
+        );
+        sent++;
+      } catch {
+        // continua con gli altri destinatari
+      }
+    }
+    return {recipients: byEmail.size, sent};
   }
 
   /**

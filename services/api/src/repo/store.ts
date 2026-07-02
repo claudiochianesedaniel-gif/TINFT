@@ -103,6 +103,7 @@ export interface Store {
   // -------- biglietti ---------------------------------------------------------
   getTicket(id: string): Promise<Ticket | undefined>;
   ticketsByOwner(ownerId: string): Promise<Ticket[]>;
+  ticketsByEvent(eventId: string): Promise<Ticket[]>;
   listedTickets(): Promise<Ticket[]>;
   /** Biglietti ACTIVE/LISTED controllati da un'identità (cfHash) per un evento (R4). */
   heldCountForIdentity(eventId: string, cfHash: string): Promise<number>;

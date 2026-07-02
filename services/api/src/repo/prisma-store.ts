@@ -575,6 +575,10 @@ export class PrismaStore implements Store {
     return (await this.prisma.ticket.findMany({where: {ownerId}})).map((r) => this.toTicket(r));
   }
 
+  async ticketsByEvent(eventId: string): Promise<Ticket[]> {
+    return (await this.prisma.ticket.findMany({where: {eventId}})).map((r) => this.toTicket(r));
+  }
+
   async listedTickets(): Promise<Ticket[]> {
     return (await this.prisma.ticket.findMany({where: {status: "LISTED"}})).map((r) => this.toTicket(r));
   }

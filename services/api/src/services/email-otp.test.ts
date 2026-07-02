@@ -10,6 +10,9 @@ class SpyEmailSender implements EmailSender {
   async sendOtp(email: string, code: string): Promise<void> {
     this.sent.push({email, code});
   }
+  async send(): Promise<void> {
+    // le email di prodotto (conferma/promemoria) sono coperte da email-events.test.ts
+  }
 }
 
 const REG = {nome: "Marco", cognome: "Bianchi", cf: "BNCMRC90A01F205X", email: "mb@e.it", city: "Milano"};

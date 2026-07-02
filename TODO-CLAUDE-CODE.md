@@ -124,7 +124,8 @@
 
 ## FASE 8 — Notifiche
 
-- [ ] Email di **evento/promemoria** (oltre all'OTP già fatto) in `src/notifications/email.ts`. SMS opzionale.
+- [x] Email di **evento** in `src/notifications/email.ts`: `EmailSender.send` generico (Resend reale / Dev no-op), **conferma d'ordine** automatica al pagamento (best-effort: mai blocca il pagamento, mai doppia sui ritenti webhook) e **promemoria evento** via `POST /events/:id/remind` (organizzatore → possessori validi, dedup per indirizzo). Test in `email-events.test.ts`.
+- [ ] SMS opzionale. Promemoria SCHEDULATO automatico: richiede una data evento strutturata (oggi `date` è testo libero, es. "21 GIU") — da fare quando si tipizza la data.
 
 ---
 

@@ -107,6 +107,9 @@ export const openapiSpec = {
         responses: {"201": {description: "evento creato (con gateCode)"}, "401": {description: "non autenticato"}, "409": {description: "gateCode già in uso"}}
       }
     },
+    "/events/{id}/remind": {
+      post: {tags: ["eventi"], summary: "Invia il promemoria evento via email ai possessori dei biglietti validi (organizzatore)", security: [{bearerAuth: []}], responses: {"200": {description: "{ recipients, sent }"}, "403": {description: "non sei l'organizzatore"}}}
+    },
     "/events/{id}/gate-code/rotate": {
       post: {tags: ["eventi"], summary: "Rigenera il codice varco (il vecchio smette di valere); solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento con nuovo gateCode"}, "403": {description: "non sei l'organizzatore"}}}
     },

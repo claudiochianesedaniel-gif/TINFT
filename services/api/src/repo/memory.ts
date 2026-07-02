@@ -241,6 +241,10 @@ export class MemoryStore implements Store {
     return [...this.tickets.values()].filter((t) => t.ownerId === ownerId);
   }
 
+  async ticketsByEvent(eventId: string): Promise<Ticket[]> {
+    return [...this.tickets.values()].filter((t) => t.eventId === eventId);
+  }
+
   async listedTickets(): Promise<Ticket[]> {
     return [...this.tickets.values()].filter((t) => t.status === "LISTED");
   }

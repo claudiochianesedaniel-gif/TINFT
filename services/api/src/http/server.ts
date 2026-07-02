@@ -949,6 +949,16 @@ export function buildServer(
     }
   );
 
+  // -------- promemoria evento (FASE 8): email ai possessori dei biglietti validi
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/remind",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.remindEvent(req.params.id, req.body.organizerId);
+    }
+  );
+
   // -------- pubblicazione evento con gate KYC (B7): DRAFT → ON_SALE
   app.post<{Params: {id: string}; Body: {organizerId: string}}>(
     "/events/:id/publish",
