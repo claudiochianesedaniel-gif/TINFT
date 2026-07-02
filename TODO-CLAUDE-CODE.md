@@ -98,7 +98,7 @@
 
 **Decisione:** doppio livello. **Login veloce** con **Sign in with Apple** e **Google Sign-In** (ce l'hanno tutti); **verifica identità ed età (18+)** con **SPID** (che Apple/Google NON danno). Entrambi presenti nel prototipo.
 
-- [ ] **Sign in with Apple + Google** (OIDC): verifica id_token lato server, crea/collega account, sessione JWT esistente. Provider consigliato: Auth0/Clerk/Supabase Auth, o OIDC diretto.
+- [x] **Sign in with Apple + Google** (OIDC diretto, zero dipendenze nuove): `POST /auth/oidc` {provider, idToken} → verifica lato server firma RS256 via JWKS (cache 1h + refetch su rotazione chiavi), issuer/audience/scadenza (`src/identity/oidc.ts`); trova per sub → collega per email → crea account CLIENTE; sessione JWT esistente. Campi `appleSub`/`googleSub` su Account (migration `6_account_oidc`). Si accende con `APPLE_CLIENT_ID`/`GOOGLE_CLIENT_ID` (⚠️ titolare: Apple Developer + Google Cloud OAuth); senza → 501. Il login veloce NON verifica identità/età: quella resta a SPID.
 - [ ] **SPID reale (OIDC)** al posto di `FakeSpid` in `src/identity/verifier.ts`: aggregatore accreditato AgID; usato per **verifica identità + età 18+** e per rendere il biglietto nominativo. Impostare l'hash CF on-chain via `TinftTicket.setIdentity`. Env: `SPID_OIDC_ISSUER/CLIENT_ID/CLIENT_SECRET`.
 - [ ] **Quando richiedere SPID:** al primo acquisto o all'attivazione wallet (non necessariamente al solo login). Decidere con il legale (FASE 10) i casi in cui è obbligatorio. In futuro anche **CIE** come alternativa.
 - [ ] **Wallet custodial ERC-4337** + paymaster + recovery (Turnkey/Pimlico; env `TURNKEY_*`, `PIMLICO_API_KEY` già previste). Oggi `walletAddress` opzionale e mint dall'owner.

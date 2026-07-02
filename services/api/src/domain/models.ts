@@ -35,6 +35,9 @@ export interface Account {
   goodwill: number;
   // hash della password (scrypt, formato "salt:hash" hex); assente per account SPID-only
   passwordHash?: string;
+  // login veloce OIDC (FASE 5): `sub` stabile presso il provider, collegato all'account
+  appleSub?: string;
+  googleSub?: string;
 }
 
 export interface Club {

@@ -47,6 +47,9 @@ export interface Store {
   deleteAccount(id: string): Promise<void>;
 
   // -------- club --------------------------------------------------------------
+  /** Account collegato a un login OIDC (sub stabile del provider). */
+  getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined>;
+
   getClub(id: string): Promise<Club | undefined>;
   listClubs(): Promise<Club[]>;
   /** Club che condividono un account Stripe connesso (per il webhook account.updated). */

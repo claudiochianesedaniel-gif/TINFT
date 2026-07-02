@@ -16,6 +16,7 @@ import {ViemChain} from "../chain/viem";
 import {openapiSpec, swaggerUiHtml} from "./openapi";
 import {emailSenderFromEnv} from "../notifications/email";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+import {type OidcProviderName, type OidcVerifier, oidcVerifierFromEnv} from "../identity/oidc";
 import {setPassword, verifyPassword} from "../auth/password";
 import {signToken, verifyToken} from "../auth/tokens";
 import {ACCESS_TTL_SECONDS, signAccessToken} from "../access/access-token";
@@ -68,7 +69,14 @@ function providerFromEnv(): PaymentProvider | undefined {
  * (store condiviso). Testabile via `app.inject` senza rete né DB.
  */
 export function buildServer(
-  opts: {store?: Store; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier; rateLimit?: boolean} = {}
+  opts: {
+    store?: Store;
+    provider?: PaymentProvider;
+    chain?: ChainPort;
+    verifier?: IdentityVerifier;
+    oidc?: OidcVerifier;
+    rateLimit?: boolean;
+  } = {}
 ): FastifyInstance {
   const store: Store = opts.store ?? new MemoryStore();
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
@@ -76,6 +84,7 @@ export function buildServer(
   // Stesso provider per ticketing (onboarding Connect alla creazione club) e payments
   // (checkout con split); stessa istanza `chain` per l'acquisto primario/ordini e il flusso PSP.
   const provider = opts.provider ?? providerFromEnv() ?? new FakeProvider();
+  const oidc = opts.oidc ?? oidcVerifierFromEnv();
   const ticketing = new TicketingService(store, undefined, verifier, chain, emailSenderFromEnv(), provider.connect);
   const content = new ContentService(store);
   const consoleSvc = new ConsoleService(store);
@@ -432,6 +441,24 @@ export function buildServer(
     const token = signToken({accountId: account.id, role: account.role});
     return reply.status(200).send({token, account});
   });
+
+  // Login veloce OIDC (FASE 5): il client manda l'id_token di Apple/Google; il server
+  // ne verifica firma+claim e collega/crea l'account. L'identità 18+ resta a SPID.
+  app.post<{Body: {provider: OidcProviderName; idToken: string}}>(
+    "/auth/oidc",
+    {
+      preHandler: rateLimit(30, 60_000),
+      schema: {
+        body: body({provider: {type: "string", enum: ["apple", "google"]}, idToken: STR}, ["provider", "idToken"])
+      }
+    },
+    async (req, reply) => {
+      const profile = await oidc.verify(req.body.provider, req.body.idToken);
+      const {account, created} = await ticketing.loginWithOidc(profile);
+      const token = signToken({accountId: account.id, role: account.role});
+      return reply.status(created ? 201 : 200).send({token, account, created});
+    }
+  );
 
   // GDPR — cancellazione account (right to erasure). Gating admin via token;
   // in produzione: auth reale + allow-list (cfr. pattern Mindful Trading Club).

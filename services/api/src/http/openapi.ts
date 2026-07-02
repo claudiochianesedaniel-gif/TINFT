@@ -72,6 +72,30 @@ export const openapiSpec = {
         responses: {"200": {description: "{ token }"}, "401": {description: "credenziali errate"}}
       }
     },
+    "/auth/oidc": {
+      post: {
+        tags: ["auth"],
+        summary: "Login veloce Sign in with Apple / Google: verifica l'id_token lato server, collega/crea l'account → token di sessione",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["provider", "idToken"],
+                properties: {provider: {type: "string", enum: ["apple", "google"]}, idToken: {type: "string"}}
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {description: "{ token, account, created:false } — account esistente/collegato"},
+          "201": {description: "{ token, account, created:true } — account creato"},
+          "401": {description: "id_token non valido"},
+          "501": {description: "provider non configurato (APPLE_CLIENT_ID / GOOGLE_CLIENT_ID)"}
+        }
+      }
+    },
     "/auth/register/email": {
       post: {tags: ["auth"], summary: "Avvia registrazione email (invia OTP; in dev restituisce devCode)", responses: {"201": {description: "registrazione in attesa"}}}
     },

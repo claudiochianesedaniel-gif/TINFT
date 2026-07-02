@@ -31,6 +31,7 @@ import {
   royaltySplitCents
 } from "../domain/rules";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+import type {OidcProfile} from "../identity/oidc";
 import {hashPassword} from "../auth/password";
 import {verifyAccessToken} from "../access/access-token";
 import type {ChainPort} from "../chain/port";
@@ -111,6 +112,45 @@ export class TicketingService {
   /** Cerca un account per email (case-insensitive). Per il login. */
   async findAccountByEmail(email: string): Promise<Account | undefined> {
     return this.store.getAccountByEmail(email);
+  }
+
+  // ------------------------------------------- login veloce OIDC (FASE 5)
+  /**
+   * Login con un profilo OIDC GIÀ verificato (firma+claim in {@link OidcVerifier}):
+   * 1) account già collegato al `sub` del provider → login;
+   * 2) altrimenti account esistente con la stessa email → COLLEGA il sub e login;
+   * 3) altrimenti crea un account CLIENTE (serve l'email nel token, che Apple/Google
+   *    includono; senza email e senza account → OIDC_EMAIL_REQUIRED).
+   * Il login veloce NON verifica l'identità/età: quella resta a SPID (18+, biglietto
+   * nominativo), richiesta al primo acquisto — non al login.
+   */
+  async loginWithOidc(profile: OidcProfile): Promise<{account: Account; created: boolean}> {
+    const linked = await this.store.getAccountByOidcSub(profile.provider, profile.subject);
+    if (linked) return {account: linked, created: false};
+
+    const subField = profile.provider === "apple" ? "appleSub" : "googleSub";
+
+    if (profile.email) {
+      const byEmail = await this.store.getAccountByEmail(profile.email);
+      if (byEmail) {
+        byEmail[subField] = profile.subject;
+        await this.store.updateAccount(byEmail);
+        return {account: byEmail, created: false};
+      }
+    }
+
+    if (!profile.email) {
+      throw new DomainError("OIDC_EMAIL_REQUIRED", "il provider non ha fornito l'email: usa la registrazione email", 400);
+    }
+    const account = await this.createAccount({
+      role: "CLIENTE",
+      nome: profile.givenName?.trim() || "Utente",
+      cognome: profile.familyName?.trim() || (profile.provider === "apple" ? "Apple" : "Google"),
+      email: profile.email
+    });
+    account[subField] = profile.subject;
+    await this.store.updateAccount(account);
+    return {account, created: true};
   }
 
   // --------------------------------------------- registrazione email + OTP (v2)

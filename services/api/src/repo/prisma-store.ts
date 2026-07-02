@@ -109,7 +109,9 @@ export class PrismaStore implements Store {
       verified: r.verified,
       walletAddress: r.walletAddress ?? undefined,
       goodwill: r.goodwill,
-      passwordHash: r.passwordHash ?? undefined
+      passwordHash: r.passwordHash ?? undefined,
+      appleSub: r.appleSub ?? undefined,
+      googleSub: r.googleSub ?? undefined
     };
   }
 
@@ -133,7 +135,9 @@ export class PrismaStore implements Store {
       verified: a.verified,
       walletAddress: a.walletAddress ?? null,
       goodwill: a.goodwill,
-      passwordHash: a.passwordHash ?? null
+      passwordHash: a.passwordHash ?? null,
+      appleSub: a.appleSub ?? null,
+      googleSub: a.googleSub ?? null
     };
   }
 
@@ -248,6 +252,13 @@ export class PrismaStore implements Store {
   // -------- account -----------------------------------------------------------
   async getAccount(id: string): Promise<Account | undefined> {
     const r = await this.prisma.account.findUnique({where: {id}});
+    return r ? this.toAccount(r) : undefined;
+  }
+
+  async getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined> {
+    const r = await this.prisma.account.findFirst({
+      where: provider === "apple" ? {appleSub: subject} : {googleSub: subject}
+    });
     return r ? this.toAccount(r) : undefined;
   }
 

@@ -80,6 +80,10 @@ export class MemoryStore implements Store {
     return [...this.accounts.values()].find((a) => a.email.trim().toLowerCase() === target);
   }
 
+  async getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined> {
+    return [...this.accounts.values()].find((a) => (provider === "apple" ? a.appleSub : a.googleSub) === subject);
+  }
+
   async listAccounts(): Promise<Account[]> {
     return [...this.accounts.values()];
   }
