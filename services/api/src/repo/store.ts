@@ -54,6 +54,8 @@ export interface Store {
 
   // -------- eventi ------------------------------------------------------------
   getEvent(id: string): Promise<Event | undefined>;
+  /** Lookup per codice varco (già normalizzato); undefined se nessun evento lo usa. */
+  getEventByGateCode(code: string): Promise<Event | undefined>;
   listEvents(): Promise<Event[]>;
   eventsByOrganizer(organizerId: string): Promise<Event[]>;
   eventsByClub(clubId: string): Promise<Event[]>;

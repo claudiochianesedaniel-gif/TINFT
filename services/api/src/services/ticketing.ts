@@ -20,9 +20,11 @@ import type {Store} from "../repo/store";
 import {
   canAcquireForEvent,
   exitFeeCents,
+  generateGateCode,
   GOODWILL_PER_TICKET,
   isResalePriceAllowed,
   MAX_PER_EVENT,
+  normalizeGateCode,
   orderTotalCents,
   resaleCapCents,
   royaltyCents,
@@ -204,6 +206,7 @@ export class TicketingService {
     priceCents: number;
     capacity: number;
     status?: EventStatus;
+    gateCode?: string;
   }): Promise<Event> {
     await this.getAccount(input.organizerId);
     if (input.priceCents < 0 || input.capacity <= 0) {
@@ -220,10 +223,32 @@ export class TicketingService {
       priceCents: input.priceCents,
       capacity: input.capacity,
       sold: 0,
-      status: input.status ?? "ON_SALE"
+      status: input.status ?? "ON_SALE",
+      gateCode: await this.uniqueGateCode(input.title, input.gateCode)
     };
     await this.store.createEvent(event);
     return event;
+  }
+
+  /**
+   * Codice varco definitivo per un evento: se fornito lo normalizza e ne esige
+   * l'unicità (GATE_CODE_TAKEN altrimenti); se assente ne genera uno libero dal
+   * titolo. Il vincolo unique in persistenza copre la corsa residua.
+   */
+  private async uniqueGateCode(title: string, requested?: string): Promise<string> {
+    if (requested !== undefined) {
+      const code = normalizeGateCode(requested);
+      if (!code) throw new DomainError("INVALID_GATE_CODE", "codice varco vuoto");
+      if (await this.store.getEventByGateCode(code)) {
+        throw new DomainError("GATE_CODE_TAKEN", "codice varco già in uso", 409);
+      }
+      return code;
+    }
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const code = generateGateCode(title);
+      if (!(await this.store.getEventByGateCode(code))) return code;
+    }
+    throw new DomainError("GATE_CODE_EXHAUSTED", "impossibile generare un codice varco unico", 500);
   }
 
   async listEvents(): Promise<Event[]> {
@@ -296,6 +321,38 @@ export class TicketingService {
   async listValidators(eventId: string): Promise<Validator[]> {
     await this.getEvent(eventId);
     return this.store.validatorsByEvent(eventId);
+  }
+
+  // ------------------------------------------------ codice varco (gateCode)
+  /** Rigenera il codice varco dell'evento (il vecchio smette di valere); solo l'organizzatore. */
+  async rotateGateCode(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    event.gateCode = await this.uniqueGateCode(event.title);
+    await this.store.updateEvent(event);
+    return event;
+  }
+
+  /** Revoca il codice varco: nessun validatore può più agganciarsi finché non si ruota. */
+  async revokeGateCode(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    event.gateCode = undefined;
+    await this.store.updateEvent(event);
+    return event;
+  }
+
+  /**
+   * Aggancio staff al varco: risolve un codice inserito dal validatore nell'evento
+   * corrispondente. Codice sconosciuto o revocato → NOT_FOUND (nessun picker di eventi:
+   * il validatore resta legato al SOLO evento del codice).
+   */
+  async eventByGateCode(code: string): Promise<Event> {
+    const normalized = normalizeGateCode(code ?? "");
+    if (!normalized) throw new DomainError("INVALID_GATE_CODE", "codice varco vuoto");
+    const event = await this.store.getEventByGateCode(normalized);
+    if (!event) throw NotFound("codice varco");
+    return event;
   }
 
   // -------------------------------------------------------------- club (M9)

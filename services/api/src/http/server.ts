@@ -545,6 +545,7 @@ export function buildServer(
       priceCents: number;
       capacity: number;
       status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
+      gateCode?: string;
     };
   }>(
     "/events",
@@ -559,7 +560,8 @@ export function buildServer(
             date: STR,
             priceCents: INT_NONNEG,
             capacity: INT_POS,
-            status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]}
+            status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]},
+            gateCode: STR
           },
           ["organizerId", "title", "venue", "date", "priceCents", "capacity"]
         )
@@ -572,6 +574,31 @@ export function buildServer(
   );
   app.get("/events", async () => ticketing.listEvents());
   app.get<{Params: {id: string}}>("/events/:id", async (req) => ticketing.getEvent(req.params.id));
+
+  // -------- codice varco (gateCode): rotazione/revoca (organizzatore) + aggancio staff
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/gate-code/rotate",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.rotateGateCode(req.params.id, req.body.organizerId);
+    }
+  );
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/gate-code/revoke",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.revokeGateCode(req.params.id, req.body.organizerId);
+    }
+  );
+  // Il validatore inserisce il codice e resta agganciato al SOLO evento corrispondente
+  // (niente lista eventi). Autenticato + rate-limit anti forza bruta sui codici.
+  app.post<{Body: {code: string}}>(
+    "/gate/access",
+    {preHandler: [rateLimit(20, 60_000), authenticate], schema: {body: body({code: STR}, ["code"])}},
+    async (req) => ticketing.eventByGateCode(req.body.code)
+  );
 
   // -------- acquisto primario (record diretto; il flusso reale passa dai pagamenti)
   app.post<{Params: {id: string}; Body: {buyerId: string; holderName?: string}}>(

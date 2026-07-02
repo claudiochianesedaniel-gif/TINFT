@@ -67,6 +67,9 @@ export interface Event {
   capacity: number;
   sold: number;
   status: EventStatus;
+  // codice varco per lo staff (es. "NOTTE-7K2"): unico tra gli eventi; assente = revocato,
+  // nessun validatore può agganciarsi. Generato alla creazione se non fornito.
+  gateCode?: string;
 }
 
 export interface Ticket {

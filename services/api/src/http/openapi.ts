@@ -79,12 +79,47 @@ export const openapiSpec = {
       post: {tags: ["auth"], summary: "Verifica OTP → crea l'account verificato", responses: {"201": {description: "account verificato"}, "400": {description: "codice errato"}}}
     },
     "/events": {
-      get: {tags: ["eventi"], summary: "Elenco eventi", responses: {"200": {description: "lista eventi"}}},
+      get: {tags: ["eventi"], summary: "Elenco eventi (incluso gateCode)", responses: {"200": {description: "lista eventi"}}},
       post: {
         tags: ["eventi"],
-        summary: "Crea un evento (organizzatore)",
+        summary: "Crea un evento (organizzatore). gateCode opzionale: se assente viene generato unico",
         security: [{bearerAuth: []}],
-        responses: {"201": {description: "evento creato"}, "401": {description: "non autenticato"}}
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["organizerId", "title", "venue", "date", "priceCents", "capacity"],
+                properties: {
+                  organizerId: {type: "string"},
+                  title: {type: "string"},
+                  venue: {type: "string"},
+                  date: {type: "string"},
+                  priceCents: {type: "integer", minimum: 0},
+                  capacity: {type: "integer", minimum: 1},
+                  status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]},
+                  gateCode: {type: "string", description: "codice varco per lo staff; unico tra gli eventi"}
+                }
+              }
+            }
+          }
+        },
+        responses: {"201": {description: "evento creato (con gateCode)"}, "401": {description: "non autenticato"}, "409": {description: "gateCode già in uso"}}
+      }
+    },
+    "/events/{id}/gate-code/rotate": {
+      post: {tags: ["eventi"], summary: "Rigenera il codice varco (il vecchio smette di valere); solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento con nuovo gateCode"}, "403": {description: "non sei l'organizzatore"}}}
+    },
+    "/events/{id}/gate-code/revoke": {
+      post: {tags: ["eventi"], summary: "Revoca il codice varco (nessun aggancio staff finché non si ruota); solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento senza gateCode"}, "403": {description: "non sei l'organizzatore"}}}
+    },
+    "/gate/access": {
+      post: {
+        tags: ["biglietti"],
+        summary: "Aggancio staff al varco: risolve il codice nell'evento (rate-limited)",
+        security: [{bearerAuth: []}],
+        requestBody: {required: true, content: {"application/json": {schema: {type: "object", required: ["code"], properties: {code: {type: "string"}}}}}},
+        responses: {"200": {description: "evento agganciato"}, "404": {description: "codice sconosciuto o revocato"}}
       }
     },
     "/orders": {

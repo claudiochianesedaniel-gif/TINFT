@@ -122,6 +122,10 @@ export class MemoryStore implements Store {
     return this.events.get(id);
   }
 
+  async getEventByGateCode(code: string): Promise<Event | undefined> {
+    return [...this.events.values()].find((e) => e.gateCode === code);
+  }
+
   async listEvents(): Promise<Event[]> {
     return [...this.events.values()];
   }

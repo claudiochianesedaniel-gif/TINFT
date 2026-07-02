@@ -148,7 +148,8 @@ export class PrismaStore implements Store {
       priceCents: r.priceCents,
       capacity: r.capacity,
       sold: r.sold,
-      status: r.status
+      status: r.status,
+      gateCode: r.gateCode ?? undefined
     };
   }
 
@@ -313,6 +314,11 @@ export class PrismaStore implements Store {
   }
 
   // -------- eventi ------------------------------------------------------------
+  async getEventByGateCode(code: string): Promise<Event | undefined> {
+    const r = await this.prisma.event.findUnique({where: {gateCode: code}});
+    return r ? this.toEvent(r) : undefined;
+  }
+
   async getEvent(id: string): Promise<Event | undefined> {
     const r = await this.prisma.event.findUnique({where: {id}});
     return r ? this.toEvent(r) : undefined;
@@ -344,7 +350,8 @@ export class PrismaStore implements Store {
         priceCents: event.priceCents,
         capacity: event.capacity,
         sold: event.sold,
-        status: event.status
+        status: event.status,
+        gateCode: event.gateCode ?? null
       }
     });
     return event;
@@ -362,7 +369,8 @@ export class PrismaStore implements Store {
         priceCents: event.priceCents,
         capacity: event.capacity,
         sold: event.sold,
-        status: event.status
+        status: event.status,
+        gateCode: event.gateCode ?? null
       }
     });
     return event;

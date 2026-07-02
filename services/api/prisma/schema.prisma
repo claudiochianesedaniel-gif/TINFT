@@ -169,6 +169,7 @@ model Event {
   capacity          Int
   sold              Int         @default(0)
   status            EventStatus @default(DRAFT)
+  gateCode          String?     @unique // codice varco per lo staff (null = revocato)
   onchainCollection String? // indirizzo collezione ERC-721 su Base
   onchainEventId    BigInt? // eventId on-chain
   createdAt         DateTime    @default(now())
