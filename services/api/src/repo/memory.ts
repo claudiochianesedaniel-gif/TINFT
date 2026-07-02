@@ -179,6 +179,12 @@ export class MemoryStore implements Store {
     return event;
   }
 
+  async nextOnchainEventId(): Promise<number> {
+    let max = 0;
+    for (const e of this.events.values()) max = Math.max(max, e.onchainEventId ?? 0);
+    return max + 1;
+  }
+
   // -------- tier --------------------------------------------------------------
   async getTier(id: string): Promise<Tier | undefined> {
     return this.tiers.get(id);

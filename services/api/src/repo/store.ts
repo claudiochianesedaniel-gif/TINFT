@@ -75,6 +75,8 @@ export interface Store {
   eventsByClub(clubId: string): Promise<Event[]>;
   createEvent(event: Event): Promise<Event>;
   updateEvent(event: Event): Promise<Event>;
+  /** Prossimo eventId on-chain libero (max assegnato + 1). Chiamare sotto withLock. */
+  nextOnchainEventId(): Promise<number>;
 
   // -------- tier --------------------------------------------------------------
   getTier(id: string): Promise<Tier | undefined>;

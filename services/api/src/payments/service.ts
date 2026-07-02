@@ -232,6 +232,7 @@ export class PaymentsService {
       const mint = await this.chain.mintTicket({
         to: buyer?.walletAddress,
         reference: payment.eventId,
+        onchainEventId: await this.ticketing.ensureOnchainEventId(payment.eventId), // registro (FASE 4)
         priceCents: payment.amountCents
       });
       const ticket = await this.ticketing.purchasePrimary(payment.eventId, payment.accountId, {

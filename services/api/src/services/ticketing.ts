@@ -302,6 +302,26 @@ export class TicketingService {
     return this.store.listEvents();
   }
 
+  /**
+   * REGISTRO eventi on-chain (FASE 4): assegna all'evento — UNA volta, al primo
+   * mint — un eventId on-chain sequenziale univoco e lo persiste
+   * (Event.onchainEventId). Sostituisce l'hash placeholder (collisioni possibili):
+   * su TinftTicket l'eventId è la chiave del limite anti-bagarino per-evento,
+   * quindi deve essere univoco e immutabile. L'assegnazione gira sotto lock
+   * (distribuito su Postgres): niente doppioni nemmeno tra istanze.
+   */
+  async ensureOnchainEventId(eventId: string): Promise<number> {
+    const current = (await this.getEvent(eventId)).onchainEventId;
+    if (current !== undefined) return current;
+    return this.withLock("onchain-event-registry", async () => {
+      const event = await this.getEvent(eventId); // riletto sotto lock
+      if (event.onchainEventId !== undefined) return event.onchainEventId;
+      event.onchainEventId = await this.store.nextOnchainEventId();
+      await this.store.updateEvent(event);
+      return event.onchainEventId;
+    });
+  }
+
   async getEvent(id: string): Promise<Event> {
     const e = await this.store.getEvent(id);
     if (!e) throw NotFound("evento");
@@ -547,7 +567,8 @@ export class TicketingService {
     if (tokenId === undefined) {
       const mint = await this.chain.mintTicket({
         to: buyer.walletAddress,
-        reference: event.id, // off-chain eventId → uint on-chain (mappato dall'adapter)
+        reference: event.id,
+        onchainEventId: await this.ensureOnchainEventId(event.id), // registro eventi (FASE 4)
         priceCents: event.priceCents
       });
       tokenId = mint.tokenId;

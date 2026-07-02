@@ -175,7 +175,8 @@ export class PrismaStore implements Store {
       capacity: r.capacity,
       sold: r.sold,
       status: r.status,
-      gateCode: r.gateCode ?? undefined
+      gateCode: r.gateCode ?? undefined,
+      onchainEventId: r.onchainEventId == null ? undefined : Number(r.onchainEventId)
     };
   }
 
@@ -392,7 +393,8 @@ export class PrismaStore implements Store {
         capacity: event.capacity,
         sold: event.sold,
         status: event.status,
-        gateCode: event.gateCode ?? null
+        gateCode: event.gateCode ?? null,
+        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId)
       }
     });
     return event;
@@ -411,10 +413,17 @@ export class PrismaStore implements Store {
         capacity: event.capacity,
         sold: event.sold,
         status: event.status,
-        gateCode: event.gateCode ?? null
+        gateCode: event.gateCode ?? null,
+        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId)
       }
     });
     return event;
+  }
+
+  async nextOnchainEventId(): Promise<number> {
+    const agg = await this.prisma.event.aggregate({_max: {onchainEventId: true}});
+    const max = agg._max.onchainEventId;
+    return (max == null ? 0 : Number(max)) + 1;
   }
 
   // -------- tier --------------------------------------------------------------

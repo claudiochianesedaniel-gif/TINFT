@@ -89,7 +89,7 @@
 
 - [ ] **Audit di sicurezza** dei contratti prima della mainnet.
 - [ ] **Deploy su Base mainnet** (`CHAIN_ID=8453`): impostare `TINFT_PAYEE` e `ORGANIZER_PAYEE` (diversi tra loro), deploy con `scripts/deploy-base-sepolia.sh` adattato / `contracts/script/Deploy.s.sol`, aggiornare `TICKET_ADDRESS`, `CHAIN_RPC_URL`, `CHAIN_PRIVATE_KEY` (owner) in env.
-- [ ] Sostituire `referenceToOnchainId` (placeholder in `src/chain/viem.ts`) con un **registro eventi on-chain reale**.
+- [x] Sostituito `referenceToOnchainId` (hash con possibili COLLISIONI tra eventi → limite 3/evento on-chain sbagliato) con un **registro eventi**: `Event.onchainEventId` (colonna già in schema) assegnato UNA volta al primo mint — sequenziale, univoco, immutabile, sotto lock distribuito — e passato a `TinftTicket.mint` da entrambi i percorsi (ordini e webhook PSP). Test `src/chain/onchain-registry.test.ts`. Da riverificare su anvil/Base Sepolia al prossimo deploy (Foundry non disponibile in questo ambiente).
 - [ ] Verifica: `cast call <ticket> 'ownerOf(uint256)(address)' <tokenId>` = wallet compratore.
 
 ---

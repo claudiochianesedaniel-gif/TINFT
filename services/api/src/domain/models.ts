@@ -77,6 +77,9 @@ export interface Event {
   // codice varco per lo staff (es. "NOTTE-7K2"): unico tra gli eventi; assente = revocato,
   // nessun validatore può agganciarsi. Generato alla creazione se non fornito.
   gateCode?: string;
+  // registro eventi on-chain (FASE 4): eventId uint usato da TinftTicket.mint e dal
+  // limite anti-bagarino per-evento; assegnato UNA volta al primo mint, poi immutabile.
+  onchainEventId?: number;
 }
 
 export interface Ticket {
