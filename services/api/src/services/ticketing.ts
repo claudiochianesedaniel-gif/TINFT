@@ -575,7 +575,7 @@ export class TicketingService {
    * di payOrder; oggi l'accredito è comunque protetto cross-processo dal lock di riga.
    */
   async payOrder(orderId: string): Promise<Order> {
-    return this.withOrderLock(orderId, () => this.fulfillOrder(orderId));
+    return this.withLock(`ord:${orderId}`, () => this.fulfillOrder(orderId));
   }
 
   private async fulfillOrder(orderId: string): Promise<Order> {
@@ -610,21 +610,22 @@ export class TicketingService {
 
   /**
    * Mutex asincrono per-chiave (in-processo): incatena le chiamate sulla stessa
-   * chiave così che eseguano una alla volta. La catena memorizzata ingoia gli errori
-   * per non propagarli ai successivi; il chiamante riceve comunque il proprio esito.
+   * chiave così che eseguano una alla volta. Usato per gli ordini (`ord:<id>`) e per
+   * la validazione al varco (`val:<ticketId>`). La catena memorizzata ingoia gli
+   * errori per non propagarli ai successivi; il chiamante riceve comunque il proprio esito.
    */
-  private readonly orderLocks = new Map<string, Promise<unknown>>();
-  private withOrderLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
-    const prev = this.orderLocks.get(key) ?? Promise.resolve();
+  private readonly locks = new Map<string, Promise<unknown>>();
+  private withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.locks.get(key) ?? Promise.resolve();
     const run = prev.then(fn, fn);
     const tail = run.then(
       () => {},
       () => {}
     );
-    this.orderLocks.set(key, tail);
+    this.locks.set(key, tail);
     // pulizia: se nessun'altra chiamata si è accodata nel frattempo, libera la chiave
     void tail.then(() => {
-      if (this.orderLocks.get(key) === tail) this.orderLocks.delete(key);
+      if (this.locks.get(key) === tail) this.locks.delete(key);
     });
     return run;
   }
@@ -932,7 +933,18 @@ export class TicketingService {
   }
 
   // ------------------------------------------------------------ validazione
+  /**
+   * SERIALIZZATA per biglietto: tra la lettura dello stato e la scrittura di USED
+   * c'è un confine async; senza mutex due scansioni simultanee dello stesso token
+   * leggerebbero entrambe ACTIVE → due VALID (doppio ingresso). Con il lock la
+   * seconda vede USED → DUPLICATE. In scale-out multi-istanza serve il lock
+   * distribuito (FASE 7), come per il mint.
+   */
   async validate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
+    return this.withLock(`val:${ticketId}`, () => this.doValidate(ticketId, validatorId, scenario));
+  }
+
+  private async doValidate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
     const ticket = await this.store.getTicket(ticketId);
     let outcome: ValidationOutcome;
     if (!ticket) outcome = "FAKE";

@@ -59,9 +59,9 @@
 
 **Stato:** `/validate/scan` e `/tickets/:id/access-token` esistono e funzionano. Il prototipo li usa, ma tiene ancora un **fallback HMAC locale** (`_localToken`/`_validateToken`, chiave `TINFT-DEMO-KEY-2026`) per i token demo/offline.
 
-- [ ] **Frontend:** in `TINFT - Prototipo App.dc.html`, rendere il varco **solo-online**: il QR è sempre l'access-token del server; lo scan chiama sempre `/validate/scan`. Rimuovere `_localToken`, la verifica HMAC locale e l'anti-doppio in `localStorage`. In assenza di rete → stato "offline, validazione sospesa" (mai un VALID locale).
-- [ ] **Backend:** verificare che `SCREENSHOT` (token scaduto) e `DUPLICATE` siano robusti sotto carico (vedi lock distribuito, FASE 7).
-- [ ] Test E2E: `src/http/scan.http.test.ts` — coprire i 5 esiti e la finestra di rotazione.
+- [ ] **Frontend:** in `TINFT - Prototipo App.dc.html`, rendere il varco **solo-online**: il QR è sempre l'access-token del server; lo scan chiama sempre `/validate/scan`. Rimuovere `_localToken`, la verifica HMAC locale e l'anti-doppio in `localStorage`. In assenza di rete → stato "offline, validazione sospesa" (mai un VALID locale). ⚠️ Prototipi wired non in repo (vedi FASE 1): aggiungerli per completare.
+- [x] **Backend:** `DUPLICATE` robusto sotto scansioni CONCORRENTI: `validate()` serializzata per biglietto con mutex per-chiave (stesso meccanismo di `payOrder`) — mai due VALID sullo stesso token. Multi-istanza → lock distribuito (FASE 7).
+- [x] Test E2E: `src/http/scan.http.test.ts` — 5 esiti coperti + scansioni concorrenti (un solo VALID), bordo finestra di rotazione (exp==now → SCREENSHOT, entro TTL → VALID), token manomesso (payload alterato, firma originale) → FAKE senza consumare l'ingresso.
 
 ---
 
