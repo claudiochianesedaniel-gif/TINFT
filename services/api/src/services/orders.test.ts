@@ -116,7 +116,7 @@ describe("Mercato secondario (v2)", () => {
     expect(listed.market).toBe("Re-Selling");
   });
 
-  it("list + buy: royalty split 0,5/0,5 al ledger, costo base trasferito, goodwill al venditore", async () => {
+  it("list + buy (biglietto ATTIVO): fee 1% TUTTA a TINFT al ledger, costo base trasferito, goodwill al venditore", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const buyer = await client(s.service, "luca", "idLuca");
     const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
@@ -124,16 +124,16 @@ describe("Mercato secondario (v2)", () => {
     const goodwillBefore = s.store.accounts.get(seller.id)!.goodwill; // include il goodwill d'acquisto
 
     const res = await s.service.buyFromMarket(t, buyer.id);
-    // royalty 1% di 3150 = 31 → split 15/16
-    expect(res.royalty).toEqual({tinftCents: 15, organizerCents: 16});
+    // fee 1% di 3150 = 31 → biglietto ATTIVO: tutta a TINFT (organizzatore 0)
+    expect(res.royalty).toEqual({tinftCents: 31, organizerCents: 0});
     expect(res.paidByBuyerCents).toBe(3_000 + 31);
     expect(res.ticket.ownerId).toBe(buyer.id);
     expect(res.ticket.paidCents).toBe(3_000); // costo base viaggia col token
     expect(res.ticket.status).toBe("ACTIVE");
     expect(res.ticket.askPriceCents).toBeUndefined();
 
-    expect(s.store.ledger.royaltyTinftCents).toBe(15);
-    expect(s.store.ledger.royaltyOrganizerCents).toBe(16);
+    expect(s.store.ledger.royaltyTinftCents).toBe(31);
+    expect(s.store.ledger.royaltyOrganizerCents).toBe(0);
     // goodwill venditore ~ euro: incremento round(3000/100) = 30
     expect(s.store.accounts.get(seller.id)!.goodwill - goodwillBefore).toBe(30);
     // transfer registrato PAYMENT/DONE con royalty
@@ -141,7 +141,23 @@ describe("Mercato secondario (v2)", () => {
     expect(xfer.mode).toBe("PAYMENT");
     expect(xfer.status).toBe("DONE");
     expect(xfer.priceCents).toBe(3_000);
-    expect(xfer.royaltyTinftCents).toBe(15);
+    expect(xfer.royaltyTinftCents).toBe(31);
+  });
+
+  it("buy post-evento (mero NFT, evento CONCLUDED): fee 1% con split 0,5/0,5 al ledger", async () => {
+    const seller = await client(s.service, "sara3", "idSara3");
+    const buyer = await client(s.service, "luca3", "idLuca3");
+    const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
+    await s.service.listTicket(t, seller.id, 3_000);
+    const event = await s.service.getEvent(s.event.id);
+    event.status = "CONCLUDED";
+    await s.store.updateEvent(event);
+
+    const res = await s.service.buyFromMarket(t, buyer.id);
+    // fee 1% di 3150 = 31 → mero NFT: split 15/16 (resto all\'organizzatore)
+    expect(res.royalty).toEqual({tinftCents: 15, organizerCents: 16});
+    expect(s.store.ledger.royaltyTinftCents).toBe(15);
+    expect(s.store.ledger.royaltyOrganizerCents).toBe(16);
   });
 
   it("buy rispetta il limite 3/evento del compratore", async () => {

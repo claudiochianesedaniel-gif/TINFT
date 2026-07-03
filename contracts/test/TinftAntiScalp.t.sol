@@ -24,7 +24,7 @@ contract TinftAntiScalpTest is Test {
     bytes32 internal constant ID_CAROL = keccak256("CF_CAROL+salt");
 
     uint256 internal constant PRICE = 1 ether;
-    uint256 internal constant CAP = (PRICE * 110) / 100; // +10%
+    uint256 internal constant CAP = (PRICE * 10_500) / 10_000; // tetto +5%
     uint256 internal constant ROYALTY = PRICE / 100;
     uint64 internal constant TTL = 1 hours;
     uint256 internal constant EVENT_X = 100;
@@ -57,7 +57,7 @@ contract TinftAntiScalpTest is Test {
         escrow.list(id, price, TTL);
     }
 
-    // ---------------- Tetto +10% (R2) ----------------
+    // ---------------- Tetto +5% (R2) ----------------
     function test_ListAboveCapReverts() public {
         uint256 id = _mint(alice, EVENT_X);
         vm.prank(alice);
@@ -81,7 +81,7 @@ contract TinftAntiScalpTest is Test {
         vm.prank(bob);
         escrow.pay{value: PRICE + ROYALTY}(id);
         assertEq(ticket.paidOf(id), PRICE);
-        // bob non può rilistare oltre PRICE*1.10
+        // bob non può rilistare oltre PRICE*1.05
         vm.prank(bob);
         ticket.setApprovalForAll(address(escrow), true);
         vm.prank(bob);

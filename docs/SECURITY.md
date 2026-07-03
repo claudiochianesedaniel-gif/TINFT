@@ -9,7 +9,7 @@ Contratti in `contracts/src` (Solidity 0.8.28, OpenZeppelin 5.6.1):
 
 | Contratto | Responsabilità |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; policy di trasferimento (ERC-721C), royalty 1%, anti-bagarinaggio (tetto +10%, limite 3/evento), validazione ed export. |
+| `TinftTicket` | ERC-721 + EIP-2981; policy di trasferimento (ERC-721C), royalty 1%, anti-bagarinaggio (tetto +5%, limite 3/evento), validazione ed export. |
 | `TinftTransferValidator` | Allowlist di operatori; gate di ogni trasferimento di token vincolato. |
 | `TinftRoyaltySplit` | Ripartizione royalty 0,5/0,5 (pull-payment). |
 | `TinftEscrow` | Vendita P2P con escrow (list/pay/reclaim/cancel), Pausable. |

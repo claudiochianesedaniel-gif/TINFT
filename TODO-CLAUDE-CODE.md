@@ -16,8 +16,8 @@
 
 ## Come lavorare (comandi)
 
-- Backend: `cd services/api && pnpm install && pnpm test` (atteso ~156 test) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001
-- Contratti: `cd contracts && forge test` (atteso 74/74, incl. fuzz + invarianti) · `forge fmt --check`
+- Backend: `cd services/api && pnpm install && pnpm test` (atteso ~193 test) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001
+- Contratti: `cd contracts && forge test` (atteso 82/82, incl. fuzz + invarianti) · `forge fmt --check`
 - Postgres (integrazione): `DATABASE_URL=… pnpm prisma:deploy && DATABASE_URL=… pnpm test src/repo/prisma-store.it.test.ts`
 - OpenAPI live: `/openapi.json` + `/docs`. Health: `/ready`. Metriche: `/metrics`.
 
@@ -25,8 +25,8 @@
 
 ## ✅ GIÀ FATTO — NON rifare (verifica soltanto)
 
-- Contratti Solidity (Foundry): `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (tetto +10%), `TinftRoyaltySplit` (0,5/0,5), `TinftTransferValidator`. **74/74 test** (fuzz + invarianti). **Già deployati su Base Sepolia** (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
-- Backend Fastify+TS: auth (JWT, scrypt, ruoli, rate-limit, security headers), eventi+tier, ordini con **prevendita 10%**, mercato (royalty 1%, tetto +10%, max 3/evento).
+- Contratti Solidity (Foundry): `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (tetto +5%; fee 1% condizionale), `TinftRoyaltySplit` (0,5/0,5 post-evento), `TinftTransferValidator`. **82/82 test** (fuzz + invarianti). **Già deployati su Base Sepolia** (versione PRE fee-condizionale/tetto +5%: da rideployare) (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
+- Backend Fastify+TS: auth (JWT, scrypt, ruoli, rate-limit, security headers), eventi+tier, ordini con **prevendita 10%**, mercato (fee 1%: attivo → TINFT, post-evento → 0,5/0,5; tetto +5%; max 3/evento).
 - **Access-token rotante** (`src/access/access-token.ts`) + **`/validate/scan`** con 5 esiti (VALID/DUPLICATE/SCREENSHOT/ESCROW/FAKE) — la validazione sicura server-side **esiste già**.
 - **Pagamento→mint** idempotente/riprendibile, `settleOrder` atomico, webhook ritentabile. Rimborsi/chargeback + payout venditore (lista/liquidazione).
 - Stripe integrato (Fake + reale con chiavi), mint on-chain reale (Viem) verificato su anvil.

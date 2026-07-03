@@ -41,16 +41,29 @@ describe("TicketingService", () => {
     await expect(s.service.purchasePrimary(s.event.id, buyer.id)).rejects.toThrowError(/max 3/);
   });
 
-  it("rifiuta la rivendita oltre il tetto +10% e calcola la royalty (R2/R1)", async () => {
+  it("rifiuta la rivendita oltre il tetto +5% e calcola la fee 1% (R2/R1): biglietto ATTIVO → tutta a TINFT", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const t = await s.service.purchasePrimary(s.event.id, seller.id); // paid = PRICE
-    await expect(s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 11_001})).rejects.toThrowError(/tetto/);
-    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 11_000});
+    await expect(s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 10_501})).rejects.toThrowError(/tetto/);
+    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 10_500});
     expect(xfer.status).toBe("ESCROW");
     expect(xfer.royaltyCents).toBe(100); // 1% di PRICE
+    // biglietto ATTIVO (evento non concluso): l'1% è TUTTO di TINFT
+    expect(xfer.royaltyTinftCents).toBe(100);
+    expect(xfer.royaltyOrganizerCents).toBe(0);
+    expect(await s.service.getEvent(s.event.id)).toBeDefined();
+  });
+
+  it("rivendita post-evento (mero NFT, evento CONCLUDED): fee 1% con split 0,5/0,5", async () => {
+    const seller = await client(s.service, "sara2", "idSara2");
+    const t = await s.service.purchasePrimary(s.event.id, seller.id);
+    const event = await s.service.getEvent(s.event.id);
+    event.status = "CONCLUDED";
+    await s.store.updateEvent(event);
+    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 9_000});
+    expect(xfer.royaltyCents).toBe(100);
     expect(xfer.royaltyTinftCents).toBe(50);
     expect(xfer.royaltyOrganizerCents).toBe(50);
-    expect(await s.service.getEvent(s.event.id)).toBeDefined();
   });
 
   it("alla vendita il token passa al compratore e il costo base lo segue (R3)", async () => {

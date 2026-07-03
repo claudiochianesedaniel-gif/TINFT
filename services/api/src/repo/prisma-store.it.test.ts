@@ -102,10 +102,10 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     expect(market[0]!.askPriceCents).toBe(3_000);
     expect(market[0]!.royaltyCents).toBe(31); // 1% di 3150
 
-    // -------- buy dal mercato (royalty split + spostamento proprietà)
+    // -------- buy dal mercato (fee 1% su biglietto ATTIVO → tutta a TINFT)
     const sellerGoodwillBefore = (await store.getAccount(seller.id))!.goodwill;
     const res = await ticketing.buyFromMarket(ticketId, buyer.id);
-    expect(res.royalty).toEqual({tinftCents: 15, organizerCents: 16}); // 31 → 15/16
+    expect(res.royalty).toEqual({tinftCents: 31, organizerCents: 0}); // attivo: 31 tutto a TINFT
     expect(res.paidByBuyerCents).toBe(3_000 + 31);
     expect(res.ticket.ownerId).toBe(buyer.id);
     expect(res.ticket.paidCents).toBe(3_000); // costo base viaggia col token
@@ -121,7 +121,7 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     const xfer = (await store.listTransfers())[0]!;
     expect(xfer.mode).toBe("PAYMENT");
     expect(xfer.status).toBe("DONE");
-    expect(xfer.royaltyTinftCents).toBe(15);
+    expect(xfer.royaltyTinftCents).toBe(31);
 
     // -------- validazione (varco esplicito) → USED
     const gate = await ticketing.createValidator(event.id, org.id);
@@ -137,17 +137,17 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     expect(dash.grossCents).toBe(3_150); // sold(1) × price
     expect(dash.eventsOnSale).toBe(1);
     expect(dash.validated).toBe(1);
-    expect(dash.royaltyOrganizerCents).toBe(16); // dal transfer DONE
+    expect(dash.royaltyOrganizerCents).toBe(0); // rivendita di biglietto ATTIVO: fee tutta a TINFT
 
     const inc = await consoleSvc.incassi(org.id);
     expect(inc.grossCents).toBe(3_150);
-    expect(inc.royaltyOrganizerCents).toBe(16);
-    expect(inc.netCents).toBe(3_150 + 16);
+    expect(inc.royaltyOrganizerCents).toBe(0); // quota org solo sul mero NFT
+    expect(inc.netCents).toBe(3_150);
 
     // -------- console: revenue di piattaforma (ledger di processo)
     const rev = await consoleSvc.platformRevenue();
     expect(rev.presaleCommissionCents).toBe(315);
-    expect(rev.royaltyTinftCents).toBe(15);
+    expect(rev.royaltyTinftCents).toBe(31); // fee attiva: 1% intero a TINFT
     expect(rev.gmvPrimaryCents).toBe(3_150);
     expect(rev.p2pCount).toBe(1);
 

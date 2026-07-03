@@ -86,7 +86,7 @@
     </div>
     <div class="lang" style="margin:6px 4px;width:max-content"><button data-l="it" onclick="setLang('it')">IT</button><button data-l="en" onclick="setLang('en')">EN</button></div>
     <div class="nav" id="nav"></div>
-    <div class="side-foot">Demo autonoma · regole reali (royalty 1% 0,5/0,5 · tetto +10% · 3/evento · fee 25%). Logica = <code>rules.ts</code> + contratti M1–M5.</div>
+    <div class="side-foot">Demo autonoma · regole reali (fee 1% (attivo→TINFT; post-evento 0,5/0,5) · tetto +5% · 3/evento · fee 25%). Logica = <code>rules.ts</code> + contratti M1–M5.</div>
   </aside>
   <main class="main">
     <div class="topbar"><div><h1 id="ttl">—</h1><div class="sub" id="sub">—</div></div><div id="topright"></div></div>
@@ -187,10 +187,10 @@ function buyFidelity(clubId){
   toast('Fidelity '+c.name+' acquistata · '+c.fidelityUses+' ingressi'); render();
 }
 function sell(id){var t=state.tickets.find(function(x){return x.id===id});if(!t)return;
-  var cap=resaleCap(t.paid);var raw=prompt('Prezzo di rivendita (€). Tetto +10% = '+eur(cap),(cap/100).toFixed(2));if(raw===null)return;
+  var cap=resaleCap(t.paid);var raw=prompt('Prezzo di rivendita (€). Tetto +5% = '+eur(cap),(cap/100).toFixed(2));if(raw===null)return;
   var price=Math.round(parseFloat(String(raw).replace(',','.'))*100);
   if(!(price>0)){toast('Prezzo non valido',true);return}
-  if(price>cap){toast('Prezzo oltre il tetto +10% ('+eur(cap)+')',true);return}
+  if(price>cap){toast('Prezzo oltre il tetto +5% ('+eur(cap)+')',true);return}
   t.status='vendita';t.salePrice=price;t.expiresAt=Date.now()+90000;toast('In escrow a '+eur(price)+' · scade tra 90s');render();}
 function payMarket(id){var t=state.tickets.find(function(x){return x.id===id});if(!t||t.status!=='vendita')return;
   var s=splitRoyalty(t.originalPrice);state.ledger.royT+=s.tinft;state.ledger.royO+=s.org;

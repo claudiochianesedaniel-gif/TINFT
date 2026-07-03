@@ -27,8 +27,8 @@ import {
   normalizeGateCode,
   orderTotalCents,
   resaleCapCents,
-  royaltyCents,
-  royaltySplitCents
+  resaleFeeSplitCents,
+  royaltyCents
 } from "../domain/rules";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
 import type {OidcProfile} from "../identity/oidc";
@@ -829,7 +829,7 @@ export class TicketingService {
   }
 
   // -------------------------------------------------- mercato secondario (v2)
-  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +10%; solo il proprietario. */
+  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +5%; solo il proprietario. */
   async listTicket(ticketId: string, ownerId: string, priceCents: number): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
     if (ticket.revoked) throw new DomainError("TICKET_REVOKED", "biglietto revocato", 409);
@@ -837,7 +837,7 @@ export class TicketingService {
     if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non quotabile", 409);
     if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
     if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
-      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +10%", 400);
+      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 400);
     }
     ticket.status = "LISTED";
     ticket.askPriceCents = priceCents;
@@ -887,7 +887,8 @@ export class TicketingService {
 
   /**
    * Acquisto sul mercato secondario: il compratore paga ask + royalty (1% sul prezzo
-   * originale), la royalty va al ledger 0,5/0,5, il costo base viaggia col token (R3),
+   * originale); la fee va al ledger secondo lo stato del token — biglietto ATTIVO
+   * → tutta a TINFT, mero NFT → 0,5/0,5 —, il costo base viaggia col token (R3),
    * il venditore riceve goodwill (~euro). Registra un Transfer PAYMENT/DONE.
    */
   async buyFromMarket(ticketId: string, buyerId: string): Promise<{
@@ -904,7 +905,9 @@ export class TicketingService {
 
     const askPriceCents = ticket.askPriceCents ?? 0;
     const royalty = royaltyCents(ticket.originalPriceCents);
-    const split = royaltySplitCents(ticket.originalPriceCents);
+    // fee 1% condizionale: biglietto ATTIVO (evento non concluso) → tutta a TINFT;
+    // mero NFT → split 0,5/0,5 — speculare a TinftTicket.resaleRoyaltyReceiver
+    const split = resaleFeeSplitCents(ticket.originalPriceCents, await this.isTicketActive(ticket));
     const paidByBuyerCents = askPriceCents + royalty;
 
     const transfer: Transfer = {
@@ -960,6 +963,18 @@ export class TicketingService {
     return this.getTicket(id);
   }
 
+  /**
+   * Biglietto ATTIVO = non usato/esportato e con evento non ancora concluso
+   * (speculare a TinftTicket.isTicketActive: `used` + "Fine evento"). I Fidelity
+   * (senza evento) sono trattati come attivi finché il carnet non è esaurito.
+   */
+  private async isTicketActive(ticket: Ticket): Promise<boolean> {
+    if (ticket.status === "USED" || ticket.status === "EXPORTED") return false;
+    if (!ticket.eventId) return true; // Fidelity di club: nessuna Fine evento
+    const event = await this.store.getEvent(ticket.eventId);
+    return (event?.status ?? "ON_SALE") !== "CONCLUDED";
+  }
+
   // --------------------------------------------- trasferimento P2P (escrow)
   async createTransfer(
     ticketId: string,
@@ -977,10 +992,11 @@ export class TicketingService {
       priceCents = input.priceCents ?? 0;
       if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
       if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
-        throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +10%", 409);
+        throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 409);
       }
       royalty = royaltyCents(ticket.originalPriceCents);
-      split = royaltySplitCents(ticket.originalPriceCents);
+      // fee 1% condizionale (come buyFromMarket): attivo → TINFT; mero NFT → 0,5/0,5
+      split = resaleFeeSplitCents(ticket.originalPriceCents, await this.isTicketActive(ticket));
     }
 
     const transfer: Transfer = {
