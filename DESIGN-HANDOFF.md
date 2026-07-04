@@ -20,11 +20,36 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
 1. **Tre ruoli**: **Cliente**, **Organizzatore**, **Validatore** (validatore = solo ingresso).
 2. **"Solo in app" = SOLO la VALIDAZIONE.** Tutto il resto (acquisto, biglietti, mercato, console) è **speculare**: c'è sia su sito che su app.
 3. **Organizzatore**: registrazione e creazione club richiedono **P.IVA + dati di fatturazione** (ragione sociale, sede legale, PEC, SDI, IBAN) — obbligatori.
-4. **Regole economiche** (mostrarle con chiarezza nei flussi):
+4. **Regole economiche** (mostrarle con chiarezza nei flussi — AGGIORNATE 2026-07):
    - Prevendita **10%** sul **primo** acquisto (solo TINFT, a carico del compratore).
-   - Rivendita: royalty **1%** (0,5% TINFT + 0,5% organizzatore) sul prezzo originale.
-   - Tetto rivendita **+10%** · **max 3 biglietti/evento** per identità · export libero **fee 25%**.
+   - Fee di rivendita **1%** sul prezzo originale, **condizionale allo stato del token**:
+     **biglietto ATTIVO** (prima della Fine evento — Market Re-Selling) → **tutta a TINFT**;
+     **mero NFT** (dopo la Fine evento / già usato — Market Collection) → 0,5% TINFT + 0,5% organizzatore.
+   - Tetto rivendita **+5%** (era +10%) · **max 3 biglietti/evento** per identità · export libero **fee 25%**.
 5. Biglietto **nominativo** con **QR rotante** (~30s) — anti-screenshot.
+
+## NUOVI FLUSSI da disegnare (backend già pronto — riferimento funzionante: `apps/web/app-live.html`)
+
+> Aggiornamento 2026-07: questi flussi esistono e funzionano nell'API e in `app-live.html`
+> (aprire con il backend attivo, o in demo offline). Vanno portati nei prototipi `.dc.html`.
+
+1. **Staff / varco — aggancio per CODICE** (mai una lista di eventi): schermata con input
+   codice varco (es. `NOTTE-7K2`) → banner "Varco collegato a {evento} · {codice}" + scollega.
+   Codice errato/revocato → errore. Demo: `NOTTE-7K2` · `JAZZ-9R3` · `OPEN-5X1`.
+2. **Esiti scansione** (5 stati da disegnare): VALIDO ✓ · DUPLICATO (già entrato) ·
+   SCREENSHOT (QR scaduto) · ESCROW (in trasferimento) · FALSO. Più lo stato
+   "offline — validazione sospesa" (MAI un valido offline).
+3. **Console organizzatore — Accessi/Varchi**: codice varco per evento con azioni
+   **Ruota** (nuovo codice, il vecchio smette di valere) e **Revoca**; bottone
+   **Promemoria email** ai possessori (mostra `inviati/destinatari`).
+4. **Onboarding Stripe del club**: stato "in attesa di onboarding" (eventi NON pubblicabili
+   finché non completo), CTA "Completa l'onboarding Stripe" (link guidato), stato "attivo".
+5. **Login veloce**: bottoni **Sign in with Apple** e **Google** accanto a email+password.
+   SPID resta per la verifica identità/18+ al primo acquisto (non al login).
+6. **Mercato — copy fee**: sul biglietto attivo la fee 1% va a TINFT; sul collectible
+   post-evento 0,5/0,5. Tetto +5% ovunque (etichette, stepper prezzo, errori).
+7. **Email transazionali** (se si disegnano template): conferma d'ordine (evento, quantità,
+   totale, "QR in app, niente stampe") e promemoria evento.
 
 ## Aree da rifinire (suggerimenti UX/UI)
 - **Onboarding**: selezione ruolo chiara; form organizzatore con fatturazione (validazioni inline, P.IVA 11 cifre); SPID come opzione.
