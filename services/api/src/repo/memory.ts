@@ -464,7 +464,7 @@ export class MemoryStore implements Store {
       {
         slug: "mercato-secondario-tetto-prezzo",
         tag: "MERCATO",
-        title: "Mercato secondario: il tetto +10% e la royalty",
+        title: "Mercato secondario: il tetto +5% e la fee 1%",
         excerpt: "Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.",
         readMins: 4
       }

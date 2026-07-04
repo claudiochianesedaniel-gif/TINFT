@@ -9,7 +9,7 @@
 
 export const BPS_DENOMINATOR = 10_000;
 export const ROYALTY_BPS = 100; // 1% del prezzo originale (R1)
-export const RESALE_CAP_BPS = 11_000; // tetto +10% sul costo base (R2)
+export const RESALE_CAP_BPS = 10_500; // tetto +5% sul costo base (R2)
 export const EXIT_FEE_BPS = 2_500; // fee d'uscita export libero 25% (R5)
 export const MAX_PER_EVENT = 3; // max biglietti per evento per identità (R4)
 export const PRESALE_COMMISSION_BPS = 1_000; // commissione di prevendita 10% sul PRIMO acquisto, solo TINFT, a carico del compratore (R10)
@@ -27,14 +27,25 @@ export interface RoyaltySplit {
   organizerCents: number;
 }
 
-/** Ripartizione 0,5%/0,5%; l'eventuale resto (importo dispari) va all'organizzatore. */
+/** Ripartizione 0,5%/0,5% (mero NFT); l'eventuale resto (importo dispari) va all'organizzatore. */
 export function royaltySplitCents(originalPriceCents: number): RoyaltySplit {
   const royalty = royaltyCents(originalPriceCents);
   const tinftCents = Math.floor(royalty / 2);
   return { tinftCents, organizerCents: royalty - tinftCents };
 }
 
-/** Prezzo massimo di rivendita = costo base · 1,10 (troncato). */
+/**
+ * Fee di rivendita 1% CONDIZIONALE allo stato del token (decisione committente,
+ * speculare a TinftTicket.resaleRoyaltyReceiver):
+ *  - biglietto ATTIVO (prima della Fine evento — Market Re-Selling) → 1% TUTTO a TINFT;
+ *  - mero NFT (dopo la Fine evento — Market Collection) → split 0,5/0,5.
+ */
+export function resaleFeeSplitCents(originalPriceCents: number, ticketActive: boolean): RoyaltySplit {
+  if (ticketActive) return { tinftCents: royaltyCents(originalPriceCents), organizerCents: 0 };
+  return royaltySplitCents(originalPriceCents);
+}
+
+/** Prezzo massimo di rivendita = costo base · 1,05 (troncato). */
 export function resaleCapCents(paidCents: number): number {
   return Math.floor((paidCents * RESALE_CAP_BPS) / BPS_DENOMINATOR);
 }

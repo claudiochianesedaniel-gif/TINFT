@@ -226,7 +226,7 @@ var MOCK = (function(){
     blog:[
       {id:'b1',slug:'guida-acquisto',tag:'GUIDA',title:'Come acquistare un biglietto NFT su TINFT',excerpt:'Dalla registrazione al wallet: il percorso completo per il tuo primo biglietto.',readMins:5},
       {id:'b2',slug:'mint-on-chain',tag:'DIETRO LE QUINTE',title:'Dietro le quinte: come funziona il mint on-chain',excerpt:'Cosa succede quando paghi: escrow, mint del token e ledger di piattaforma.',readMins:7},
-      {id:'b3',slug:'tetto-prezzo',tag:'MERCATO',title:'Mercato secondario: il tetto +10% e la royalty',excerpt:'Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.',readMins:4}
+      {id:'b3',slug:'tetto-prezzo',tag:'MERCATO',title:'Mercato secondario: il tetto +5% e la fee 1%',excerpt:'Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.',readMins:4}
     ],
     news:[
       {id:'n1',date:'2026-05-02',title:'TINFT apre le vendite per la stagione estiva'},
@@ -252,7 +252,7 @@ var MOCK = (function(){
   ];
 
   function presale(p){ return Math.round(p*0.10); }            // 10% commissione prevendita
-  function cap(paid){ return Math.floor(paid*1.10); }          // tetto +10%
+  function cap(paid){ return Math.floor(paid*1.05); }          // tetto +5%
   function royalty(orig){ return Math.floor(orig*0.01); }      // 1%
 
   function makeTicket(o){
@@ -266,7 +266,7 @@ var MOCK = (function(){
   store.accounts[seller.id]=seller;
   (function(){
     var t=makeTicket({eventId:e1.id,ownerId:seller.id,priceCents:3150,holderName:'Giulia Rossi'});
-    t.status='LISTED'; t.askPriceCents=Math.floor(3150*1.10); t.market='Re-Selling';
+    t.status='LISTED'; t.askPriceCents=Math.floor(3150*1.05); t.market='Re-Selling';
   })();
 
   function find(arr,pred){ for(var i=0;i<arr.length;i++) if(pred(arr[i])) return arr[i]; return null; }
@@ -336,7 +336,7 @@ var MOCK = (function(){
       if(m && method==='POST'){
         var lt=find(store.tickets,function(x){return x.id===m[1];}); if(!lt) return Promise.reject(new Error('biglietto non trovato'));
         if(lt.status!=='ACTIVE') return Promise.reject(new Error('biglietto non quotabile'));
-        if(body.priceCents>cap(lt.paidCents)) return Promise.reject(new Error('prezzo oltre il tetto +10%'));
+        if(body.priceCents>cap(lt.paidCents)) return Promise.reject(new Error('prezzo oltre il tetto +5%'));
         lt.status='LISTED'; lt.askPriceCents=body.priceCents; lt.market='Re-Selling'; return R(lt);
       }
       m=path.match(/^\/tickets\/([^/]+)\/unlist$/);
@@ -345,7 +345,10 @@ var MOCK = (function(){
       if(m && method==='POST'){
         var mt=find(store.tickets,function(x){return x.id===m[1];}); if(!mt||mt.status!=='LISTED') return Promise.reject(new Error('biglietto non in vendita'));
         var buyer=store.accounts[body.buyerId]||{}; var ask=mt.askPriceCents||0; var roy=royalty(mt.originalPriceCents);
-        var split={tinftCents:Math.floor(roy/2)}; split.organizerCents=roy-split.tinftCents;
+        // fee 1% condizionale: biglietto ATTIVO (evento non concluso) → tutta a TINFT; mero NFT → 0,5/0,5
+        var mev=find(store.events,function(x){return x.id===mt.eventId;});
+        var attivo=!mev||mev.status!=='CONCLUDED';
+        var split=attivo?{tinftCents:roy,organizerCents:0}:{tinftCents:Math.floor(roy/2),organizerCents:roy-Math.floor(roy/2)};
         store.ledger.royaltyTinftCents+=split.tinftCents; store.ledger.royaltyOrganizerCents+=split.organizerCents;
         mt.ownerId=body.buyerId; mt.paidCents=ask; mt.status='ACTIVE'; mt.holderName=(buyer.nome||'')+' '+(buyer.cognome||''); mt.askPriceCents=undefined; mt.market=undefined;
         return R({ticket:mt,royalty:split,paidByBuyerCents:ask+roy});
@@ -708,7 +711,7 @@ function cliBiglietti(nav){
       {value:eur(spent),label:'spesa totale'}
     ]);
     var cards = tks.length ? tks.map(function(t){
-      var cap = Math.floor((t.paidCents||0)*1.10);
+      var cap = Math.floor((t.paidCents||0)*1.05);
       var actions = '';
       if(t.status==='ACTIVE'){
         actions = '<button class="sm outline" onclick="listTicket(\'' + t.id + '\',' + (t.paidCents||0) + ',' + cap + ')">Rivendi</button>';
@@ -734,11 +737,11 @@ function titleForTicket(t){ return 'Biglietto NFT'; }
 
 function listTicket(id, paid, cap){
   var def = (cap/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-  var input = (typeof prompt==='function') ? prompt('Prezzo di rivendita in € (tetto +10% = ' + def + ')', def) : def;
+  var input = (typeof prompt==='function') ? prompt('Prezzo di rivendita in € (tetto +5% = ' + def + ')', def) : def;
   if(input===null || input===undefined) return;
   var cents = Math.round(parseFloat(String(input).replace(',','.'))*100);
   if(!cents || cents<=0){ toast('Prezzo non valido','err'); return; }
-  if(cents>cap){ toast('Prezzo oltre il tetto +10% (' + eur(cap) + ')','err'); return; }
+  if(cents>cap){ toast('Prezzo oltre il tetto +5% (' + eur(cap) + ')','err'); return; }
   return aapi('/tickets/'+id+'/list','POST',{ ownerId:meId(), priceCents:cents }).then(function(){ toast('Biglietto messo in vendita','ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
 }
 function unlistTicket(id){
@@ -751,7 +754,7 @@ function cliMercato(nav){
     var stats = statStrip([
       {value:items.length,label:'in vendita',color:'#ffcf80'},
       {value:minP!=null?eur(minP):'—',label:'prezzo minimo'},
-      {value:'+10%',label:'tetto rivendita',color:'#6f9eff'}
+      {value:'+5%',label:'tetto rivendita',color:'#6f9eff'}
     ]);
     var cards = items.length ? items.map(function(t){
       return '<div class="card lift">' +
@@ -765,7 +768,7 @@ function cliMercato(nav){
         '</div></div>';
     }).join('') : '';
     var html = banner() + nav + '<div class="sect-title"><h1>Mercato secondario</h1></div>' +
-      '<p class="muted" style="margin:-8px 0 16px;max-width:60ch">Biglietti rivenduti da altri clienti. Royalty all\'organizzatore inclusa, prezzo con tetto +10%.</p>' + stats +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:60ch">Biglietti rivenduti da altri clienti. Fee 1% a TINFT inclusa (biglietto attivo), prezzo con tetto +5%.</p>' + stats +
       (items.length ? ('<div class="grid">' + cards + '</div>') : '<div class="empty">Nessun biglietto in vendita ora. Mettine uno tu da <b style="color:#6f9eff">I miei biglietti</b>.</div>');
     $('content').innerHTML = html;
   });

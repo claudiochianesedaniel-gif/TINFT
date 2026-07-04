@@ -1,7 +1,7 @@
 # TINFT — Web (frontend)
 
 Pagine **autonome, zero dipendenze** (si aprono nel browser). Applicano le **regole reali**
-(royalty 1% 0,5/0,5, tetto +10%, limite 3/evento, fee export 25%, commissione 5%) — le stesse di
+(fee di rivendita 1%: biglietto attivo → tutta a TINFT, post-evento 0,5/0,5; tetto +5%; limite 3/evento; fee export 25%; prevendita 10%) — le stesse di
 `services/api/src/domain/rules.ts` e dei contratti M1–M5.
 
 | File | Cosa |

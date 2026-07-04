@@ -12,7 +12,9 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 /// @notice Biglietto ERC-721 con trasferimenti *enforced* (ERC-721C) + royalty
 ///         EIP-2981 + anti-bagarinaggio + uscita controllata (export).
 ///
-/// @dev    M1 transfer enforced · M2 royalty 1% / `originalPrice` · M3 costo base
+/// @dev    M1 transfer enforced · M2 fee di rivendita 1% / `originalPrice`
+///         (biglietto ATTIVO → 100% a TINFT; mero NFT dopo la Fine evento →
+///         split 0,5/0,5, vedi `resaleRoyaltyReceiver`) · M3 costo base
 ///         che viaggia col token · M4 limite 3/evento per identità (`hash(CF)`) ·
 ///         M5 validazione (`markUsed`) ed export post-evento:
 ///         `exportFree` (fee 25% + sgancio dalla policy) / `exportEnforced`
@@ -61,12 +63,16 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     mapping(address account => bytes32 identityHash) public identityOf;
     /// @notice biglietti correntemente "controllati" da un'identità per evento (R4)
     mapping(bytes32 identityHash => mapping(uint256 eventId => uint256 count)) public heldCount;
+    /// @notice "Fine evento" per eventId (epoch seconds). 0 = non impostata → i
+    ///         biglietti dell'evento sono considerati ATTIVI (evento non concluso).
+    mapping(uint256 eventId => uint256 endsAt) public eventEndOf;
 
     event TransferValidatorUpdated(address indexed validator);
     event PlatformTreasuryUpdated(address indexed treasury);
     event SaleOperatorUpdated(address indexed operator, bool allowed);
     event ValidatorOperatorUpdated(address indexed operator, bool allowed);
     event IdentitySet(address indexed account, bytes32 indexed identityHash);
+    event EventEndSet(uint256 indexed eventId, uint256 endsAt);
     event TicketMinted(uint256 indexed tokenId, address indexed to, uint256 indexed eventId, uint256 price);
     event PaidUpdated(uint256 indexed tokenId, uint256 newPaid);
     event TicketUsed(uint256 indexed tokenId);
@@ -117,6 +123,14 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         emit IdentitySet(account, identityHash);
     }
 
+    /// @notice Registra la "Fine evento" di un eventId (epoch seconds). Prima di
+    ///         quel momento il biglietto è ATTIVO (fee di rivendita 1% tutta a
+    ///         TINFT); dopo è un mero NFT (split 0,5/0,5). La imposta il backend.
+    function setEventEnd(uint256 eventId, uint256 endsAt) external onlyOwner {
+        eventEndOf[eventId] = endsAt;
+        emit EventEndSet(eventId, endsAt);
+    }
+
     // ---------------------------------------------------------------------- mint
     /// @notice Conia un biglietto verso `to` al prezzo `price` (face). Applica il
     ///         limite 3/evento per identità (R4).
@@ -148,6 +162,27 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     function royaltyDue(uint256 tokenId) external view returns (uint256) {
         _requireOwned(tokenId);
         return (_ticket[tokenId].originalPrice * ROYALTY_BPS) / 10_000;
+    }
+
+    /// @notice true se il biglietto è ATTIVO: non ancora validato al varco E prima
+    ///         della "Fine evento" del suo eventId (fine non impostata = attivo).
+    ///         Un biglietto usato/esportato o post-evento è un mero NFT
+    ///         (collectible, Market Collection).
+    function isTicketActive(uint256 tokenId) public view returns (bool) {
+        _requireOwned(tokenId);
+        if (used[tokenId]) return false; // validato → collectible
+        uint256 end = eventEndOf[_ticket[tokenId].eventId];
+        return end == 0 || block.timestamp < end;
+    }
+
+    /// @notice Destinatario della fee di rivendita 1% secondo lo stato del token:
+    ///         biglietto ATTIVO → 100% a TINFT (`platformTreasury`); mero NFT →
+    ///         split 0,5/0,5 (receiver EIP-2981). Se la tesoreria non è impostata
+    ///         si ripiega sullo split, così una vendita non può mai bloccarsi.
+    function resaleRoyaltyReceiver(uint256 tokenId) external view returns (address) {
+        if (isTicketActive(tokenId) && platformTreasury != address(0)) return platformTreasury;
+        (address receiver,) = royaltyInfo(tokenId, 0);
+        return receiver;
     }
 
     /// @notice Fee d'uscita per l'export libero: 25% del prezzo originale (R5).

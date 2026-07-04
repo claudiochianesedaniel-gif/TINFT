@@ -4,20 +4,20 @@ Per chi continua lo sviluppo. Riepilogo di ciò che è **fatto e verificato** e 
 **manca**, con dove intervenire nel codice.
 
 ## Mappa del repo
-- `contracts/` — Solidity 0.8.28 (Foundry). `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (secondario, tetto +10%), `TinftRoyaltySplit` (0,5/0,5), `TinftTransferValidator`. Test in `test/` (unit + **fuzz** + **invarianti**). `script/Deploy.s.sol` + `../scripts/deploy-base-sepolia.sh`.
+- `contracts/` — Solidity 0.8.28 (Foundry). `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (secondario, tetto +5%; fee 1% → TINFT se biglietto attivo, split se mero NFT), `TinftRoyaltySplit` (0,5/0,5 post-evento), `TinftTransferValidator`. Test in `test/` (unit + **fuzz** + **invarianti**). `script/Deploy.s.sol` + `../scripts/deploy-base-sepolia.sh`.
 - `services/api/` — Fastify + TypeScript. Dominio in `src/domain`, regole `src/domain/rules.ts`, servizi `src/services`, store `src/repo` (MemoryStore default + PrismaStore PostgreSQL), pagamenti `src/payments` (Fake/Stripe), on-chain `src/chain` (Fake/Viem), HTTP `src/http/server.ts`, OpenAPI `src/http/openapi.ts`, config `src/config.ts`. Prisma in `prisma/`.
 - `apps/web/` — frontend (HTML autosufficienti, demo offline). `apps/mobile/` — app Expo React Native (scaffold).
 - `docs/` — CHECKLIST, DEPLOY-BASE-SEPOLIA, PERSISTENCE, SECURITY, SPEC-VERIFICATA. `PROVA.md` — come testare.
 
 ## Come girare / verificare
-- Contratti: `cd contracts && forge test` (**74/74**, incl. fuzz+invarianti) · `forge fmt --check`.
-- Backend: `cd services/api && pnpm install && pnpm test` (**190** + 4 skip) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001.
+- Contratti: `cd contracts && forge test` (**82/82**, incl. fuzz+invarianti) · `forge fmt --check`.
+- Backend: `cd services/api && pnpm install && pnpm test` (**193** + 4 skip) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001.
 - Postgres (IT): `DATABASE_URL=… pnpm prisma:deploy && DATABASE_URL=… pnpm test src/repo/prisma-store.it.test.ts` (**3/3**).
 - App: `cd apps/mobile && npm install && npx expo start`.
 
 ## ✓ Fatto e verificato
 - Contratti M1–M5 + **fuzz** (royalty/fee/EIP-2981/tetto/anti-bagarino) + **invarianti** stateful (conservazione valore).
-- Backend v2 completo: identità (hash CF) + OTP; club + dati societari + KYC; eventi + tier; ordini con **prevendita 10%**; mercato secondario (royalty 1%, tetto +10%, max 3/evento); validazione (token QR rotante + `/validate/scan`, 5 esiti); console org + piattaforma; contenuti.
+- Backend v2 completo: identità (hash CF) + OTP; club + dati societari + KYC; eventi + tier; ordini con **prevendita 10%**; mercato secondario (fee 1%: biglietto attivo → tutta a TINFT, post-evento → 0,5/0,5; tetto +5%; max 3/evento); validazione (token QR rotante + `/validate/scan`, 5 esiti); console org + piattaforma; contenuti.
 - Auth (JWT-like, scrypt, ruoli/proprietà, rate-limit, security headers, body limit) + **validazione schema input**.
 - Persistenza **PostgreSQL** (Prisma) oltre all'in-memory; pagamenti/ledger/registrazioni/webhook su tabelle.
 - **Affidabilità pagamento→mint**: `payOrder` riprendibile/idempotente, `settleOrder` atomico (transazione + lock di riga), mutex per-ordine, webhook ritentabile.

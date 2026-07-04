@@ -1,11 +1,11 @@
 # ▶️ RIPRENDI QUI (nota per la prossima sessione)
 
-> Aggiornato: 2026-07-02. Branch di lavoro: **`claude/new-session-gbkhk3`** (tutto committato e pushato).
+> Aggiornato: 2026-07-03. Branch di lavoro: **`claude/new-session-gbkhk3`** (tutto committato e pushato).
 > Piano di lavoro dettagliato: **`TODO-CLAUDE-CODE.md`** (root) — fasi spuntate man mano.
 
 ## Stato attuale (fatto e verificato)
-- **Contratti** Foundry: 74/74 (fuzz + invarianti), **già su Base Sepolia** (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
-- **Backend** (`services/api`): **190 test + 4 skip (DB)**, `tsc` pulito. In questa sessione:
+- **Contratti** Foundry: 82/82 (fuzz + invarianti). **DECISIONE COMMITTENTE implementata**: fee di rivendita 1% TUTTA a TINFT sul biglietto ATTIVO (prima della "Fine evento" on-chain, `eventEndOf`/`setEventEnd`; anche `used` → mero NFT) e split 0,5/0,5 solo sul mero NFT; **tetto rivendita +5%** (era +10%). L'indirizzo su Base Sepolia è la versione PRECEDENTE: **rideployare dopo l'audit esterno** (entrambe le modifiche vanno auditate insieme). Vecchio deploy (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
+- **Backend** (`services/api`): **193 test + 4 skip (DB)** — fee 1% condizionale (`resaleFeeSplitCents`, `isTicketActive`: evento CONCLUDED o biglietto USED/EXPORTED = mero NFT) e tetto +5% allineati ai contratti; UI e docs aggiornate, `tsc` pulito. In questa sessione:
   - **FASE 1** — `gateCode` campo reale su Event (migration 4): generato/unico, `POST /gate/access` per l'aggancio staff, rotate/revoke. Seed: `NOTTE-7K2` / `JAZZ-9R3` / `OPEN-5X1`.
   - **FASE 2** — validazione serializzata per biglietto (mai due VALID concorrenti); E2E su 5 esiti, finestra rotazione, token manomesso.
   - **FASE 3** — **Stripe Connect**: account connesso per organizzatore alla creazione club (riuso + lazy per dati vecchi, migration 5), blocco messa in vendita senza onboarding, checkout ordini con `application_fee` + `transfer_data.destination`, webhook `account.updated`, rotte onboarding-link/refresh.

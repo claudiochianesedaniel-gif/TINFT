@@ -9,11 +9,13 @@ import {TinftTicket} from "./TinftTicket.sol";
 
 /// @title TinftEscrow
 /// @notice Escrow P2P a pagamento per i biglietti TINFT (handoff §5).
-///         - `list()`   : il venditore mette in vendita (tetto +10%, R2); il token
+///         - `list()`   : il venditore mette in vendita (tetto +5%, R2); il token
 ///                        è bloccato qui.
 ///         - `pay()`    : in UN'UNICA transazione → token al compratore, prezzo al
-///                        venditore, royalty 1% allo split (0,5/0,5); il costo base
-///                        viaggia col token (R3) e il limite 3/evento è applicato (R4).
+///                        venditore, fee di rivendita 1% (biglietto ATTIVO → tutta a
+///                        TINFT; mero NFT dopo la Fine evento → split 0,5/0,5); il
+///                        costo base viaggia col token (R3) e il limite 3/evento è
+///                        applicato (R4).
 ///         - `reclaim()`: allo scadere del `ttl`, CHIUNQUE restituisce il token al
 ///                        venditore.
 ///         - `cancel()` : il venditore ritira l'offerta in qualsiasi momento.
@@ -25,6 +27,9 @@ import {TinftTicket} from "./TinftTicket.sol";
 ///         intrappolati. La royalty va allo split (pull-payment) e non si blocca.
 contract TinftEscrow is Ownable2Step, Pausable, ReentrancyGuard {
     TinftTicket public immutable TICKET;
+
+    /// @notice tetto di rivendita: +5% sul costo base (R2), in basis point
+    uint256 public constant RESALE_CAP_BPS = 10_500;
 
     struct Listing {
         address seller;
@@ -71,8 +76,8 @@ contract TinftEscrow is Ownable2Step, Pausable, ReentrancyGuard {
         if (TICKET.ownerOf(tokenId) != msg.sender) revert NotOwner();
         if (ttl == 0) revert ZeroTtl();
 
-        // tetto rivendita +10% sul costo base (R2); il costo base viaggia col token (R3)
-        uint256 cap = (TICKET.paidOf(tokenId) * 110) / 100;
+        // tetto rivendita +5% sul costo base (R2); il costo base viaggia col token (R3)
+        uint256 cap = (TICKET.paidOf(tokenId) * RESALE_CAP_BPS) / 10_000;
         if (price > cap) revert PriceAboveCap(cap, price);
 
         listings[tokenId] =
@@ -110,9 +115,12 @@ contract TinftEscrow is Ownable2Step, Pausable, ReentrancyGuard {
         // 2) costo base che viaggia col token (R3) + conteggio anti-bagarinaggio (R4):
         //    sposta la quota evento da venditore a compratore e applica il limite 3/evento
         TICKET.recordSale(l.seller, msg.sender, tokenId, l.price);
-        // 3) royalty 1% allo split (0,5/0,5) — receiver pull-payment, non si blocca
+        // 3) fee di rivendita 1%: biglietto ATTIVO (prima della Fine evento) → tutta
+        //    a TINFT; mero NFT (dopo) → split 0,5/0,5 pull-payment. Il receiver è
+        //    risolto dal ticket (resaleRoyaltyReceiver), che ripiega sullo split se
+        //    la tesoreria non è impostata: la vendita non si blocca mai.
         if (royalty > 0) {
-            (address receiver,) = TICKET.royaltyInfo(tokenId, 0);
+            address receiver = TICKET.resaleRoyaltyReceiver(tokenId);
             (bool okRoyalty,) = payable(receiver).call{value: royalty}("");
             if (!okRoyalty) revert TransferFailed();
         }
