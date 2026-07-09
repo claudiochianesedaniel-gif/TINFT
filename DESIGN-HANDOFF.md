@@ -8,14 +8,16 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
 - `apps/web/tinft-demo.html` — **SPA unica più aggiornata** (3 ruoli, aree per ruolo, P.IVA/fatturazione, QR rotante). È il riferimento attuale da rifinire.
 - `apps/web/sito.html` — landing/sito vetrina · `app-live.html` — web app cliente · `console.html` — console organizzatore · `registrazione.html`, `demo.html`, `index.html` (launcher).
 - `apps/web/tinft.css`, `i18n.js`, `assets/` (`tinft-logo.png`, `mesh.jpg`), `manifest.webmanifest`, `icon.svg`.
-- `design_handoff_tinft/` — i **prototipi** (`*.dc.html`: Sito, Web App, Console, **Prototipo App aggiornato**) + `support.js` (runtime DC, NON modificare), `tinft-data.js`, `assets/`.
+- `design_handoff_tinft/` — i **prototipi** (`*.dc.html`: Sito, Web App, Console, **Prototipo App aggiornato**) + `support.js` (runtime DC, NON modificare), `tinft-data.js`, **`tinft-api.js`** (wrapper `window.TINFT_API` verso l'API reale — vedi sotto), `assets/`.
 
-> ⚠️ **Per far girare il "Prototipo App" collegato all'API reale** servono due file NON nel repo
-> (li ha l'ambiente dev/design): `design_handoff_tinft/tinft-api.js` (il wrapper `window.TINFT_API`,
-> 27 chiamate) e i poster demo `design_handoff_tinft/assets/ev-vol4.png` · `ev-live.png` · `ev-jazz.png`.
-> **Senza di essi il prototipo si apre lo stesso** (support.js + dati mock) per il lavoro di
-> **design/UX**; le chiamate live degradano su mock e i poster mostrano il gradiente di fallback.
-> Per il collaudo wired-to-backend, reintegrare quei due file.
+> ✅ **Wiring live del "Prototipo App"**: `design_handoff_tinft/tinft-api.js` (nel repo) collega il
+> prototipo all'API reale. Base URL configurabile: `window.TINFT_API_BASE`, `<meta name="tinft-api-base">`,
+> `?api=` in query, oppure default `http://localhost:3001` (backend `pnpm dev`). Verificato end-to-end
+> contro il backend (login, eventi/gateCode, ordine→pay, QR→scan VALID/DUPLICATE, mercato).
+>
+> ⚠️ **Restano da reintegrare** i poster demo `assets/ev-vol4.png` · `ev-live.png` · `ev-jazz.png`
+> (non nel repo): senza, gli eventi mock mostrano il gradiente di fallback — irrilevante per il
+> lavoro di design/UX, il prototipo si apre comunque (support.js + mock).
 
 ## Design tokens (v2 — già applicati)
 - Sfondo `#0a0a0a`; superfici `#131313` / `#1c1c1c`; bordo `#2a2a2a`.

@@ -15,10 +15,17 @@
   - **FASE 4** — **registro eventi on-chain**: `Event.onchainEventId` sequenziale univoco al primo mint (sotto lock) al posto dell'hash con collisioni in `viem.ts`.
   - **FASE 6 (parziale)** — `apps/web/app-live.html`: validatore agganciato per **codice varco** (`/gate/access`, niente picker) e scansione via **QR rotante + `/validate/scan`**; console org con gateCode (ruota/revoca) e promemoria. Verificato E2E in browser reale (Playwright).
 
-## COMPITI per la prossima sessione (in ordine)
-1. **Prototipi `.dc.html` aggiornati**: NON sono in questo repo (in `design_handoff_tinft/` c'è una versione vecchia). Quando l'utente li carica: rimuovere il workaround `|VC:..|` nel `venue` (FASE 1) e il fallback HMAC locale (FASE 2), agganciare `/gate/access`, `/auth/oidc`, onboarding Stripe. Mantenere **sito↔app speculari**.
-2. **Verifica on-chain del registro eventi** su anvil/Base Sepolia (Foundry non era disponibile nel container): un acquisto pagato deve emettere `TicketMinted` con l'`onchainEventId` dell'evento; `cast call <ticket> 'ownerOf(uint256)(address)' <tokenId>` = wallet compratore.
-3. **Restano fasi "solo titolare"** (chiavi/account, mai nel repo): Stripe live + Connect attivo, Apple/Google client id, aggregatore SPID, RPC mainnet + audit, piano Render + Postgres gestito + rotazione `AUTH_SECRET`.
+## Fatto anche (ultimo giro)
+- **Prototipo `.dc.html` nel repo**, **senza workaround**: 0 `|VC:..|` (usa il campo `gateCode` reale in `_buildEV`/`_orgEmitReal`) e 0 fallback HMAC (`_hmac`/`_localToken`/`_validateToken` rimossi, chiave demo eliminata). Validazione **solo-online**: QR = access-token del server, scan → `POST /validate/scan`.
+- **`design_handoff_tinft/tinft-api.js`**: wrapper `window.TINFT_API` verso l'API reale (base URL configurabile: `window.TINFT_API_BASE` / `?api=` / default `localhost:3001`). **Verificato end-to-end** (16/16 check: login, eventi/gateCode, gate/access, ordine→pay, QR→scan VALID→BURNED→DUPLICATE, mercato, errori 401 gestiti).
+- **`design_handoff_tinft/CHECKLIST-DESIGN.md`**: checklist operativa per design.
+- **Verifica completa**: contratti 92/92 + fmt, backend 194+4 skip + tsc, Postgres IT 4/4 (7 migration).
+
+## COMPITI per la prossima sessione (in ordine) — tutto "solo titolare" o esterno
+1. **Chiavi/account (mai nel repo)**: Stripe live + Connect attivo, Apple/Google client id, aggregatore SPID, piano Render + Postgres gestito + rotazione `AUTH_SECRET`.
+2. **On-chain**: **audit esterno indipendente** dei contratti (i 3 task insieme, punto di partenza `contracts/SELF-AUDIT.md`) → **rideploy** (l'indirizzo su Base Sepolia è la versione precedente) → mainnet.
+3. **Asset prototipo**: reintegrare i poster `assets/ev-*.png` (non nel repo) per il wiring live 100% del Prototipo App.
+4. **Legale/GDPR/IVA** (FASE 10).
 
 ## Regole/sicurezza (invarianti)
 - Mai committare segreti (chiavi private, API key, RPC con key): solo dashboard Render/secret manager.
