@@ -159,6 +159,22 @@ contract TinftBurnOnEntryTest is Test {
         ticket.markUsed(id);
     }
 
+    // --- difesa: un token in vendita (detenuto dall'escrow) non è bruciabile ---
+    function test_MarkUsed_RevertsWhileListed() public {
+        uint256 id = _mint(alice);
+        vm.prank(alice);
+        ticket.setApprovalForAll(address(escrow), true);
+        vm.prank(alice);
+        escrow.list(id, PRICE, TTL); // ora il token è dell'escrow (sale operator)
+
+        vm.prank(validatorOp);
+        vm.expectRevert(TinftTicket.TokenInEscrow.selector);
+        ticket.markUsed(id);
+
+        // il token resta intatto e vendibile
+        assertEq(ticket.ownerOf(id), address(escrow));
+    }
+
     // --- Signature esente anche con identità registrata: nessun burn ---
     function test_SpecialNotBurned_EvenWithIdentity() public {
         bytes32 idHash = keccak256("bob-CF");

@@ -10,7 +10,7 @@ Per chi continua lo sviluppo. Riepilogo di ciò che è **fatto e verificato** e 
 - `docs/` — CHECKLIST, DEPLOY-BASE-SEPOLIA, PERSISTENCE, SECURITY, SPEC-VERIFICATA. `PROVA.md` — come testare.
 
 ## Come girare / verificare
-- Contratti: `cd contracts && forge test` (**91/91**, incl. fuzz+invarianti) · `forge fmt --check`.
+- Contratti: `cd contracts && forge test` (**92/92**, incl. fuzz+invarianti) · `forge fmt --check`.
 - Backend: `cd services/api && pnpm install && pnpm test` (**194** + 4 skip) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001.
 - Postgres (IT): `DATABASE_URL=… pnpm prisma:deploy && DATABASE_URL=… pnpm test src/repo/prisma-store.it.test.ts` (**3/3**).
 - App: `cd apps/mobile && npm install && npx expo start`.

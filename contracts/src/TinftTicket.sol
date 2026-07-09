@@ -91,6 +91,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     error NotTicketOwner();
     error NotUsed();
     error TicketAlreadyUsed();
+    error TokenInEscrow();
     error EventNotEnded();
     error AlreadyExported();
     error TreasuryNotSet();
@@ -248,6 +249,9 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     function markUsed(uint256 tokenId) external {
         if (!isValidatorOperator[msg.sender]) revert NotValidatorOperator();
         address holder = ownerOf(tokenId); // reverte se il token non esiste (già bruciato)
+        // difesa: un token in vendita è detenuto da un modulo di vendita (escrow) — non
+        // va bruciato mentre è in listing (si validerebbe un biglietto messo in vendita).
+        if (isSaleOperator[holder]) revert TokenInEscrow();
         used[tokenId] = true;
         emit TicketUsed(tokenId);
 
