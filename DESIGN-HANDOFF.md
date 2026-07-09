@@ -8,7 +8,14 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
 - `apps/web/tinft-demo.html` — **SPA unica più aggiornata** (3 ruoli, aree per ruolo, P.IVA/fatturazione, QR rotante). È il riferimento attuale da rifinire.
 - `apps/web/sito.html` — landing/sito vetrina · `app-live.html` — web app cliente · `console.html` — console organizzatore · `registrazione.html`, `demo.html`, `index.html` (launcher).
 - `apps/web/tinft.css`, `i18n.js`, `assets/` (`tinft-logo.png`, `mesh.jpg`), `manifest.webmanifest`, `icon.svg`.
-- `design_handoff_tinft/` — i **prototipi originali** (`*.dc.html`: Sito, Web App, Console, Prototipo App) = riferimento visivo di partenza, + README/Specifica/Roadmap.
+- `design_handoff_tinft/` — i **prototipi** (`*.dc.html`: Sito, Web App, Console, **Prototipo App aggiornato**) + `support.js` (runtime DC, NON modificare), `tinft-data.js`, `assets/`.
+
+> ⚠️ **Per far girare il "Prototipo App" collegato all'API reale** servono due file NON nel repo
+> (li ha l'ambiente dev/design): `design_handoff_tinft/tinft-api.js` (il wrapper `window.TINFT_API`,
+> 27 chiamate) e i poster demo `design_handoff_tinft/assets/ev-vol4.png` · `ev-live.png` · `ev-jazz.png`.
+> **Senza di essi il prototipo si apre lo stesso** (support.js + dati mock) per il lavoro di
+> **design/UX**; le chiamate live degradano su mock e i poster mostrano il gradiente di fallback.
+> Per il collaudo wired-to-backend, reintegrare quei due file.
 
 ## Design tokens (v2 — già applicati)
 - Sfondo `#0a0a0a`; superfici `#131313` / `#1c1c1c`; bordo `#2a2a2a`.
@@ -27,6 +34,14 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
      **mero NFT** (dopo la Fine evento / già usato — Market Collection) → 0,5% TINFT + 0,5% organizzatore.
    - Tetto rivendita **+5%** (era +10%) · **max 3 biglietti/evento** per identità · export libero **fee 25%**.
 5. Biglietto **nominativo** con **QR rotante** (~30s) — anti-screenshot.
+6. **Burn all'ingresso (NUOVO, vincolante)**: entrare al varco (esito VALIDO) **brucia** il
+   biglietto normale — ticket **e** NFT distrutti: non più rivendibile, collezionabile né
+   esportabile. Conseguenze UI: dopo l'uso mostrare il banner *"Hai usato questo titolo per
+   entrare: ticket e NFT bruciati al varco"* e **nascondere** ogni azione (Rivendi/Esporta).
+   La **rivendita è possibile solo PRIMA della validazione** (non solo "prima della fine evento").
+   I **Signature (1/1 speciali)** dell'organizzatore **non si bruciano mai** — restano
+   collectible trasferibili anche dopo l'uso. Solo il **mero NFT sopravvissuto** (chi NON è
+   entrato, a evento concluso) è esportabile come ricordo.
 
 ## NUOVI FLUSSI da disegnare (backend già pronto — riferimento funzionante: `apps/web/app-live.html`)
 
@@ -50,6 +65,11 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
    post-evento 0,5/0,5. Tetto +5% ovunque (etichette, stepper prezzo, errori).
 7. **Email transazionali** (se si disegnano template): conferma d'ordine (evento, quantità,
    totale, "QR in app, niente stampe") e promemoria evento.
+8. **Biglietto BRUCIATO (stato nuovo)**: nella lista "I miei biglietti" un titolo usato per
+   entrare va mostrato come **"Bruciato al varco"** (pill spenta), con banner esplicativo e
+   **senza** bottoni Rivendi/Esporta. Distinguere visivamente: Attivo · In vendita · Usato
+   (Signature/collectible) · **Bruciato** · Esportato. Riferimento in `apps/web/app-live.html`
+   (pill + banner già implementati).
 
 ## Aree da rifinire (suggerimenti UX/UI)
 - **Onboarding**: selezione ruolo chiara; form organizzatore con fatturazione (validazioni inline, P.IVA 11 cifre); SPID come opzione.
