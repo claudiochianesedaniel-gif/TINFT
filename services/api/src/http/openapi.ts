@@ -134,6 +134,9 @@ export const openapiSpec = {
     "/events/{id}/remind": {
       post: {tags: ["eventi"], summary: "Invia il promemoria evento via email ai possessori dei biglietti validi (organizzatore)", security: [{bearerAuth: []}], responses: {"200": {description: "{ recipients, sent }"}, "403": {description: "non sei l'organizzatore"}}}
     },
+    "/events/{id}/conclude": {
+      post: {tags: ["eventi"], summary: "Conclude l'evento (Fine evento): ON_SALE → CONCLUDED. Da qui i biglietti NON usati sono meri NFT (fee 0,5/0,5) ed esportabili; solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento CONCLUDED"}, "403": {description: "non sei l'organizzatore"}, "409": {description: "evento non in vendita"}}}
+    },
     "/events/{id}/gate-code/rotate": {
       post: {tags: ["eventi"], summary: "Rigenera il codice varco (il vecchio smette di valere); solo l'organizzatore", security: [{bearerAuth: []}], responses: {"200": {description: "evento con nuovo gateCode"}, "403": {description: "non sei l'organizzatore"}}}
     },

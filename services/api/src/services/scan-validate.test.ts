@@ -30,7 +30,7 @@ describe("TicketingService.scanValidate", () => {
     s = await setup();
   });
 
-  it("token fresco di un biglietto ACTIVE → VALID e il biglietto diventa USED; di nuovo → DUPLICATE", async () => {
+  it("token fresco di un biglietto ACTIVE → VALID e il biglietto normale viene BRUCIATO; di nuovo → DUPLICATE", async () => {
     const buyer = await client(s.service, "marco", "idMarco");
     const t = await s.service.purchasePrimary(s.event.id, buyer.id);
     const token = signAccessToken(t.id);
@@ -39,7 +39,7 @@ describe("TicketingService.scanValidate", () => {
     expect(first.outcome).toBe("VALID");
     expect(first.holderName).toBe(t.holderName);
     expect(first.meta?.ticketId).toBe(t.id);
-    expect(s.store.tickets.get(t.id)!.status).toBe("USED");
+    expect(s.store.tickets.get(t.id)!.status).toBe("BURNED");
 
     const second = await s.service.scanValidate(signAccessToken(t.id));
     expect(second.outcome).toBe("DUPLICATE");

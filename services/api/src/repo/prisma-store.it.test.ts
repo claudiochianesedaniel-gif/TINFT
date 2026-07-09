@@ -123,13 +123,15 @@ describe.skipIf(!RUN)("PrismaStore — integrazione PostgreSQL", () => {
     expect(xfer.status).toBe("DONE");
     expect(xfer.royaltyTinftCents).toBe(31);
 
-    // -------- validazione (varco esplicito) → USED
+    // -------- validazione (varco esplicito): entrare BRUCIA il biglietto normale
     const gate = await ticketing.createValidator(event.id, org.id);
     expect(gate.code).toMatch(/^VARCO-\d{4}$/);
     const val = await ticketing.validate(ticketId, gate.id);
     expect(val.outcome).toBe("VALID");
-    expect((await store.getTicket(ticketId))?.status).toBe("USED");
+    expect((await store.getTicket(ticketId))?.status).toBe("BURNED"); // burn definitivo (task 3)
     expect(await prisma.validation.count()).toBe(1);
+    // un biglietto bruciato non è più validabile né esportabile
+    expect((await ticketing.validate(ticketId, gate.id)).outcome).toBe("DUPLICATE");
 
     // -------- console: dashboard + incassi
     const dash = await consoleSvc.dashboard(org.id);

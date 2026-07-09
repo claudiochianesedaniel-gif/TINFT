@@ -44,8 +44,9 @@ enum EventStatus {
 enum TicketStatus {
   ACTIVE // attivo
   LISTED // in vendita sul mercato secondario
-  USED // validato al varco (collectible)
+  USED // validato ma sopravvissuto (Signature/collectible o Fidelity con ingressi residui)
   EXPORTED // esportato
+  BURNED // biglietto normale bruciato all'ingresso (burn definitivo on-chain)
 }
 
 enum TicketKind {
@@ -248,6 +249,7 @@ model Ticket {
   holderName         String
   txHash             String? // tx di mint on-chain
   revoked            Boolean      @default(false) // revocato per rimborso/chargeback
+  isSpecial          Boolean      @default(false) // Signature 1/1: non bruciato all'ingresso
   createdAt          DateTime     @default(now())
 
   transfers   Transfer[]

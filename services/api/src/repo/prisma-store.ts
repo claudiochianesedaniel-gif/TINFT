@@ -210,7 +210,8 @@ export class PrismaStore implements Store {
       used: r.used ?? undefined,
       askPriceCents: r.askPriceCents ?? undefined,
       market: r.market ?? undefined,
-      revoked: r.revoked
+      revoked: r.revoked,
+      isSpecial: r.isSpecial
     };
   }
 
@@ -582,7 +583,8 @@ export class PrismaStore implements Store {
       used: t.used ?? null,
       holderName: t.holderName,
       txHash: t.txHash ?? null,
-      revoked: t.revoked ?? false
+      revoked: t.revoked ?? false,
+      isSpecial: t.isSpecial ?? false
     };
   }
 

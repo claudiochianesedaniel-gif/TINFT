@@ -4,7 +4,10 @@
 export type AccountRole = "CLIENTE" | "ORGANIZER" | "VALIDATOR" | "PLATFORM";
 export type EventType = "TICKET_NFT" | "FIDELITY" | "SPECIAL";
 export type EventStatus = "DRAFT" | "ON_SALE" | "CONCLUDED";
-export type TicketStatus = "ACTIVE" | "LISTED" | "USED" | "EXPORTED";
+// USED = validato ma sopravvissuto (Signature/collectible o Fidelity con ingressi residui).
+// BURNED = biglietto NORMALE bruciato all'ingresso (burn definitivo on-chain): non
+// listabile/trasferibile/esportabile, equivalente a token inesistente.
+export type TicketStatus = "ACTIVE" | "LISTED" | "USED" | "EXPORTED" | "BURNED";
 export type ExportMode = "NONE" | "FREE" | "ENFORCED";
 export type TransferMode = "GIFT" | "PAYMENT";
 export type TransferStatus = "PENDING" | "ESCROW" | "DONE" | "RECLAIMED";
@@ -101,6 +104,9 @@ export interface Ticket {
   askPriceCents?: number; // prezzo richiesto sul mercato secondario (status LISTED)
   market?: string; // etichetta mercato, es. "Re-Selling"
   revoked?: boolean; // biglietto revocato per rimborso/chargeback → non valido, non rivendibile
+  // biglietto Signature (1/1 dell'organizzatore): NON viene bruciato all'ingresso,
+  // resta come collectible trasferibile (speculare a TinftTicket.isSpecial).
+  isSpecial?: boolean;
 }
 
 export interface Tier {

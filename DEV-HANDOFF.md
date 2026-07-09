@@ -4,14 +4,14 @@ Per chi continua lo sviluppo. Riepilogo di ciò che è **fatto e verificato** e 
 **manca**, con dove intervenire nel codice.
 
 ## Mappa del repo
-- `contracts/` — Solidity 0.8.28 (Foundry). `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (secondario, tetto +5%; fee 1% → TINFT se biglietto attivo, split se mero NFT), `TinftRoyaltySplit` (0,5/0,5 post-evento), `TinftTransferValidator`. Test in `test/` (unit + **fuzz** + **invarianti**). `script/Deploy.s.sol` + `../scripts/deploy-base-sepolia.sh`.
+- `contracts/` — Solidity 0.8.28 (Foundry). `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (secondario, tetto +5%; fee 1% → TINFT se biglietto attivo, split se mero NFT), `TinftRoyaltySplit` (0,5/0,5 post-evento), `TinftTransferValidator`. **Burn all'ingresso**: `markUsed` brucia il biglietto normale (`_burn`); i **Signature** (`isSpecial`/`mintSpecial`) sono esenti. Test in `test/` (unit + **fuzz** + **invarianti**). `script/Deploy.s.sol` + `../scripts/deploy-base-sepolia.sh`.
 - `services/api/` — Fastify + TypeScript. Dominio in `src/domain`, regole `src/domain/rules.ts`, servizi `src/services`, store `src/repo` (MemoryStore default + PrismaStore PostgreSQL), pagamenti `src/payments` (Fake/Stripe), on-chain `src/chain` (Fake/Viem), HTTP `src/http/server.ts`, OpenAPI `src/http/openapi.ts`, config `src/config.ts`. Prisma in `prisma/`.
 - `apps/web/` — frontend (HTML autosufficienti, demo offline). `apps/mobile/` — app Expo React Native (scaffold).
 - `docs/` — CHECKLIST, DEPLOY-BASE-SEPOLIA, PERSISTENCE, SECURITY, SPEC-VERIFICATA. `PROVA.md` — come testare.
 
 ## Come girare / verificare
-- Contratti: `cd contracts && forge test` (**82/82**, incl. fuzz+invarianti) · `forge fmt --check`.
-- Backend: `cd services/api && pnpm install && pnpm test` (**193** + 4 skip) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001.
+- Contratti: `cd contracts && forge test` (**91/91**, incl. fuzz+invarianti) · `forge fmt --check`.
+- Backend: `cd services/api && pnpm install && pnpm test` (**194** + 4 skip) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001.
 - Postgres (IT): `DATABASE_URL=… pnpm prisma:deploy && DATABASE_URL=… pnpm test src/repo/prisma-store.it.test.ts` (**3/3**).
 - App: `cd apps/mobile && npm install && npx expo start`.
 

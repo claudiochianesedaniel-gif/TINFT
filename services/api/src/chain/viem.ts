@@ -19,6 +19,13 @@ export const TINFT_TICKET_ABI = [
     outputs: [{name: "tokenId", type: "uint256"}]
   },
   {
+    type: "function",
+    name: "markUsed",
+    stateMutability: "nonpayable",
+    inputs: [{name: "tokenId", type: "uint256"}],
+    outputs: []
+  },
+  {
     type: "event",
     name: "TicketMinted",
     inputs: [
@@ -71,5 +78,20 @@ export class ViemChain implements ChainPort {
     const first = logs[0];
     if (!first) throw new DomainError("MINT_FAILED", "evento TicketMinted assente nel receipt", 502);
     return {tokenId: Number(first.args.tokenId), txHash};
+  }
+
+  /** Validazione al varco on-chain: `markUsed` brucia il biglietto normale (Signature esente). */
+  async markUsed(tokenId: number): Promise<{txHash: string}> {
+    const chain = this.cfg.chain ?? foundry;
+    const wallet = createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)});
+    const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
+    const txHash = await wallet.writeContract({
+      address: this.cfg.ticketAddress,
+      abi: TINFT_TICKET_ABI,
+      functionName: "markUsed",
+      args: [BigInt(tokenId)]
+    });
+    await pub.waitForTransactionReceipt({hash: txHash});
+    return {txHash};
   }
 }

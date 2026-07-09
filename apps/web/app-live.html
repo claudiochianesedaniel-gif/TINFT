@@ -399,7 +399,7 @@ var MOCK = (function(){
       m=path.match(/^\/tickets\/([^/]+)\/validate$/);
       if(m && method==='POST'){
         var vt=find(store.tickets,function(x){return x.id===m[1];}); var out='FAKE';
-        if(vt){ if(vt.status==='LISTED')out='ESCROW'; else if(vt.status==='USED'||vt.status==='EXPORTED')out='DUPLICATE'; else { out='VALID'; if(vt.kind==='FIDELITY'){ vt.used=(vt.used||0)+1; if(vt.used>=(vt.uses||1))vt.status='USED'; } else vt.status='USED'; store._validated=(store._validated||0)+1; } }
+        if(vt){ if(vt.status==='LISTED')out='ESCROW'; else if(vt.status==='USED'||vt.status==='EXPORTED'||vt.status==='BURNED')out='DUPLICATE'; else { out='VALID'; if(vt.kind==='FIDELITY'){ vt.used=(vt.used||0)+1; if(vt.used>=(vt.uses||1))vt.status='USED'; } else if(vt.isSpecial){ vt.status='USED'; } else { vt.status='BURNED'; } store._validated=(store._validated||0)+1; } }
         return R({id:id('val'),ticketId:m[1],outcome:out,at:Math.floor(Date.now()/1000)});
       }
 
@@ -582,7 +582,7 @@ function statStrip(stats){
   }).join('') + '</div>';
 }
 function statusPill(st){
-  var map = { ACTIVE:['green','Attivo'], LISTED:['orange','In vendita'], USED:['used','Usato'], EXPORTED:['used','Esportato'] };
+  var map = { ACTIVE:['green','Attivo'], LISTED:['orange','In vendita'], USED:['used','Usato'], EXPORTED:['used','Esportato'], BURNED:['used','Bruciato al varco'] };
   var m = map[st] || ['', st];
   return '<span class="pill ' + m[0] + '">' + esc(m[1]) + '</span>';
 }
@@ -703,7 +703,7 @@ function cliBiglietti(nav){
   var me = meId();
   return aapi('/accounts/'+me+'/tickets').then(function(tks){
     var active=0,used=0,listed=0,spent=0;
-    tks.forEach(function(t){ if(t.status==='ACTIVE')active++; else if(t.status==='USED'||t.status==='EXPORTED')used++; if(t.status==='LISTED')listed++; spent+=t.paidCents||0; });
+    tks.forEach(function(t){ if(t.status==='ACTIVE')active++; else if(t.status==='USED'||t.status==='EXPORTED'||t.status==='BURNED')used++; if(t.status==='LISTED')listed++; spent+=t.paidCents||0; });
     var stats = statStrip([
       {value:active,label:'attivi',color:'#5fe0b0'},
       {value:used,label:'usati'},
@@ -718,6 +718,10 @@ function cliBiglietti(nav){
       } else if(t.status==='LISTED'){
         actions = '<button class="sm ghost" onclick="unlistTicket(\'' + t.id + '\')">Ritira dal mercato</button>';
       }
+      // burn all'ingresso: nessuna azione (né rivendita né export) sul biglietto bruciato
+      var burnNote = t.status==='BURNED'
+        ? '<div class="faint" style="margin-top:8px;color:#ff9b9b">Hai usato questo titolo per entrare: ticket e NFT sono stati bruciati al varco.</div>'
+        : '';
       return '<div class="card">' +
         '<div class="cover" style="height:96px;background:' + cover(t.eventId||t.id) + '"><span style="position:absolute;top:10px;right:10px">' + statusPill(t.status) + '</span></div>' +
         '<div class="body">' +
@@ -725,6 +729,7 @@ function cliBiglietti(nav){
           '<div class="faint" style="margin-top:6px">token <code>#' + esc(t.tokenId) + '</code> · ' + eur(t.paidCents) + (t.kind==='FIDELITY'&&t.uses?(' · '+(t.used||0)+'/'+t.uses+' ingressi'):'') + '</div>' +
           '<div class="faint" style="margin-top:4px">intestato a ' + esc(t.holderName||'—') + '</div>' +
           (t.status==='LISTED'&&t.askPriceCents?('<div class="faint" style="margin-top:4px;color:#ffcf80">richiesto ' + eur(t.askPriceCents) + ' · tetto ' + eur(cap) + '</div>'):'') +
+          burnNote +
           (actions?('<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' + actions + '</div>'):'') +
         '</div></div>';
     }).join('') : '';

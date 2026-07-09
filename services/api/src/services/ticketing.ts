@@ -371,6 +371,22 @@ export class TicketingService {
   }
 
   /**
+   * Conclude l'evento ("Fine evento"): ON_SALE → CONCLUDED. Da qui i biglietti NON
+   * usati diventano meri NFT (fee di rivendita 0,5/0,5) ed esportabili come ricordo;
+   * i biglietti usati sono già stati bruciati all'ingresso. Solo l'organizzatore.
+   * In prod: cablare anche `TinftTicket.setEventEnd(onchainEventId, endsAt)` on-chain.
+   */
+  async concludeEvent(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    if (event.status === "CONCLUDED") return event; // idempotente
+    if (event.status !== "ON_SALE") throw new DomainError("NOT_ON_SALE", "evento non in vendita", 409);
+    event.status = "CONCLUDED";
+    await this.store.updateEvent(event);
+    return event;
+  }
+
+  /**
    * Blocco FASE 3: un evento legato a un club va in vendita solo se il club ha
    * completato l'onboarding Stripe Connect (può incassare). Eventi senza club
    * (percorso legacy/test) non sono soggetti al blocco.
@@ -553,7 +569,7 @@ export class TicketingService {
   async purchasePrimary(
     eventId: string,
     buyerId: string,
-    opts: {holderName?: string; tokenId?: number; txHash?: string} = {}
+    opts: {holderName?: string; tokenId?: number; txHash?: string; isSpecial?: boolean} = {}
   ): Promise<Ticket> {
     const event = await this.getEvent(eventId);
     const buyer = await this.getAccount(buyerId);
@@ -586,7 +602,8 @@ export class TicketingService {
       exportMode: "NONE",
       exitFeeCents: 0,
       holderName: opts.holderName?.trim() || `${buyer.nome} ${buyer.cognome}`,
-      txHash
+      txHash,
+      isSpecial: opts.isSpecial || undefined
     };
     await this.store.createTicket(ticket);
     event.sold += 1;
@@ -969,7 +986,7 @@ export class TicketingService {
    * (senza evento) sono trattati come attivi finché il carnet non è esaurito.
    */
   private async isTicketActive(ticket: Ticket): Promise<boolean> {
-    if (ticket.status === "USED" || ticket.status === "EXPORTED") return false;
+    if (ticket.status === "USED" || ticket.status === "EXPORTED" || ticket.status === "BURNED") return false;
     if (!ticket.eventId) return true; // Fidelity di club: nessuna Fine evento
     const event = await this.store.getEvent(ticket.eventId);
     return (event?.status ?? "ON_SALE") !== "CONCLUDED";
@@ -1110,15 +1127,22 @@ export class TicketingService {
     else if (ticket.revoked) outcome = "FAKE"; // biglietto revocato (rimborso/chargeback): accesso negato
     else if (scenario === "screenshot") outcome = "SCREENSHOT";
     else if (ticket.status === "LISTED") outcome = "ESCROW"; // in trasferimento → accesso negato
-    else if (ticket.status === "USED" || ticket.status === "EXPORTED") outcome = "DUPLICATE";
+    else if (ticket.status === "USED" || ticket.status === "EXPORTED" || ticket.status === "BURNED") outcome = "DUPLICATE";
     else outcome = "VALID";
 
     if (outcome === "VALID" && ticket) {
       if (ticket.kind === "FIDELITY") {
+        // carnet multi-ingresso: non si brucia, si consuma un ingresso alla volta
         ticket.used = (ticket.used ?? 0) + 1;
         if ((ticket.used ?? 0) >= (ticket.uses ?? 1)) ticket.status = "USED"; // carnet esaurito
       } else {
-        ticket.status = "USED";
+        // Validazione al varco on-chain: markUsed BRUCIA il biglietto normale
+        // (Signature esente). PRIMA della scrittura off-chain, così un fallimento
+        // on-chain non lascia lo stato incoerente (l'operatore ritenta). Con FakeChain
+        // è un no-op; con ViemChain è la transazione di burn reale.
+        await this.chain.markUsed?.(ticket.tokenId);
+        // Signature 1/1: validato ma NON bruciato (resta collectible); normale: BRUCIATO.
+        ticket.status = ticket.isSpecial ? "USED" : "BURNED";
       }
       await this.store.updateTicket(ticket);
     }
@@ -1167,11 +1191,21 @@ export class TicketingService {
   }
 
   // ----------------------------------------------------------------- export
+  /**
+   * Export del MERO NFT sopravvissuto: chi NON è entrato può, a evento concluso,
+   * portare fuori l'NFT ricordo (fee 25% se FREE). Un biglietto bruciato all'ingresso
+   * NON esiste più → non esportabile (speculare a TinftTicket._requireExportable).
+   */
   async exportTicket(ticketId: string, ownerId: string, mode: "FREE" | "ENFORCED"): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.exportMode !== "NONE") throw new DomainError("ALREADY_EXPORTED", "già esportato", 409);
-    if (ticket.status !== "USED") throw new DomainError("NOT_USED", "esportabile solo a evento concluso", 409);
+    if (ticket.status === "BURNED") throw new DomainError("TICKET_BURNED", "biglietto bruciato all'ingresso: non esportabile", 409);
+    if (ticket.status !== "ACTIVE") throw new DomainError("NOT_EXPORTABLE", "esportabile solo un biglietto sopravvissuto non usato", 409);
+    const event = await this.store.getEvent(ticket.eventId);
+    if ((event?.status ?? "ON_SALE") !== "CONCLUDED") {
+      throw new DomainError("EVENT_NOT_ENDED", "esportabile solo a evento concluso", 409);
+    }
 
     ticket.exportMode = mode;
     ticket.exitFeeCents = mode === "FREE" ? exitFeeCents(ticket.originalPriceCents) : 0;

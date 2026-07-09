@@ -147,8 +147,10 @@ describe("Console piattaforma — revenue (B6)", () => {
     // secondario su biglietto ATTIVO: fee 1% di 3150 = 31 → TUTTA a TINFT
     await s.service.listTicket(ticketId, seller.id, 3_000);
     await s.service.buyFromMarket(ticketId, buyer.id);
-    // export libero: 25% di 3150 = 787 (serve biglietto USED)
-    await s.service.validate(ticketId);
+    // export libero del SOPRAVVISSUTO (non entra): a evento concluso, fee d'uscita 25% di 3150 = 787
+    const ev = await s.service.getEvent(s.event.id);
+    ev.status = "CONCLUDED";
+    await s.store.updateEvent(ev);
     await s.service.exportTicket(ticketId, buyer.id, "FREE");
 
     const rev = await s.consoleSvc.platformRevenue();

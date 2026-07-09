@@ -37,7 +37,7 @@ describe("API HTTP (Fastify inject)", () => {
     expect(res.json()).toEqual({status: "ok"});
   });
 
-  it("flusso: account → evento → acquisto → biglietti → validazione → export", async () => {
+  it("flusso: acquisto → validazione BRUCIA il biglietto (non esportabile); un sopravvissuto post-evento è esportabile", async () => {
     const org = await auth({role: "ORGANIZER", nome: "Org", cognome: "X", email: "o@e.it"});
     const evRes = await post(
       "/events",
@@ -48,18 +48,22 @@ describe("API HTTP (Fastify inject)", () => {
     const event = evRes.json();
 
     const buyer = await auth({nome: "Marco", cognome: "B", email: "m@e.it", cfHash: "idMarco"});
-    const buyRes = await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id});
-    expect(buyRes.statusCode).toBe(201);
-    const ticket = buyRes.json();
+    const ticket = (await post(`/events/${event.id}/purchase`, {buyerId: buyer.account.id})).json();
     expect(ticket.status).toBe("ACTIVE");
 
-    const list = await get(`/accounts/${buyer.account.id}/tickets`, buyer.headers);
-    expect(list.json()).toHaveLength(1);
-
+    // entra → VALID → biglietto BRUCIATO → export negato (409)
     const val = await post(`/tickets/${ticket.id}/validate`, {}, buyer.headers);
     expect(val.json().outcome).toBe("VALID");
+    const burned = (await get(`/accounts/${buyer.account.id}/tickets`, buyer.headers)).json()[0];
+    expect(burned.status).toBe("BURNED");
+    const expBurned = await post(`/tickets/${ticket.id}/export`, {ownerId: buyer.account.id, mode: "FREE"}, buyer.headers);
+    expect(expBurned.statusCode).toBe(409);
 
-    const exp = await post(`/tickets/${ticket.id}/export`, {ownerId: buyer.account.id, mode: "FREE"}, buyer.headers);
+    // un secondo compratore NON entra: a evento concluso l'NFT ricordo è esportabile
+    const buyer2 = await auth({nome: "Sara", cognome: "V", email: "s@e.it", cfHash: "idSara"});
+    const t2 = (await post(`/events/${event.id}/purchase`, {buyerId: buyer2.account.id})).json();
+    await post(`/events/${event.id}/conclude`, {organizerId: org.account.id}, org.headers);
+    const exp = await post(`/tickets/${t2.id}/export`, {ownerId: buyer2.account.id, mode: "FREE"}, buyer2.headers);
     expect(exp.statusCode).toBe(200);
     expect(exp.json().exportMode).toBe("FREE");
     expect(exp.json().exitFeeCents).toBe(787); // 25% di 3150 (troncato)
