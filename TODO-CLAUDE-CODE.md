@@ -16,8 +16,8 @@
 
 ## Come lavorare (comandi)
 
-- Backend: `cd services/api && pnpm install && pnpm test` (atteso ~193 test) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001
-- Contratti: `cd contracts && forge test` (atteso 82/82, incl. fuzz + invarianti) · `forge fmt --check`
+- Backend: `cd services/api && pnpm install && pnpm test` (atteso ~194 test) · `pnpm typecheck` · `pnpm dev` → http://localhost:3001
+- Contratti: `cd contracts && forge test` (atteso 92/92, incl. fuzz + invarianti) · `forge fmt --check`
 - Postgres (integrazione): `DATABASE_URL=… pnpm prisma:deploy && DATABASE_URL=… pnpm test src/repo/prisma-store.it.test.ts`
 - OpenAPI live: `/openapi.json` + `/docs`. Health: `/ready`. Metriche: `/metrics`.
 
@@ -25,7 +25,7 @@
 
 ## ✅ GIÀ FATTO — NON rifare (verifica soltanto)
 
-- Contratti Solidity (Foundry): `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (tetto +5%; fee 1% condizionale), `TinftRoyaltySplit` (0,5/0,5 post-evento), `TinftTransferValidator`. **82/82 test** (fuzz + invarianti). **Già deployati su Base Sepolia** (versione PRE fee-condizionale/tetto +5%: da rideployare) (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
+- Contratti Solidity (Foundry): `TinftTicket` (ERC-721 + 721C, EIP-2981, anti-bagarino, export), `TinftEscrow` (tetto +5%; fee 1% condizionale), `TinftRoyaltySplit` (0,5/0,5 post-evento), `TinftTransferValidator`. **92/92 test** (fuzz + invarianti; incl. burn all'ingresso). **Già deployati su Base Sepolia** (versione PRE fee-condizionale/tetto +5%: da rideployare) (`TICKET_ADDRESS=0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37`, `CHAIN_ID=84532`).
 - Backend Fastify+TS: auth (JWT, scrypt, ruoli, rate-limit, security headers), eventi+tier, ordini con **prevendita 10%**, mercato (fee 1%: attivo → TINFT, post-evento → 0,5/0,5; tetto +5%; max 3/evento).
 - **Access-token rotante** (`src/access/access-token.ts`) + **`/validate/scan`** con 5 esiti (VALID/DUPLICATE/SCREENSHOT/ESCROW/FAKE) — la validazione sicura server-side **esiste già**.
 - **Pagamento→mint** idempotente/riprendibile, `settleOrder` atomico, webhook ritentabile. Rimborsi/chargeback + payout venditore (lista/liquidazione).
@@ -50,7 +50,7 @@
 - [x] **Dominio:** `src/domain/models.ts` (campo `gateCode`) + `src/domain/rules.ts` (`generateGateCode` dal titolo, `normalizeGateCode`); generato se non fornito; unicità garantita dal servizio (`uniqueGateCode`) + vincolo unique in persistenza.
 - [x] **HTTP:** `POST /events` accetta `gateCode` (opzionale, normalizzato, 409 `GATE_CODE_TAKEN` se già in uso); `GET /events` e `GET /events/:id` lo restituiscono; `POST /events/:id/gate-code/rotate` e `/revoke` (solo organizzatore proprietario). OpenAPI aggiornata.
 - [x] **Validatore:** `POST /gate/access` {code} (autenticato + rate-limit anti brute-force) risolve il codice nell'evento: lo staff resta agganciato al SOLO evento del codice, revoca → 404. Seed demo: `NOTTE-7K2`, `JAZZ-9R3`, `OPEN-5X1`.
-- [ ] **Frontend:** rimuovere l'encoding `|VC:..|` nel `venue` (in `TINFT - Prototipo App.dc.html`: `_orgEmitReal` e il parsing in `_buildEV`); usare il campo `gateCode` reale dall'API. ⚠️ I prototipi wired all'API non sono in questo repo (quelli in `design_handoff_tinft/` sono una versione precedente senza workaround): aggiungere al repo la versione corrente dei `.dc.html` per completare questo punto.
+- [x] **Frontend:** prototipo aggiornato committato in `design_handoff_tinft/TINFT - Prototipo App.dc.html`. Rimosso l'encoding `|VC:..|`: `_orgEmitReal` crea l'evento con `gateCode` come campo di prima classe (`POST /events` body), `_buildEV` legge `e.gateCode` reale dall'API. Nessun `|VC:` residuo.
 - [x] Test: `src/http/gate-code.http.test.ts` — creazione con/senza gateCode, unicità, normalizzazione, rotate/revoke, aggancio staff, guardie 401/403.
 
 ---
@@ -59,7 +59,7 @@
 
 **Stato:** `/validate/scan` e `/tickets/:id/access-token` esistono e funzionano. Il prototipo li usa, ma tiene ancora un **fallback HMAC locale** (`_localToken`/`_validateToken`, chiave `TINFT-DEMO-KEY-2026`) per i token demo/offline.
 
-- [ ] **Frontend:** in `TINFT - Prototipo App.dc.html`, rendere il varco **solo-online**: il QR è sempre l'access-token del server; lo scan chiama sempre `/validate/scan`. Rimuovere `_localToken`, la verifica HMAC locale e l'anti-doppio in `localStorage`. In assenza di rete → stato "offline, validazione sospesa" (mai un VALID locale). ⚠️ Prototipi wired non in repo (vedi FASE 1): aggiungerli per completare.
+- [x] **Frontend:** varco **solo-online** in `TINFT - Prototipo App.dc.html`: QR sempre = access-token del server (`_ticketToken`), scan sempre → `POST /validate/scan` (`_onScan`). Rimossi `_hmac`/`_localToken`/`_validateToken`, la verifica HMAC locale (chiave `TINFT-DEMO-KEY-2026`) e l'anti-doppio in `localStorage`. Senza rete/sessione → stato "offline · validazione sospesa" (mai un VALID locale). Classe validata con `node --check`.
 - [x] **Backend:** `DUPLICATE` robusto sotto scansioni CONCORRENTI: `validate()` serializzata per biglietto con mutex per-chiave (stesso meccanismo di `payOrder`) — mai due VALID sullo stesso token. Multi-istanza → lock distribuito (FASE 7).
 - [x] Test E2E: `src/http/scan.http.test.ts` — 5 esiti coperti + scansioni concorrenti (un solo VALID), bordo finestra di rotazione (exp==now → SCREENSHOT, entro TTL → VALID), token manomesso (payload alterato, firma originale) → FAKE senza consumare l'ingresso.
 
