@@ -71,7 +71,7 @@ describe("API HTTP — access-token + /validate/scan (app nativa)", () => {
     expect(missing.statusCode).toBe(404);
   });
 
-  it("POST /validate/scan: token fresco → VALID (biglietto USED); ri-scan → DUPLICATE", async () => {
+  it("POST /validate/scan: token fresco → VALID (biglietto BRUCIATO); ri-scan → DUPLICATE", async () => {
     const buyer = await auth({nome: "Marco", cognome: "B", email: "scan_valid@e.it", cfHash: "idMarco"});
     const staff = await auth({role: "VALIDATOR", nome: "Gate", cognome: "Keeper", email: "scan_staff@e.it"});
     const {ticket} = await ticketFor(buyer);
@@ -84,7 +84,7 @@ describe("API HTTP — access-token + /validate/scan (app nativa)", () => {
     expect(first.json().holderName).toBe(ticket.holderName);
 
     const tickets = await get(`/accounts/${buyer.account.id}/tickets`, buyer.headers);
-    expect(tickets.json()[0].status).toBe("USED");
+    expect(tickets.json()[0].status).toBe("BURNED");
 
     const fresh = (await get(`/tickets/${ticket.id}/access-token`, buyer.headers)).json().token as string;
     const second = await post("/validate/scan", {token: fresh}, staff.headers);

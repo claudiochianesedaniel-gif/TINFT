@@ -152,8 +152,8 @@ describe("API HTTP v2 — content / console / KYC (B5–B7)", () => {
     // secondario su biglietto ATTIVO: fee 1% di 3150 = 31 → TUTTA a TINFT
     await post(`/tickets/${ticketId}/list`, {ownerId: seller.account.id, priceCents: 3_000}, seller.headers);
     await post(`/market/${ticketId}/buy`, {buyerId: buyerAcc.account.id}, buyerAcc.headers);
-    // export libero: 25% di 3150 = 787 (serve biglietto USED)
-    await post(`/tickets/${ticketId}/validate`, {}, buyerAcc.headers);
+    // export libero del SOPRAVVISSUTO (non entra): a evento concluso, fee d'uscita 25% di 3150 = 787
+    await post(`/events/${ev.id}/conclude`, {organizerId: o.account.id}, o.headers);
     await post(`/tickets/${ticketId}/export`, {ownerId: buyerAcc.account.id, mode: "FREE"}, buyerAcc.headers);
 
     const rev = await get("/platform/revenue", ADMIN);

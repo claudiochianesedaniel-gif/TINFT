@@ -20,4 +20,10 @@ export interface MintResult {
 export interface ChainPort {
   /** Conia il biglietto sul contratto TinftTicket e restituisce tokenId + txHash. */
   mintTicket(params: MintParams): Promise<MintResult>;
+  /**
+   * Validazione al varco on-chain (`TinftTicket.markUsed`): per un biglietto NORMALE
+   * BRUCIA definitivamente il token; un Signature resta. Opzionale: gli adapter che
+   * non la implementano (mock legacy) lasciano la transizione solo off-chain.
+   */
+  markUsed?(tokenId: number): Promise<{txHash: string}>;
 }

@@ -995,6 +995,15 @@ export function buildServer(
       return ticketing.publishEvent(req.params.id, req.body.organizerId);
     }
   );
+  // -------- conclusione evento ("Fine evento"): ON_SALE → CONCLUDED (organizzatore)
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/conclude",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.concludeEvent(req.params.id, req.body.organizerId);
+    }
+  );
 
   // -------- pagamenti (M7)
   app.post<{Body: {eventId: string; buyerId: string}}>(
