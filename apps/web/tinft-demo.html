@@ -219,7 +219,7 @@ function uid(p){ return (p||'id') + '_' + Math.random().toString(36).slice(2,9);
 /* ---------- Costanti economiche (NON inventare numeri diversi) ---------- */
 var RULES = {
   PREVENDITA: 0.10,     // 10% sul PRIMO acquisto, solo TINFT, a carico del compratore
-  ROYALTY: 0.01,        // 1% sul secondario (0,5% TINFT + 0,5% organizzatore) sul prezzo originale
+  ROYALTY: 0.01,        // 1% sul secondario: biglietto ATTIVO → tutta a TINFT; mero NFT post-evento → 0,5% TINFT + 0,5% organizzatore
   ROYALTY_TINFT: 0.005,
   ROYALTY_ORG: 0.005,
   RESALE_CAP: 0.05,     // tetto rivendita +5% sul prezzo pagato
@@ -904,7 +904,7 @@ function cliMercato(){
       '<h3 style="margin:0 0 4px">'+esc(ev.titolo)+'</h3>'+
       '<p class="muted" style="margin:0 0 12px">Venditore: '+esc(ls.sellerName)+' · '+esc(ev.data)+'</p>'+
       '<div class="kv"><span class="k">Prezzo</span><span class="v">'+eur(ls.price)+'</span></div>'+
-      '<div class="kv"><span class="k">Royalty 1% (0,5% TINFT · 0,5% org.)</span><span class="v">'+eur(roy)+'</span></div>'+
+      '<div class="kv"><span class="k">Fee 1% (attivo→TINFT · post-evento 0,5/0,5)</span><span class="v">'+eur(roy)+'</span></div>'+
       '<div class="kv" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:8px"><span class="k">Totale</span><span class="v blue-t">'+eur(tot)+'</span></div>'+
       '<button class="btn primary sm block" style="margin-top:10px" onclick="buyFromMarket(\''+ls.id+'\')">Compra ('+eur(tot)+')</button>'+
     '</div>';
@@ -944,7 +944,7 @@ function cliMercato(){
 
   return ''+
     '<div class="note" style="margin-bottom:18px">Mercato secondario controllato: '+
-      '<b>royalty 1%</b> (0,5% TINFT + 0,5% organizzatore) sul prezzo originale; '+
+      '<b>fee 1%</b> (biglietto attivo → tutta a TINFT; mero NFT post-evento → 0,5% TINFT + 0,5% organizzatore) sul prezzo originale; '+
       '<b>tetto rivendita +5%</b> sul prezzo pagato. Export libero con fee 25%.</div>'+
     '<h3 style="margin:0 0 12px">Annunci attivi</h3>'+
     '<div class="cards-grid">'+listingCards+'</div>'+
@@ -1086,7 +1086,7 @@ function orgIncassi(){
     '<hr class="divider">'+
     '<div class="kv"><span class="k" style="font-weight:700;color:var(--tx)">Netto stimato organizzatore</span><span class="v green-t" style="font-size:18px">'+eur(netto+royaltyOrg)+'</span></div>'+
     '<p class="faint" style="font-size:12px;margin-top:10px">La prevendita 10% è una fee TINFT a carico del compratore e non incide sul netto organizzatore. '+
-      'Sul secondario l’organizzatore riceve lo 0,5% (royalty 1% = 0,5% TINFT + 0,5% organizzatore).</p>'+
+      'Sul secondario: biglietto attivo → fee 1% tutta a TINFT; mero NFT post-evento → 0,5% TINFT + 0,5% organizzatore.</p>'+
   '</div>';
 }
 

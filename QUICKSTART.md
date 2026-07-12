@@ -32,8 +32,9 @@ Le app si **collegano da sole** all'account demo del ruolo scelto; aprendole **s
 
 ## Regole economiche attive
 - **Prevendita 10%** sul primo acquisto → **solo TINFT** (mostrata nel checkout: Prezzo · Commissione di prevendita 10% · Totale).
-- Rivendita: **royalty 1%** (0,5% TINFT + 0,5% organizzatore), **tetto +10%**, **max 3 biglietti/evento** per identità.
-- Export libero: **fee d'uscita 25%**.
+- Rivendita: **fee 1%** — biglietto **attivo** → tutta a **TINFT**; **mero NFT** post-evento → 0,5% TINFT + 0,5% organizzatore. **Tetto +5%**, **max 3 biglietti/evento** per identità.
+- **Burn all'ingresso**: entrare brucia il biglietto normale; i **Signature 1/1** restano collectible.
+- Export libero del **mero NFT sopravvissuto** (chi non entra, a evento concluso): **fee d'uscita 25%**.
 
 ## Note
 - Persistenza: i dati **sopravvivono ai riavvii** (snapshot su `services/api/.tinft-data.json`, salvataggio periodico + alla chiusura). Per ripartire pulito cancella quel file. Per Postgres in produzione vedi `docs/PERSISTENCE.md`.

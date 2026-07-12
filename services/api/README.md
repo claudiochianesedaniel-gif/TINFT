@@ -6,14 +6,14 @@ Backend per eventi, biglietti, trasferimenti e account dei 4 profili
 ## Stato (avvio M6)
 - **Modello dati**: [`prisma/schema.prisma`](./prisma/schema.prisma) — derivato da
   `docs/SPEC-VERIFICATA.md` §3, con i collegamenti on-chain (tokenId, collezione, txHash).
-- **Regole economiche condivise**: [`src/domain/rules.ts`](./src/domain/rules.ts) — royalty 1%,
-  split 0,5/0,5, tetto +10%, fee 25%, limite 3/evento, in **centesimi interi** per rispecchiare
+- **Regole economiche condivise**: [`src/domain/rules.ts`](./src/domain/rules.ts) — fee di rivendita 1%
+  (attivo → TINFT; post-evento split 0,5/0,5), tetto +5%, fee export 25%, prevendita 10%, limite 3/evento, in **centesimi interi** per rispecchiare
   1:1 la matematica dei contratti (test in `rules.test.ts`). È la sorgente unica che evita
   derive tra on-chain e off-chain.
 - **Servizio applicativo** ([`src/services/ticketing.ts`](./src/services/ticketing.ts)): i flussi
-  dei 4 profili — acquisto primario (limite 3/evento), rivendita (tetto +10%), escrow P2P
+  dei 4 profili — acquisto primario (prevendita 10%, limite 3/evento), rivendita (tetto +5%, fee 1% condizionale), escrow P2P
   (`createTransfer`/`acceptTransfer`/`reclaimTransfer`), validazione (5 esiti, incl. escrow→accesso negato)
-  ed export (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
+  burn all'ingresso (Signature esenti) ed export del sopravvissuto (free 25% / enforced). Su store in-memory; test in `ticketing.test.ts`.
 - **API HTTP** ([`src/http/server.ts`](./src/http/server.ts), Fastify, **CORS** abilitato): account,
   **club ed eventi del club**, **Fidelity del club**, acquisto, biglietti, trasferimenti, validazione,
   export. Testata via `inject` (`server.test.ts`). Modello: organizzatore → più club → eventi;

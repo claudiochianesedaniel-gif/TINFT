@@ -51,9 +51,9 @@
       <span style="color:oklch(0.5 0.01 265);align-self:center">→</span>
       <span style="background:oklch(0.94 0.04 70);border:1px solid oklch(0.75 0.1 70);padding:7px 12px;border-radius:7px">exported · free | enforced</span>
     </div>
-    <p style="font-size:14px;color:oklch(0.42 0.01 265);margin-top:12px">La validazione al varco emette un evento on-chain (o aggiorna un flag) che marca il token come "usato" → da lì è collectible ed esportabile.</p>
+    <p style="font-size:14px;color:oklch(0.42 0.01 265);margin-top:12px">La validazione al varco (VALID) **BRUCIA** il biglietto normale (burn definitivo ERC-721: ownerOf reverte) → non più rivendibile/esportabile. I **Signature 1/1** (isSpecial) non si bruciano: restano collectible. Solo il mero NFT sopravvissuto (chi non entra, a evento concluso) è esportabile.</p>
 
-    <h2 style="font-family:'Space Grotesk';font-weight:600;font-size:20px;margin-top:30px;padding-top:18px;border-top:1px solid oklch(0.86 0.005 265)">4 · Royalty 1% (0,5% TINFT + 0,5% organizzatore)</h2>
+    <h2 style="font-family:'Space Grotesk';font-weight:600;font-size:20px;margin-top:30px;padding-top:18px;border-top:1px solid oklch(0.86 0.005 265)">4 · Fee di rivendita 1% (biglietto attivo → TINFT · mero NFT post-evento → 0,5% + 0,5%)</h2>
     <ul style="margin-top:10px;padding-left:20px;font-size:14.5px">
       <li style="margin-bottom:6px"><b>EIP-2981:</b> dichiara royalty e destinatari (split contract che spacca 50/50) → onorata dai marketplace conformi.</li>
       <li><b>Enforcement reale:</b> il Transfer Validator (§1) consente il trasferimento solo via modulo di vendita TINFT, che trattiene l'1% e lo instrada allo split contract. Senza questo, la royalty resta facoltativa.</li>

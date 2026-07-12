@@ -259,7 +259,7 @@
             </div>
             <div style="margin-top:14px;border-top:1px solid #2a2a2a;padding-top:12px;font-size:12.5px;color:#8a8682">
               <div style="display:flex;justify-content:space-between"><span>Prezzo</span><span style="color:#e8e6e0">{{ dPrice }}</span></div>
-              <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Commissione servizio (4%)</span><span style="color:#e8e6e0">{{ dFee }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Prevendita (10%)</span><span style="color:#e8e6e0">{{ dFee }}</span></div>
               <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700;color:#e8e6e0"><span>Totale</span><span>{{ dTotal }}</span></div>
             </div>
             <div onClick="{{ buyTier }}" style="margin-top:14px;background:#4472c4;color:#fff;text-align:center;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:14px;cursor:pointer">Acquista · {{ dTotal }}</div>
@@ -455,7 +455,7 @@ class Component extends DCLogic {
     const events=[...evList.map(e=>({ id:e.id, art:e.art, type:e.type.toUpperCase(), date:e.date, title:e.title, availLabel:e.venue+' · '+e.city, priceLabel:'da '+eur(this.minP(e.id)), onBuy:()=>this.openDetail(e.id) })), ..._clubEv];
     const cities=['Tutte','Milano','Torino'], genres=['Tutti','Techno · House','Live · Indie','Jazz'];
     const dId=S.detailId, dE=dId?EVcat[dId]:null, dTar=dE?dE.tiers:[];
-    const stI=Math.min(S.tierIdx,Math.max(0,dTar.length-1)), stT=dE?dTar[stI]:null, feeN=stT?Math.round(stT.p*0.04*100)/100:0;
+    const stI=Math.min(S.tierIdx,Math.max(0,dTar.length-1)), stT=dE?dTar[stI]:null, feeN=stT?Math.round(stT.p*0.10*100)/100:0;
     const qNs=Math.max(1,Math.min(4,S.qty||1));
 
     const evIdMap={'Notte Elettronica \u00b7 Vol.4':'vol4','Stagione Live \u00b7 Fidelity':'live','Blue Room \u00b7 Jazz':'jazz','Blue Room \u00b7 Jazz Sessions':'jazz'};

@@ -75,7 +75,7 @@ finti). Rifinisci pure l'estetica/UX; le **regole di prodotto** qui sotto vanno 
 
 ## Aree da rifinire (suggerimenti UX/UI)
 - **Onboarding**: selezione ruolo chiara; form organizzatore con fatturazione (validazioni inline, P.IVA 11 cifre); SPID come opzione.
-- **Cliente**: lista biglietti + dettaglio con QR animato e countdown; flusso acquisto con breakdown prezzo+10%; mercato (vendi col tetto +10%, compra con royalty), stati vuoti curati.
+- **Cliente**: lista biglietti + dettaglio con QR animato e countdown; flusso acquisto con breakdown **prezzo + prevendita 10%**; mercato (vendi col **tetto +5%**, fee 1% biglietto attivo → TINFT); stato **Bruciato al varco** dopo l'ingresso; stati vuoti curati.
 - **Organizzatore (console)**: dashboard con metriche; club & dati fiscali; creazione evento/tier; incassi (lordo/commissioni/netto); accessi/varchi (con nota "validazione in app").
 - **Validatore (web)**: schermata che comunica "validazione solo nell'app", elenco varchi in sola lettura.
 - **Trasversale**: responsive/mobile, accessibilità (AgID/WCAG), microcopy IT (+ i18n), errori e loading, coerenza iconografica, motion del QR.

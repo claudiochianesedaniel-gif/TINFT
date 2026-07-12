@@ -74,7 +74,7 @@
 
 ## 4 · Regole economiche
 - **Prevendita 10%** sul PRIMO acquisto → solo TINFT (a carico del compratore).
-- Rivendita: **royalty 1%** (0,5% TINFT + 0,5% organizzatore) sul prezzo originale.
+- Rivendita: **fee 1%** sul prezzo originale — biglietto **attivo** → tutta a **TINFT**; **mero NFT** post-evento → 0,5% TINFT + 0,5% organizzatore. **Tetto +5%**. **Burn all'ingresso** (Signature 1/1 esenti).
 - **Tetto +5%** sul prezzo pagato · **max 3 biglietti/evento** per identità (hash CF).
 - Export libero: **fee d'uscita 25%** (oppure enforced: royalty per sempre).
 

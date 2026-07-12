@@ -40,7 +40,7 @@
       <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Cliente</b> — acquisto in euro, wallet, biglietti, check-in con QR rotante.</div></div>
       <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Validatore</b> — profilo separato, scansione, esiti valido/screenshot/già usato/falso/in-escrow, modalità offline + sync tra varchi, storico per telefono.</div></div>
       <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Organizzatore</b> — dashboard, crea evento, incassi (con royalty P2P), accessi live, gestione validatori, holder.</div></div>
-      <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Trasferimento P2P</b> — regalo/pagamento, escrow con scadenza, royalty 1% (0,5% TINFT + 0,5% organizzatore), tetto rivendita +5%, accettazione lato destinatario.</div></div>
+      <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Trasferimento P2P</b> — regalo/pagamento, escrow con scadenza, fee 1% (biglietto attivo → TINFT; post-evento 0,5% + 0,5%), tetto rivendita +5%, accettazione lato destinatario.</div></div>
       <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Export post-evento</b> — scelta (A) rilascio completo con fee d'uscita 25% / (B) export con royalty attiva.</div></div>
       <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Mercato secondario reale</b> — listing dei biglietti in vendita e acquisto con accredito al venditore e royalty.</div></div>
       <div class="it"><span class="bx" style="background:oklch(0.55 0.14 158);color:#fff">✓</span><div><b>Anti-bagarinaggio</b> — max 2 biglietti per evento legato all'identità.</div></div>
@@ -52,7 +52,7 @@
     <div style="margin-top:8px">
       <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Scelta L2 definitiva (Polygon PoS / Base) + setup deploy.</div></div>
       <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Contratto <b>ERC-721 + ERC-721C</b> con Transfer Validator (royalty enforced anche P2P).</div></div>
-      <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Split contract royalty 0,5% / 0,5%.</div></div>
+      <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Split royalty del mero NFT 0,5% / 0,5% (biglietto attivo: fee 1% a TINFT).</div></div>
       <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Contratto <b>escrow</b>: lock alla vendita, release atomico al pagamento, <code>reclaim()</code> a scadenza.</div></div>
       <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Tetto +5% on-chain (base di costo registrata per token) e limite per <code>hash(CF)→evento</code>.</div></div>
       <div class="it"><span class="bx" style="background:#fff;border:1.5px solid oklch(0.7 0.01 265)"></span><div>Funzioni <code>exportFree()</code> (fee 25% + delist) e <code>exportEnforced()</code>.</div></div>

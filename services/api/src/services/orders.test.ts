@@ -105,10 +105,10 @@ describe("Mercato secondario (v2)", () => {
     s = await setup();
   });
 
-  it("list rifiutato oltre il tetto +10%", async () => {
+  it("list rifiutato oltre il tetto +5%", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
-    const cap = resaleCapCents(3_150); // 3465
+    const cap = resaleCapCents(3_150); // +5% → 3307
     await expect(s.service.listTicket(t, seller.id, cap + 1)).rejects.toThrowError(/tetto/);
     const listed = await s.service.listTicket(t, seller.id, cap);
     expect(listed.status).toBe("LISTED");

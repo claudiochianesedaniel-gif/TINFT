@@ -7,7 +7,7 @@ import {TinftTicket} from "../src/TinftTicket.sol";
 import {TinftTransferValidator} from "../src/TinftTransferValidator.sol";
 import {TinftRoyaltySplit} from "../src/TinftRoyaltySplit.sol";
 
-/// @notice M4 — anti-bagarinaggio: tetto +10% e limite 3/evento per identità.
+/// @notice M4 — anti-bagarinaggio: tetto +5% e limite 3/evento per identità.
 contract TinftAntiScalpTest is Test {
     TinftEscrow internal escrow;
     TinftTicket internal ticket;

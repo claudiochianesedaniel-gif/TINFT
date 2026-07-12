@@ -11,7 +11,7 @@ Contratti in `contracts/src` (Solidity 0.8.28, OpenZeppelin 5.6.1):
 |---|---|
 | `TinftTicket` | ERC-721 + EIP-2981; policy di trasferimento (ERC-721C), royalty 1%, anti-bagarinaggio (tetto +5%, limite 3/evento), validazione ed export. |
 | `TinftTransferValidator` | Allowlist di operatori; gate di ogni trasferimento di token vincolato. |
-| `TinftRoyaltySplit` | Ripartizione royalty 0,5/0,5 (pull-payment). |
+| `TinftRoyaltySplit` | Ripartizione royalty del mero NFT 0,5/0,5 (pull-payment); sul biglietto attivo la fee 1% va a TINFT. |
 | `TinftEscrow` | Vendita P2P con escrow (list/pay/reclaim/cancel), Pausable. |
 
 ## 2. Modello di fiducia e ruoli privilegiati
@@ -31,7 +31,7 @@ owner = **multisig** (es. Safe) con **timelock** sulle funzioni amministrative.
 
 ## 3. Proprietà di sicurezza garantite (e testate)
 - **Royalty enforced**: i token vincolati si muovono solo via operatori in allowlist;
-  un trasferimento diretto fa revert. La royalty 1% (0,5/0,5) è trattenuta dall'escrow.
+  un trasferimento diretto fa revert. La fee 1% è trattenuta dall'escrow (biglietto attivo → TINFT; mero NFT → split 0,5/0,5).
 - **Conservazione fondi nello split**: `pending[TINFT] + pending[ORGANIZER] == totalReceived`
   (fuzz). Ricezione senza chiamate esterne → non può fallire/bloccarsi.
 - **Escrow non intrappola mai i token**: `reclaim` (a timeout, da chiunque) e `cancel`

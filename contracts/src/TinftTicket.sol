@@ -38,7 +38,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     struct TicketData {
         uint256 eventId;
         uint256 originalPrice; // prezzo originale (face) — base immutabile della royalty 1% (R1)
-        uint256 paid; // costo base corrente — base del tetto +10% (R2/R3), aggiornato a ogni vendita
+        uint256 paid; // costo base corrente — base del tetto +5% (R2/R3), aggiornato a ogni vendita
     }
 
     /// @notice validator esterno consultato a ogni trasferimento reale

@@ -7,7 +7,7 @@
 Sei lo sviluppatore lead del progetto **TINFT** (biglietteria con biglietti-NFT, tutto via app proprietaria, nessun device esterno). Nella cartella `design_handoff_tinft/` trovi la **specifica funzionale 1:1**: leggi `README.md` e apri i file `.dc.html` (sono prototipi di design HTML, non codice da copiare — ricreane logica e UI nello stack che proponi).
 
 **Vincoli non negoziabili:**
-- Royalty trasferimento **1%** del prezzo originale, a carico del compratore, split **0,5% TINFT + 0,5% organizzatore**, *enforced* on-chain.
+- Fee di rivendita **1%** del prezzo originale, a carico del compratore, *enforced* on-chain: biglietto **attivo** → 100% TINFT; **mero NFT** post-evento → split **0,5% TINFT + 0,5% organizzatore**. Prevendita **10%** sul primo acquisto (solo TINFT). **Burn all'ingresso** (Signature 1/1 esenti).
 - **Escrow** sul P2P a pagamento (lock → pay atomico → reclaim a timeout).
 - **Tetto rivendita +5%** per passaggio (base di costo per token); **max 2 biglietti/evento per identità** (`hash(CF)`).
 - **Export** a scelta: (A) rilascio con fee 25% / (B) enforced con royalty perpetua.
@@ -21,7 +21,7 @@ Sei lo sviluppatore lead del progetto **TINFT** (biglietteria con biglietti-NFT,
    - ERC-721 + ERC-721C con Transfer Validator + allowlist operatori.
    - DoD: mint di un biglietto; un trasferimento fuori dagli operatori allowlist è **bloccato**; test passano.
 2. **Royalty + split**
-   - EIP-2981 + split contract 0,5/0,5; l'1% è trattenuto su ogni vendita via modulo TINFT.
+   - EIP-2981; fee 1% trattenuta su ogni vendita via modulo TINFT: biglietto **attivo** → 100% TINFT; **mero NFT** post-evento → split 0,5/0,5.
    - DoD: una vendita P2P accredita 0,5% a due wallet distinti; verificato in test.
 3. **Escrow**
    - `list()` / `pay()` (release atomico token↔fondi + royalty) / `reclaim()` (timeout).
