@@ -1,16 +1,16 @@
 {
   "name": "TINFT — Biglietti NFT",
   "short_name": "TINFT",
-  "description": "Biglietteria con biglietti-NFT nominativi: acquisto, validazione e trasferimento, tutto in app.",
-  "start_url": "/",
-  "scope": "/",
+  "description": "Biglietti d'ingresso come titoli NFT nominativi. Tutto da smartphone.",
+  "start_url": "./app.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#06070c",
-  "theme_color": "#06070c",
-  "categories": ["shopping", "entertainment"],
-  "lang": "it",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
-    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
