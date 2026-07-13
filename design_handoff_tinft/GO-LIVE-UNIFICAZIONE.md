@@ -63,31 +63,33 @@ serve il **backend su Render**, NON il Netlify statico.
 
 ---
 
-## 3 · Pipeline GO-LIVE (stato e blocchi)
+## 3 · Pipeline GO-LIVE — **COMPLETATA** ✅
 
-### ✅ Fatto in questo branch (`claude/new-session-gbkhk3`)
-1. **Branch unificato**: la logica aggiornata (burn + tetto +5%) e i **file di deploy**
-   (`Dockerfile`, `.dockerignore`, `render.yaml` docker, `deployments/84532.json`) ora vivono
-   **sullo stesso branch**. Prima erano separati (logica sul default, deploy solo su `main`).
-2. **`apps/web/` = versione aggiornata** (Prototipo App 315 KB, non i 200 KB di `main`).
-3. **Test verdi**: contratti **92/92**, API **194 passed + 4 skip** (i 4 skip sono i test
-   d'integrazione Postgres, che girano solo con `DATABASE_URL`).
+### ✅ Fatto e LIVE
+1. **Branch unificato**: logica aggiornata (burn + tetto +5%) + file di deploy
+   (`Dockerfile`, `.dockerignore`, `render.yaml` docker, `deployments/84532.json`)
+   sullo stesso branch; `main` = branch canonico.
+2. **Contratto rideployato CON burn** su Base Sepolia (chain 84532):
+   - **TinftTicket** = `0x0ecaf2e665256bbc86f8c7c992cbd3d44843db5d`
+   - TinftEscrow = `0xd67976f3fd7f66655768fbfac7c812d2ec97de36`
+   - TinftTransferValidator = `0x67d2a46f41a211509c5f7a8ed8f9c88b435f70c9`
+   - TinftRoyaltySplit = `0x82ffea524da8935039fa0479e41ac6ce0c2c6280`
+3. **Render live** (`https://tinft-api.onrender.com`): env `TICKET_ADDRESS`,
+   `CHAIN_RPC_URL`, `CHAIN_PRIVATE_KEY` impostate → mint/burn on-chain reali attivi.
+4. **Stessa UI di Netlify su Render**: Render serve gli stessi file dell'app di
+   `tinft.netlify.app` (Prototipo App, 3 ruoli, stesso design system), same-origin verso l'API.
+5. **Launcher** sulla root di Render: scelta **Console Organizzatore** o **App** per la demo
+   (l'app unificata resta su `app.html`).
+6. **Test verdi**: contratti **92/92**, API **194 passed + 4 skip** (Postgres-gated).
 
-### ⛔ Bloccato — richiede segreti/account del committente (NON eseguibile da qui)
-| Passo | Perché è bloccato | Cosa serve |
-|---|---|---|
-| **Redeploy contratto** con burn su Base Sepolia | l'attuale `0x8704…1F37` NON ha il burn | `CHAIN_RPC_URL` (Alchemy Base Sepolia) + `CHAIN_PRIVATE_KEY` (owner del contratto) → poi `scripts/deploy-base-sepolia.sh` |
-| **Aggiornare `TICKET_ADDRESS`** su Render (e in `render.yaml`) | dipende dal redeploy sopra | il nuovo indirizzo del contratto con burn |
-| **Deploy su Render** dal branch canonico | serve l'account Render collegato al repo | account Render → New → Blueprint → branch canonico; segreti `sync:false` in dashboard |
-| **Push su `main`** (Render auto-deploy) | è un deploy **live** verso l'esterno | conferma esplicita del committente su quale branch far servire a Render+Netlify |
+### ✅ Prova on-chain (Task 5, punto 7) — DIMOSTRATA sul contratto live
+- Biglietto **normale**: dopo `markUsed` → `_burn` → `ownerOf` **reverte** (`ERC721NonexistentToken`), `used=true`.
+- Biglietto **Signature**: dopo `markUsed` → `used=true` ma **NON bruciato** (`ownerOf` resta valido).
 
-> **Nota deploy live**: pushare su `main` fa partire un auto-deploy pubblico su Render. Per questo il lavoro è stato preparato sul branch canonico `claude/new-session-gbkhk3` e **non** è stato pushato su `main` senza tua conferma. Quando dai l'ok, il fast-forward di `main` sul branch canonico è immediato.
-
-### Ordine consigliato per il go-live
-1. Redeploy contratto con burn → annota nuovo `TICKET_ADDRESS`.
-2. Aggiorna `render.yaml` + env Render col nuovo indirizzo.
-3. Fai servire a **Render e Netlify lo stesso branch/file** → UI identica su entrambi.
-4. Esegui il Task 5 di auto-verifica (vedi `SCRIPT-PRESENTAZIONE.md` e la checklist "tempo reale").
+### Facoltativo (a cura del committente)
+- Collegare il progetto **Netlify** al branch `main` se si vuole che Netlify serva dal repo
+  (non necessario: la `tinft-api.js` di Netlify punta già al backend Render, quindi è già coerente).
+- Passare Render al piano **Starter** il giorno del pitch per togliere il cold-start del free.
 
 ---
 

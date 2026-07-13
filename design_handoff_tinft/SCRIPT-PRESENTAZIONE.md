@@ -56,6 +56,7 @@
 - Render piano free va in **sleep**: apri l'URL 1-2 minuti prima del pitch, o passa a Starter per quel giorno.
 - Di' esplicitamente che siamo su **testnet Base Sepolia** (transazioni reali, denaro finto).
 
-> ⚠️ **Nota go-live prima del pitch**: la versione oggi online su Render (`tinft-api.onrender.com`) è
-> **intermedia** — senza burn e con tetto +10%. La scena "Bruciato al varco" e il "+5%" sono corretti
-> solo **dopo** il redeploy dal branch canonico e il redeploy del contratto con burn (vedi `GO-LIVE-UNIFICAZIONE.md` §3).
+> ✅ **Stato go-live**: la versione online su Render (`https://tinft-api.onrender.com`) è quella **definitiva**:
+> burn all'ingresso attivo, tetto +5%, contratto con burn su Base Sepolia
+> `0x0ecaf2e665256bbc86f8c7c992cbd3d44843db5d`. La root ha un **launcher** per scegliere
+> **Console Organizzatore** o **App** (l'app è anche su `/app.html`). Login demo `demo123`.
