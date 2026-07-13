@@ -1,64 +1,41 @@
-# Blueprint Render — TINFT (FASE 7: hosting always-on + PostgreSQL gestito)
-# Spec: https://render.com/docs/blueprint-spec
-#
-# - `plan: starter` (a pagamento) = il servizio resta SEMPRE acceso: sparisce il
-#   cold start di ~50s del piano free.
-# - Il Postgres gestito è collegato via DATABASE_URL: il backend passa da
-#   in-memory a PrismaStore (i dati sopravvivono a deploy/riavvii); le migration
-#   girano allo start con `prisma migrate deploy`. L'advisory lock cross-istanza
-#   (Store.withLock) rende sicuro anche lo scale-out su più istanze.
-# - I SEGRETI non stanno in questo file né nel repo: `sync: false` li dichiara
-#   soltanto — i valori vanno inseriti nella dashboard Render (Environment).
-
+# Render Blueprint — pubblica l'API TINFT (con i frontend e la test-app) online.
+# Uso: su https://dashboard.render.com → New → Blueprint → collega il repo GitHub.
+# Render legge questo file, builda il Dockerfile e crea il servizio web.
+# I valori "sync: false" vanno inseriti a mano nella dashboard (sono segreti).
 services:
   - type: web
     name: tinft-api
-    runtime: node
-    plan: starter # "free" dorme dopo 15 min di inattività; starter è always-on
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
-    startCommand: cd services/api && pnpm prisma:deploy && pnpm exec tsx src/index.ts
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
     healthCheckPath: /ready
     envVars:
-      - key: NODE_VERSION
-        value: "22"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: tinft-db
-          property: connectionString
-      # ---- segreti: SOLO in dashboard (sync: false = dichiarati, non valorizzati)
-      - key: AUTH_SECRET # ruotarlo al passaggio in produzione
-        sync: false
-      - key: ACCESS_SECRET # firma dei QR d'accesso (separato da AUTH_SECRET)
-        sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: APPLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: CHAIN_RPC_URL
-        sync: false
-      - key: CHAIN_PRIVATE_KEY
-        sync: false
+      # --- pubblici (deploy attuale su Base Sepolia) ---
+      # ATTENZIONE go-live: 0x8704…1F37 è il contratto SENZA burn all'ingresso.
+      # Dopo il redeploy con burn (scripts/deploy-base-sepolia.sh) sostituire
+      # questo valore col nuovo indirizzo, sia qui sia nella dashboard Render.
       - key: TICKET_ADDRESS
-        sync: false
-      # ---- URL di prodotto (non segreti ma per-ambiente)
-      - key: CHECKOUT_SUCCESS_URL
-        sync: false
-      - key: CHECKOUT_CANCEL_URL
-        sync: false
-      - key: CONNECT_RETURN_URL
-        sync: false
-      - key: CONNECT_REFRESH_URL
-        sync: false
-
-databases:
-  - name: tinft-db
-    plan: basic-256mb # dimensionare a crescita; abilitare i backup dalla dashboard
-    postgresMajorVersion: "16"
+        value: "0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37"
+      - key: CHAIN_ID
+        value: "84532"
+      - key: SEED_DEMO
+        value: "1"
+      # --- generato da Render ---
+      - key: AUTH_SECRET
+        generateValue: true
+      # --- SEGRETI: inseriscili nella dashboard (non finiscono nel repo) ---
+      - key: CHAIN_RPC_URL
+        sync: false # = il tuo Alchemy Base Sepolia
+      - key: CHAIN_PRIVATE_KEY
+        sync: false # = chiave OWNER del contratto (deployer)
+      # --- Email reale (registrazione OTP via Resend) ---
+      - key: RESEND_API_KEY
+        sync: false # re_... (da resend.com → API Keys)
+      - key: EMAIL_FROM
+        value: "onboarding@resend.dev"
+      # --- Pagamenti Stripe (TEST mode, opzionale) ---
+      - key: STRIPE_SECRET_KEY
+        sync: false # sk_test_... (Stripe → Developers → API keys, modalità Test)
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # whsec_... (Stripe → Webhooks → endpoint https://<host>/webhooks/psp)
