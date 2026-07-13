@@ -11,12 +11,11 @@ services:
     autoDeploy: true
     healthCheckPath: /ready
     envVars:
-      # --- pubblici (deploy attuale su Base Sepolia) ---
-      # ATTENZIONE go-live: 0x8704…1F37 è il contratto SENZA burn all'ingresso.
-      # Dopo il redeploy con burn (scripts/deploy-base-sepolia.sh) sostituire
-      # questo valore col nuovo indirizzo, sia qui sia nella dashboard Render.
+      # --- pubblici (deploy Base Sepolia con burn all'ingresso) ---
+      # Contratto TinftTicket rideployato con burn (markUsed → _burn sui normali,
+      # Signature esenti). Sostituisce lo storico 0x8704…1F37 (senza burn).
       - key: TICKET_ADDRESS
-        value: "0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37"
+        value: "0x0ecaf2e665256bbc86f8c7c992cbd3d44843db5d"
       - key: CHAIN_ID
         value: "84532"
       - key: SEED_DEMO
