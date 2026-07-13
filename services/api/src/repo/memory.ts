@@ -80,6 +80,10 @@ export class MemoryStore implements Store {
     return [...this.accounts.values()].find((a) => a.email.trim().toLowerCase() === target);
   }
 
+  async getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined> {
+    return [...this.accounts.values()].find((a) => (provider === "apple" ? a.appleSub : a.googleSub) === subject);
+  }
+
   async listAccounts(): Promise<Account[]> {
     return [...this.accounts.values()];
   }
@@ -117,9 +121,40 @@ export class MemoryStore implements Store {
     return club;
   }
 
+  async clubsByStripeAccount(stripeAccountId: string): Promise<Club[]> {
+    return [...this.clubs.values()].filter((c) => c.stripeAccountId === stripeAccountId);
+  }
+
+  // -------- lock per-chiave ----------------------------------------------------
+  /**
+   * Mutex asincrono per-chiave in-processo: incatena le chiamate sulla stessa
+   * chiave così che eseguano una alla volta. La catena memorizzata ingoia gli
+   * errori per non propagarli ai successivi; il chiamante riceve il proprio esito.
+   * (Su Postgres l'equivalente cross-istanza è l'advisory lock del PrismaStore.)
+   */
+  private readonly keyedLocks = new Map<string, Promise<unknown>>();
+  withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.keyedLocks.get(key) ?? Promise.resolve();
+    const run = prev.then(fn, fn);
+    const tail = run.then(
+      () => {},
+      () => {}
+    );
+    this.keyedLocks.set(key, tail);
+    // pulizia: se nessun'altra chiamata si è accodata nel frattempo, libera la chiave
+    void tail.then(() => {
+      if (this.keyedLocks.get(key) === tail) this.keyedLocks.delete(key);
+    });
+    return run;
+  }
+
   // -------- eventi ------------------------------------------------------------
   async getEvent(id: string): Promise<Event | undefined> {
     return this.events.get(id);
+  }
+
+  async getEventByGateCode(code: string): Promise<Event | undefined> {
+    return [...this.events.values()].find((e) => e.gateCode === code);
   }
 
   async listEvents(): Promise<Event[]> {
@@ -142,6 +177,12 @@ export class MemoryStore implements Store {
   async updateEvent(event: Event): Promise<Event> {
     this.events.set(event.id, event);
     return event;
+  }
+
+  async nextOnchainEventId(): Promise<number> {
+    let max = 0;
+    for (const e of this.events.values()) max = Math.max(max, e.onchainEventId ?? 0);
+    return max + 1;
   }
 
   // -------- tier --------------------------------------------------------------
@@ -208,6 +249,10 @@ export class MemoryStore implements Store {
 
   async ticketsByOwner(ownerId: string): Promise<Ticket[]> {
     return [...this.tickets.values()].filter((t) => t.ownerId === ownerId);
+  }
+
+  async ticketsByEvent(eventId: string): Promise<Ticket[]> {
+    return [...this.tickets.values()].filter((t) => t.eventId === eventId);
   }
 
   async listedTickets(): Promise<Ticket[]> {
@@ -419,7 +464,7 @@ export class MemoryStore implements Store {
       {
         slug: "mercato-secondario-tetto-prezzo",
         tag: "MERCATO",
-        title: "Mercato secondario: il tetto +10% e la royalty",
+        title: "Mercato secondario: il tetto +5% e la fee 1%",
         excerpt: "Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.",
         readMins: 4
       }

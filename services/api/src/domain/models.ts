@@ -4,7 +4,10 @@
 export type AccountRole = "CLIENTE" | "ORGANIZER" | "VALIDATOR" | "PLATFORM";
 export type EventType = "TICKET_NFT" | "FIDELITY" | "SPECIAL";
 export type EventStatus = "DRAFT" | "ON_SALE" | "CONCLUDED";
-export type TicketStatus = "ACTIVE" | "LISTED" | "USED" | "EXPORTED";
+// USED = validato ma sopravvissuto (Signature/collectible o Fidelity con ingressi residui).
+// BURNED = biglietto NORMALE bruciato all'ingresso (burn definitivo on-chain): non
+// listabile/trasferibile/esportabile, equivalente a token inesistente.
+export type TicketStatus = "ACTIVE" | "LISTED" | "USED" | "EXPORTED" | "BURNED";
 export type ExportMode = "NONE" | "FREE" | "ENFORCED";
 export type TransferMode = "GIFT" | "PAYMENT";
 export type TransferStatus = "PENDING" | "ESCROW" | "DONE" | "RECLAIMED";
@@ -35,6 +38,9 @@ export interface Account {
   goodwill: number;
   // hash della password (scrypt, formato "salt:hash" hex); assente per account SPID-only
   passwordHash?: string;
+  // login veloce OIDC (FASE 5): `sub` stabile presso il provider, collegato all'account
+  appleSub?: string;
+  googleSub?: string;
 }
 
 export interface Club {
@@ -53,6 +59,10 @@ export interface Club {
   iban?: string;
   genre?: string; // genere musicale prevalente del locale
   color?: string; // colore identitario per la UI
+  // Stripe Connect (marketplace): account connesso dell'organizzatore, creato UNA
+  // volta all'onboarding del club (riusato tra i club dello stesso organizzatore).
+  stripeAccountId?: string;
+  stripeOnboarded?: boolean; // charges_enabled: senza, la messa in vendita è bloccata
 }
 
 export interface Event {
@@ -67,6 +77,12 @@ export interface Event {
   capacity: number;
   sold: number;
   status: EventStatus;
+  // codice varco per lo staff (es. "NOTTE-7K2"): unico tra gli eventi; assente = revocato,
+  // nessun validatore può agganciarsi. Generato alla creazione se non fornito.
+  gateCode?: string;
+  // registro eventi on-chain (FASE 4): eventId uint usato da TinftTicket.mint e dal
+  // limite anti-bagarino per-evento; assegnato UNA volta al primo mint, poi immutabile.
+  onchainEventId?: number;
 }
 
 export interface Ticket {
@@ -88,6 +104,9 @@ export interface Ticket {
   askPriceCents?: number; // prezzo richiesto sul mercato secondario (status LISTED)
   market?: string; // etichetta mercato, es. "Re-Selling"
   revoked?: boolean; // biglietto revocato per rimborso/chargeback → non valido, non rivendibile
+  // biglietto Signature (1/1 dell'organizzatore): NON viene bruciato all'ingresso,
+  // resta come collectible trasferibile (speculare a TinftTicket.isSpecial).
+  isSpecial?: boolean;
 }
 
 export interface Tier {

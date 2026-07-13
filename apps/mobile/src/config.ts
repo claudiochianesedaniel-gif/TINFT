@@ -16,9 +16,7 @@ import Constants from "expo-constants";
  * Nota emulatori: l'emulatore Android raggiunge il PC host su 10.0.2.2,
  * il simulatore iOS può usare localhost. Su DISPOSITIVO FISICO usa sempre l'IP LAN.
  */
-// Default: backend TINFT ONLINE (Render). Per lo sviluppo locale sovrascrivi con
-// API_BASE / EXPO_PUBLIC_API_BASE (vedi sopra), es. http://192.168.x.x:3001.
-const DEFAULT_API_BASE = "https://tinft-api.onrender.com";
+const DEFAULT_API_BASE = "http://localhost:3001";
 
 function resolveApiBase(): string {
   const fromExtra = (Constants.expoConfig?.extra as {apiBase?: string | null} | undefined)?.apiBase;

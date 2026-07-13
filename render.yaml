@@ -12,6 +12,9 @@ services:
     healthCheckPath: /ready
     envVars:
       # --- pubblici (deploy attuale su Base Sepolia) ---
+      # ATTENZIONE go-live: 0x8704…1F37 è il contratto SENZA burn all'ingresso.
+      # Dopo il redeploy con burn (scripts/deploy-base-sepolia.sh) sostituire
+      # questo valore col nuovo indirizzo, sia qui sia nella dashboard Render.
       - key: TICKET_ADDRESS
         value: "0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37"
       - key: CHAIN_ID

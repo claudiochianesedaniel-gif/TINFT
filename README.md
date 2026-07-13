@@ -23,10 +23,12 @@ La cartella [`design_handoff_tinft/`](./design_handoff_tinft/) contiene la spec 
 
 ## Vincoli non negoziabili
 
-- Royalty trasferimento **1%** del prezzo originale, a carico del compratore,
-  split **0,5% TINFT + 0,5% organizzatore**, *enforced* on-chain.
+- Fee di rivendita **1%** del prezzo originale, a carico del compratore, *enforced* on-chain:
+  **biglietto attivo** → 100% a TINFT; **mero NFT** (post-evento) → split **0,5% TINFT + 0,5% organizzatore**.
+- Prevendita **10%** sul primo acquisto (solo TINFT, a carico del compratore).
+- **Burn all'ingresso**: entrare (VALID) brucia il biglietto normale (ticket+NFT); i **Signature 1/1** no.
 - **Escrow** sul P2P a pagamento: lock → pay atomico → reclaim a timeout.
-- Tetto rivendita **+10%** per passaggio; **max 3 biglietti/evento per identità** (`hash(CF)`).
+- Tetto rivendita **+5%** per passaggio; fee di rivendita 1% (**biglietto attivo → tutta a TINFT**; post-evento split 0,5/0,5); **max 3 biglietti/evento per identità** (`hash(CF)`).
 - **Export** post-evento a scelta: (A) rilascio con fee 25% / (B) enforced con royalty perpetua.
 - Custodia **custodial** (account abstraction): niente seed/gas per l'utente.
 

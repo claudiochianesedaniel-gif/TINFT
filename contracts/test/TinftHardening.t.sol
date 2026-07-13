@@ -154,9 +154,10 @@ contract TinftHardeningTest is Test {
         ReentrantTreasury bad = new ReentrantTreasury(t2);
         t2.setPlatformTreasury(address(bad));
         uint256 id2 = t2.mint(alice, 42, PRICE);
+        t2.setEventEnd(42, block.timestamp + 1 days);
         vm.stopPrank();
-        vm.prank(validatorOp);
-        t2.markUsed(id2);
+        // sopravvissuto esportabile: non usato per entrare, evento concluso
+        vm.warp(block.timestamp + 2 days);
         ReentrantTreasury(payable(address(bad))).arm(id2);
 
         uint256 fee = t2.exitFee(id2);

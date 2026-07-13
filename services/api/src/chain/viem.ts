@@ -1,6 +1,6 @@
-import {createPublicClient, createWalletClient, getAddress, http, keccak256, parseEventLogs, toBytes} from "viem";
+import {createPublicClient, createWalletClient, getAddress, http, parseEventLogs} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
-import {base, baseSepolia, foundry} from "viem/chains";
+import {foundry} from "viem/chains";
 import type {Chain} from "viem";
 import {DomainError} from "../domain/models";
 import type {ChainPort, MintParams, MintResult} from "./port";
@@ -19,6 +19,13 @@ export const TINFT_TICKET_ABI = [
     outputs: [{name: "tokenId", type: "uint256"}]
   },
   {
+    type: "function",
+    name: "markUsed",
+    stateMutability: "nonpayable",
+    inputs: [{name: "tokenId", type: "uint256"}],
+    outputs: []
+  },
+  {
     type: "event",
     name: "TicketMinted",
     inputs: [
@@ -29,20 +36,6 @@ export const TINFT_TICKET_ABI = [
     ]
   }
 ] as const;
-
-/** Mappa un chain id al `Chain` di viem usato dall'adapter (per firmare con il chainId giusto). */
-export function viemChainForId(id?: number): Chain | undefined {
-  switch (id) {
-    case base.id:
-      return base; // 8453
-    case baseSepolia.id:
-      return baseSepolia; // 84532
-    case foundry.id:
-      return foundry; // 31337 (anvil)
-    default:
-      return undefined; // ViemChain ripiega su foundry
-  }
-}
 
 export interface ViemChainConfig {
   rpcUrl: string;
@@ -69,7 +62,9 @@ export class ViemChain implements ChainPort {
     const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
 
     const to = getAddress((params.to ?? this.account.address) as string);
-    const eventId = referenceToOnchainEventId(params.reference);
+    // eventId dal registro eventi (Event.onchainEventId): univoco e persistito —
+    // niente hash con collisioni, il limite 3/evento on-chain conta sull'evento giusto.
+    const eventId = BigInt(params.onchainEventId);
     const price = BigInt(params.priceCents);
 
     const txHash = await wallet.writeContract({
@@ -85,14 +80,18 @@ export class ViemChain implements ChainPort {
     return {tokenId: Number(first.args.tokenId), txHash};
   }
 
-}
-
-/**
- * Mappa stabile e deterministica reference(off-chain) → eventId uint256 on-chain.
- * Usa keccak256 dell'identificativo evento: deterministica (ricostruibile off-chain)
- * e di fatto priva di collisioni, a differenza del vecchio hash troncato a 1e6 (che
- * poteva mappare eventi diversi sullo stesso eventId, falsando il tetto 3/evento on-chain).
- */
-export function referenceToOnchainEventId(reference: string): bigint {
-  return BigInt(keccak256(toBytes(reference)));
+  /** Validazione al varco on-chain: `markUsed` brucia il biglietto normale (Signature esente). */
+  async markUsed(tokenId: number): Promise<{txHash: string}> {
+    const chain = this.cfg.chain ?? foundry;
+    const wallet = createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)});
+    const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
+    const txHash = await wallet.writeContract({
+      address: this.cfg.ticketAddress,
+      abi: TINFT_TICKET_ABI,
+      functionName: "markUsed",
+      args: [BigInt(tokenId)]
+    });
+    await pub.waitForTransactionReceipt({hash: txHash});
+    return {txHash};
+  }
 }

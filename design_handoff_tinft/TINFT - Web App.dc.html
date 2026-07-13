@@ -306,7 +306,7 @@
                   <sc-if value="{{ x.isPaid }}">
                     <div style="margin-top:12px;border-top:1px solid #144633;padding-top:10px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#8a8682">
                       <div style="display:flex;justify-content:space-between"><span>Prezzo al venditore</span><span style="color:#e8e6e0">{{ x.priceLabel }}</span></div>
-                      <div style="display:flex;justify-content:space-between"><span>Royalty (0,5% TINFT + 0,5% org.)</span><span style="color:#e8e6e0">{{ x.royLabel }}</span></div>
+                      <div style="display:flex;justify-content:space-between"><span>Fee 1% (attivo→TINFT · post-evento 0,5/0,5)</span><span style="color:#e8e6e0">{{ x.royLabel }}</span></div>
                       <div style="display:flex;justify-content:space-between;font-weight:700;color:#e8e6e0;border-top:1px solid #144633;padding-top:8px"><span>Totale a tuo carico</span><span>{{ x.totLabel }}</span></div>
                     </div>
                   </sc-if>
@@ -428,7 +428,7 @@
             </div>
             <div style="margin-top:14px;border-top:1px solid #2a2a2a;padding-top:12px;font-size:12.5px;color:#8a8682">
               <div style="display:flex;justify-content:space-between"><span>Prezzo</span><span style="color:#e8e6e0">{{ dPrice }}</span></div>
-              <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Commissione servizio (4%)</span><span style="color:#e8e6e0">{{ dFee }}</span></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px"><span>Prevendita (10%)</span><span style="color:#e8e6e0">{{ dFee }}</span></div>
               <div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700;color:#e8e6e0"><span>Totale</span><span>{{ dTotal }}</span></div>
             </div>
             <div onClick="{{ buyTier }}" style="margin-top:14px;background:#4472c4;color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;padding:14px;cursor:pointer">Acquista · {{ dTotal }}</div>
@@ -480,7 +480,7 @@
         <sc-if value="{{ xIsPaga }}">
           <div style="margin-top:16px;background:#0d0d0d;border:1px solid #2a2a2a;padding:11px 13px"><div style="font-size:9px;letter-spacing:0.12em;color:#5a5754;margin-bottom:5px">PREZZO (€)</div><input value="{{ xPrezzoVal }}" onInput="{{ onXPrezzo }}" placeholder="0,00" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:15px;font-weight:700;font-family:inherit"/></div>
           <div style="margin-top:10px;background:#0d0d0d;border:1px solid #2a2a2a;padding:12px 13px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:#8a8682">
-            <div style="display:flex;justify-content:space-between"><span>Royalty (0,5% TINFT + 0,5% org.)</span><span style="color:#e8e6e0">{{ xRoyLabel }}</span></div>
+            <div style="display:flex;justify-content:space-between"><span>Fee 1% (attivo→TINFT · post-evento 0,5/0,5)</span><span style="color:#e8e6e0">{{ xRoyLabel }}</span></div>
             <div style="display:flex;justify-content:space-between;font-weight:700;color:#e8e6e0"><span>Ricevi netto</span><span>{{ xNetLabel }}</span></div>
           </div>
         </sc-if>
@@ -634,7 +634,7 @@ class Component extends DCLogic {
     const newTk={...t, id:'t'+Date.now()+Math.floor(Math.random()*99), owner:u, paid:price, status:'attivo', holder:buyer.nome+' '+buyer.cognome, saleMarket:''};
     const rec={ id:'x'+Date.now(), fromUser:t.owner, fromName:seller.nome+' '+seller.cognome, toUser:u, toName:buyer.nome+' '+buyer.cognome, ticket:{type:t.type,title:t.title,venue:t.venue,price:t.price,eventId:this._evId(t),paid:price}, mode:'pagamento', prezzo:price, royalty:Math.round((royC+royT)*100)/100, royC, royT, status:'done', ack:true };
     this._w(s=>({ tickets:[newTk, ...s.tickets.filter(x=>x.id!==id)], transfers:[rec, ...(s.transfers||[])], accounts:{...s.accounts, [t.owner]:{...seller, goodwill:seller.goodwill+Math.round(price)}} }));
-    this.toast('Comprato in escrow · royalty 0,5% TINFT + 0,5% organizzatore');
+    this.toast('Comprato in escrow · fee 1% (biglietto attivo → TINFT)');
   }
 
   openDetail(id){ const ev=this.allEv()[id]; let idx=0; if(ev){ const f=ev.tiers.findIndex(t=>!t.sold); idx=f<0?0:f; } this.setState({ detailId:id, tierIdx:idx, qty:1 }); }
@@ -665,7 +665,7 @@ class Component extends DCLogic {
     const PALL=['#2f4f8a','#0a8a5c','#9c5e00','#7a3550','#3a3a38'];
     const dId=S.detailId, dE=dId?EV[dId]:null, dTiersArr=dE?dE.tiers:[];
     const stIdx=Math.min(S.tierIdx, Math.max(0,dTiersArr.length-1));
-    const stT=dE?dTiersArr[stIdx]:null, dFeeN=stT?Math.round(stT.p*0.04*100)/100:0;
+    const stT=dE?dTiersArr[stIdx]:null, dFeeN=stT?Math.round(stT.p*0.10*100)/100:0;
     const qN=Math.max(1,Math.min(4,S.qty||1));
     const navDef=[['home','◈','Home'],['eventi','€','Eventi'],['biglietti','◆','Biglietti'],['mercato','★','Mercato'],['artisti','♪','Artisti'],['blog','▤','Blog'],['news','✦','News']];
 

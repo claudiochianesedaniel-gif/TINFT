@@ -8,14 +8,11 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "API_BASE": "https://tinft-api.onrender.com"
+        "API_BASE": "http://192.168.1.50:3001"
       }
     },
     "preview": {
-      "distribution": "internal",
-      "env": {
-        "API_BASE": "https://tinft-api.onrender.com"
-      }
+      "distribution": "internal"
     },
     "production": {
       "autoIncrement": true

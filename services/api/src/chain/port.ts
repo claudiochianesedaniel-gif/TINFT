@@ -4,7 +4,11 @@
 
 export interface MintParams {
   to?: string; // smart account custodial del compratore
-  reference: string; // id evento off-chain (mappato all'eventId on-chain dall'adapter)
+  reference: string; // id evento off-chain (per log/determinismo dei fake)
+  // eventId on-chain dal REGISTRO eventi (FASE 4): assegnato una volta per evento
+  // (TicketingService.ensureOnchainEventId), persistito su Event.onchainEventId.
+  // È la chiave del limite anti-bagarino per-evento (heldCount) su TinftTicket.
+  onchainEventId: number;
   priceCents: number;
 }
 
@@ -16,4 +20,10 @@ export interface MintResult {
 export interface ChainPort {
   /** Conia il biglietto sul contratto TinftTicket e restituisce tokenId + txHash. */
   mintTicket(params: MintParams): Promise<MintResult>;
+  /**
+   * Validazione al varco on-chain (`TinftTicket.markUsed`): per un biglietto NORMALE
+   * BRUCIA definitivamente il token; un Signature resta. Opzionale: gli adapter che
+   * non la implementano (mock legacy) lasciano la transizione solo off-chain.
+   */
+  markUsed?(tokenId: number): Promise<{txHash: string}>;
 }

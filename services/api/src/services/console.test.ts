@@ -48,7 +48,11 @@ describe("Console organizzatore — dashboard (B6)", () => {
     const buyer = await client(s.service, "luca", "idLuca");
     const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
     await s.service.listTicket(t, seller.id, 3_000);
-    await s.service.buyFromMarket(t, buyer.id); // royalty 1% di 3150 = 31 → org 16
+    // quota organizzatore solo sul mero NFT: evento concluso prima della rivendita
+    const ev = await s.service.getEvent(s.event.id);
+    ev.status = "CONCLUDED";
+    await s.store.updateEvent(ev);
+    await s.service.buyFromMarket(t, buyer.id); // fee 1% di 3150 = 31 → org 16
 
     const d = await s.consoleSvc.dashboard(s.org.id);
     expect(d.royaltyOrganizerCents).toBe(16);
@@ -75,9 +79,12 @@ describe("Console organizzatore — incassi (B6)", () => {
     const s = await setup();
     const seller = await client(s.service, "sara", "idSara");
     const buyer = await client(s.service, "luca", "idLuca");
-    // 1 vendita primaria, poi rivendita: gross resta sui venduti, royalty org +16
+    // 1 vendita primaria, poi rivendita POST-evento (mero NFT): gross resta sui venduti, royalty org +16
     const t = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
     await s.service.listTicket(t, seller.id, 3_000);
+    const evInc = await s.service.getEvent(s.event.id);
+    evInc.status = "CONCLUDED";
+    await s.store.updateEvent(evInc);
     await s.service.buyFromMarket(t, buyer.id);
 
     const inc = await s.consoleSvc.incassi(s.org.id);
@@ -137,18 +144,20 @@ describe("Console piattaforma — revenue (B6)", () => {
 
     // primario: presale 10% di 3150 = 315
     const ticketId = (await s.service.payOrder((await s.service.createOrder({buyerId: seller.id, eventId: s.event.id, quantity: 1})).id)).ticketIds[0]!;
-    // secondario: royalty 1% di 3150 = 31 → TINFT 15
+    // secondario su biglietto ATTIVO: fee 1% di 3150 = 31 → TUTTA a TINFT
     await s.service.listTicket(ticketId, seller.id, 3_000);
     await s.service.buyFromMarket(ticketId, buyer.id);
-    // export libero: 25% di 3150 = 787 (serve biglietto USED)
-    await s.service.validate(ticketId);
+    // export libero del SOPRAVVISSUTO (non entra): a evento concluso, fee d'uscita 25% di 3150 = 787
+    const ev = await s.service.getEvent(s.event.id);
+    ev.status = "CONCLUDED";
+    await s.store.updateEvent(ev);
     await s.service.exportTicket(ticketId, buyer.id, "FREE");
 
     const rev = await s.consoleSvc.platformRevenue();
     expect(rev.presaleCommissionCents).toBe(315);
-    expect(rev.royaltyTinftCents).toBe(15);
+    expect(rev.royaltyTinftCents).toBe(31);
     expect(rev.exitFeeCents).toBe(787);
-    expect(rev.totalCents).toBe(315 + 15 + 787);
+    expect(rev.totalCents).toBe(315 + 31 + 787);
     expect(rev.gmvPrimaryCents).toBe(PRICE); // 1 venduto
     expect(rev.p2pCount).toBe(1); // 1 transfer PAYMENT/DONE
   });

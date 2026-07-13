@@ -9,6 +9,7 @@ import {
     orderTotalCents,
     presaleCommissionCents,
     resaleCapCents,
+    resaleFeeSplitCents,
     royaltyCents,
     royaltySplitCents
 } from "./rules";
@@ -24,11 +25,19 @@ describe("regole economiche (mirror on-chain)", () => {
         expect(royaltySplitCents(3_150)).toEqual({tinftCents: 15, organizerCents: 16}); // 31 → 15+16
     });
 
-    it("tetto rivendita +10% sul costo base (R2)", () => {
-        expect(resaleCapCents(10_000)).toBe(11_000);
-        expect(resaleCapCents(3_150)).toBe(3_465);
-        expect(isResalePriceAllowed(3_465, 3_150)).toBe(true);
-        expect(isResalePriceAllowed(3_466, 3_150)).toBe(false);
+    it("tetto rivendita +5% sul costo base (R2)", () => {
+        expect(resaleCapCents(10_000)).toBe(10_500);
+        expect(resaleCapCents(3_150)).toBe(3_307); // 3307,5 → 3307 (troncato)
+        expect(isResalePriceAllowed(3_307, 3_150)).toBe(true);
+        expect(isResalePriceAllowed(3_308, 3_150)).toBe(false);
+    });
+
+    it("fee di rivendita 1% condizionale: biglietto ATTIVO → tutta a TINFT; mero NFT → 0,5/0,5", () => {
+        expect(resaleFeeSplitCents(10_000, true)).toEqual({tinftCents: 100, organizerCents: 0});
+        expect(resaleFeeSplitCents(10_000, false)).toEqual({tinftCents: 50, organizerCents: 50});
+        // importo dispari: sul mero NFT il resto va all'organizzatore; sull'attivo tutto a TINFT
+        expect(resaleFeeSplitCents(3_150, false)).toEqual({tinftCents: 15, organizerCents: 16});
+        expect(resaleFeeSplitCents(3_150, true)).toEqual({tinftCents: 31, organizerCents: 0});
     });
 
     it("fee d'uscita export libero 25% (R5)", () => {

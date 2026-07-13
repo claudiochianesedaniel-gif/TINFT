@@ -12,10 +12,11 @@ import {StripeProvider} from "../payments/stripe";
 import {PaymentsService} from "../payments/service";
 import {FakeChain} from "../chain/fake";
 import type {ChainPort} from "../chain/port";
-import {ViemChain, viemChainForId} from "../chain/viem";
+import {ViemChain} from "../chain/viem";
 import {openapiSpec, swaggerUiHtml} from "./openapi";
 import {emailSenderFromEnv} from "../notifications/email";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+import {type OidcProviderName, type OidcVerifier, oidcVerifierFromEnv} from "../identity/oidc";
 import {setPassword, verifyPassword} from "../auth/password";
 import {signToken, verifyToken} from "../auth/tokens";
 import {ACCESS_TTL_SECONDS, signAccessToken} from "../access/access-token";
@@ -46,14 +47,10 @@ function chainFromEnv(): ChainPort | undefined {
   const privateKey = process.env.CHAIN_PRIVATE_KEY;
   const ticketAddress = process.env.TICKET_ADDRESS;
   if (rpcUrl && privateKey && ticketAddress) {
-    // CHAIN_ID seleziona la rete viem (84532=Base Sepolia, 8453=Base, 31337=anvil).
-    // Senza CHAIN_ID l'adapter ripiega su foundry (anvil), come in passato.
-    const chainId = process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined;
     return new ViemChain({
       rpcUrl,
       privateKey: privateKey as `0x${string}`,
-      ticketAddress: ticketAddress as `0x${string}`,
-      chain: viemChainForId(chainId)
+      ticketAddress: ticketAddress as `0x${string}`
     });
   }
   return undefined;
@@ -72,17 +69,26 @@ function providerFromEnv(): PaymentProvider | undefined {
  * (store condiviso). Testabile via `app.inject` senza rete né DB.
  */
 export function buildServer(
-  opts: {store?: Store; provider?: PaymentProvider; chain?: ChainPort; verifier?: IdentityVerifier; rateLimit?: boolean} = {}
+  opts: {
+    store?: Store;
+    provider?: PaymentProvider;
+    chain?: ChainPort;
+    verifier?: IdentityVerifier;
+    oidc?: OidcVerifier;
+    rateLimit?: boolean;
+  } = {}
 ): FastifyInstance {
   const store: Store = opts.store ?? new MemoryStore();
   const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
-  // Stessa istanza `chain` passata a ticketing e payments: l'acquisto primario/ordini
-  // conia via TicketingService, il flusso PSP via PaymentsService (entrambi on-chain con ViemChain).
-  const ticketing = new TicketingService(store, undefined, verifier, chain, emailSenderFromEnv());
+  // Stesso provider per ticketing (onboarding Connect alla creazione club) e payments
+  // (checkout con split); stessa istanza `chain` per l'acquisto primario/ordini e il flusso PSP.
+  const provider = opts.provider ?? providerFromEnv() ?? new FakeProvider();
+  const oidc = opts.oidc ?? oidcVerifierFromEnv();
+  const ticketing = new TicketingService(store, undefined, verifier, chain, emailSenderFromEnv(), provider.connect);
   const content = new ContentService(store);
   const consoleSvc = new ConsoleService(store);
-  const payments = new PaymentsService(store, ticketing, opts.provider ?? providerFromEnv() ?? new FakeProvider(), chain);
+  const payments = new PaymentsService(store, ticketing, provider, chain);
 
   // Logging strutturato (pino, incluso in fastify) in esecuzione normale; silenzioso sotto test.
   // request-id: riusa l'header `x-request-id` in ingresso (tracciamento end-to-end) o ne genera uno;
@@ -436,6 +442,24 @@ export function buildServer(
     return reply.status(200).send({token, account});
   });
 
+  // Login veloce OIDC (FASE 5): il client manda l'id_token di Apple/Google; il server
+  // ne verifica firma+claim e collega/crea l'account. L'identità 18+ resta a SPID.
+  app.post<{Body: {provider: OidcProviderName; idToken: string}}>(
+    "/auth/oidc",
+    {
+      preHandler: rateLimit(30, 60_000),
+      schema: {
+        body: body({provider: {type: "string", enum: ["apple", "google"]}, idToken: STR}, ["provider", "idToken"])
+      }
+    },
+    async (req, reply) => {
+      const profile = await oidc.verify(req.body.provider, req.body.idToken);
+      const {account, created} = await ticketing.loginWithOidc(profile);
+      const token = signToken({accountId: account.id, role: account.role});
+      return reply.status(created ? 201 : 200).send({token, account, created});
+    }
+  );
+
   // GDPR — cancellazione account (right to erasure). Gating admin via token;
   // in produzione: auth reale + allow-list (cfr. pattern Mindful Trading Club).
   const adminToken = process.env.ADMIN_TOKEN ?? "dev-admin";
@@ -530,6 +554,23 @@ export function buildServer(
       return reply.status(201).send(await ticketing.createEvent({...req.body, clubId: req.params.id}));
     }
   );
+  // -------- Stripe Connect del club: link di onboarding + refresh stato (organizzatore)
+  app.post<{Params: {id: string}}>(
+    "/clubs/:id/stripe/onboarding-link",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam}},
+    async (req) => {
+      assertSelf(req, (await ticketing.getClub(req.params.id)).organizerId);
+      return payments.stripeOnboardingLink(req.params.id);
+    }
+  );
+  app.post<{Params: {id: string}}>(
+    "/clubs/:id/stripe/refresh",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam}},
+    async (req) => {
+      assertSelf(req, (await ticketing.getClub(req.params.id)).organizerId);
+      return payments.refreshClubStripe(req.params.id);
+    }
+  );
   app.post<{Params: {id: string}; Body: {buyerId: string}}>(
     "/clubs/:id/fidelity",
     {preHandler: authenticate, schema: {params: idParam, body: body({buyerId: STR}, ["buyerId"])}},
@@ -549,6 +590,7 @@ export function buildServer(
       priceCents: number;
       capacity: number;
       status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
+      gateCode?: string;
     };
   }>(
     "/events",
@@ -563,7 +605,8 @@ export function buildServer(
             date: STR,
             priceCents: INT_NONNEG,
             capacity: INT_POS,
-            status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]}
+            status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]},
+            gateCode: STR
           },
           ["organizerId", "title", "venue", "date", "priceCents", "capacity"]
         )
@@ -576,6 +619,31 @@ export function buildServer(
   );
   app.get("/events", async () => ticketing.listEvents());
   app.get<{Params: {id: string}}>("/events/:id", async (req) => ticketing.getEvent(req.params.id));
+
+  // -------- codice varco (gateCode): rotazione/revoca (organizzatore) + aggancio staff
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/gate-code/rotate",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.rotateGateCode(req.params.id, req.body.organizerId);
+    }
+  );
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/gate-code/revoke",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.revokeGateCode(req.params.id, req.body.organizerId);
+    }
+  );
+  // Il validatore inserisce il codice e resta agganciato al SOLO evento corrispondente
+  // (niente lista eventi). Autenticato + rate-limit anti forza bruta sui codici.
+  app.post<{Body: {code: string}}>(
+    "/gate/access",
+    {preHandler: [rateLimit(20, 60_000), authenticate], schema: {body: body({code: STR}, ["code"])}},
+    async (req) => ticketing.eventByGateCode(req.body.code)
+  );
 
   // -------- acquisto primario (record diretto; il flusso reale passa dai pagamenti)
   app.post<{Params: {id: string}; Body: {buyerId: string; holderName?: string}}>(
@@ -601,7 +669,7 @@ export function buildServer(
     }
   );
 
-  // -------- ordini / checkout v2 (commissione 4% + quantità + limite 3)
+  // -------- ordini / checkout v2 (prevendita 10% + quantità + limite 3)
   app.post<{Body: {buyerId: string; eventId: string; tierId?: string; quantity: number}}>(
     "/orders",
     {
@@ -908,6 +976,16 @@ export function buildServer(
     }
   );
 
+  // -------- promemoria evento (FASE 8): email ai possessori dei biglietti validi
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/remind",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.remindEvent(req.params.id, req.body.organizerId);
+    }
+  );
+
   // -------- pubblicazione evento con gate KYC (B7): DRAFT → ON_SALE
   app.post<{Params: {id: string}; Body: {organizerId: string}}>(
     "/events/:id/publish",
@@ -915,6 +993,15 @@ export function buildServer(
     async (req) => {
       assertSelf(req, req.body.organizerId);
       return ticketing.publishEvent(req.params.id, req.body.organizerId);
+    }
+  );
+  // -------- conclusione evento ("Fine evento"): ON_SALE → CONCLUDED (organizzatore)
+  app.post<{Params: {id: string}; Body: {organizerId: string}}>(
+    "/events/:id/conclude",
+    {preHandler: requireRole("ORGANIZER", "PLATFORM"), schema: {params: idParam, body: body({organizerId: STR}, ["organizerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.organizerId);
+      return ticketing.concludeEvent(req.params.id, req.body.organizerId);
     }
   );
 

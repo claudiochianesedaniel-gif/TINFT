@@ -20,20 +20,24 @@ import type {Store} from "../repo/store";
 import {
   canAcquireForEvent,
   exitFeeCents,
+  generateGateCode,
   GOODWILL_PER_TICKET,
   isResalePriceAllowed,
   MAX_PER_EVENT,
+  normalizeGateCode,
   orderTotalCents,
   resaleCapCents,
-  royaltyCents,
-  royaltySplitCents
+  resaleFeeSplitCents,
+  royaltyCents
 } from "../domain/rules";
 import {FakeSpid, type IdentityVerifier} from "../identity/verifier";
+import type {OidcProfile} from "../identity/oidc";
 import {hashPassword} from "../auth/password";
 import {verifyAccessToken} from "../access/access-token";
 import type {ChainPort} from "../chain/port";
 import {FakeChain} from "../chain/fake";
-import {DevEmailSender, type EmailSender} from "../notifications/email";
+import {DevEmailSender, type EmailSender, eventReminderEmail, orderConfirmationEmail} from "../notifications/email";
+import {type ConnectPort, FakeConnect} from "../payments/provider";
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 /** Scadenza del codice OTP di registrazione: 10 minuti. */
@@ -51,7 +55,11 @@ export class TicketingService {
     private readonly now: () => number = nowSeconds,
     private readonly verifier: IdentityVerifier = new FakeSpid(),
     private readonly chain: ChainPort = new FakeChain(),
-    private readonly email: EmailSender = new DevEmailSender()
+    private readonly email: EmailSender = new DevEmailSender(),
+    // Stripe Connect: con FakeConnect (default, sandbox/test) l'account è subito
+    // operativo; con l'adapter Stripe reale resta non-onboarded finché
+    // l'organizzatore non completa l'onboarding (webhook account.updated).
+    private readonly connectPort: ConnectPort = new FakeConnect()
   ) {}
 
   // -------------------------------------------------------------- account
@@ -104,6 +112,45 @@ export class TicketingService {
   /** Cerca un account per email (case-insensitive). Per il login. */
   async findAccountByEmail(email: string): Promise<Account | undefined> {
     return this.store.getAccountByEmail(email);
+  }
+
+  // ------------------------------------------- login veloce OIDC (FASE 5)
+  /**
+   * Login con un profilo OIDC GIÀ verificato (firma+claim in {@link OidcVerifier}):
+   * 1) account già collegato al `sub` del provider → login;
+   * 2) altrimenti account esistente con la stessa email → COLLEGA il sub e login;
+   * 3) altrimenti crea un account CLIENTE (serve l'email nel token, che Apple/Google
+   *    includono; senza email e senza account → OIDC_EMAIL_REQUIRED).
+   * Il login veloce NON verifica l'identità/età: quella resta a SPID (18+, biglietto
+   * nominativo), richiesta al primo acquisto — non al login.
+   */
+  async loginWithOidc(profile: OidcProfile): Promise<{account: Account; created: boolean}> {
+    const linked = await this.store.getAccountByOidcSub(profile.provider, profile.subject);
+    if (linked) return {account: linked, created: false};
+
+    const subField = profile.provider === "apple" ? "appleSub" : "googleSub";
+
+    if (profile.email) {
+      const byEmail = await this.store.getAccountByEmail(profile.email);
+      if (byEmail) {
+        byEmail[subField] = profile.subject;
+        await this.store.updateAccount(byEmail);
+        return {account: byEmail, created: false};
+      }
+    }
+
+    if (!profile.email) {
+      throw new DomainError("OIDC_EMAIL_REQUIRED", "il provider non ha fornito l'email: usa la registrazione email", 400);
+    }
+    const account = await this.createAccount({
+      role: "CLIENTE",
+      nome: profile.givenName?.trim() || "Utente",
+      cognome: profile.familyName?.trim() || (profile.provider === "apple" ? "Apple" : "Google"),
+      email: profile.email
+    });
+    account[subField] = profile.subject;
+    await this.store.updateAccount(account);
+    return {account, created: true};
   }
 
   // --------------------------------------------- registrazione email + OTP (v2)
@@ -204,11 +251,14 @@ export class TicketingService {
     priceCents: number;
     capacity: number;
     status?: EventStatus;
+    gateCode?: string;
   }): Promise<Event> {
     await this.getAccount(input.organizerId);
     if (input.priceCents < 0 || input.capacity <= 0) {
       throw new DomainError("INVALID_EVENT", "prezzo o capienza non validi");
     }
+    // un evento di club può andare IN VENDITA solo se il club incassa (onboarding Stripe)
+    if ((input.status ?? "ON_SALE") === "ON_SALE") await this.assertClubPayoutReady(input.clubId);
     const event: Event = {
       id: this.store.id("evt"),
       organizerId: input.organizerId,
@@ -220,14 +270,56 @@ export class TicketingService {
       priceCents: input.priceCents,
       capacity: input.capacity,
       sold: 0,
-      status: input.status ?? "ON_SALE"
+      status: input.status ?? "ON_SALE",
+      gateCode: await this.uniqueGateCode(input.title, input.gateCode)
     };
     await this.store.createEvent(event);
     return event;
   }
 
+  /**
+   * Codice varco definitivo per un evento: se fornito lo normalizza e ne esige
+   * l'unicità (GATE_CODE_TAKEN altrimenti); se assente ne genera uno libero dal
+   * titolo. Il vincolo unique in persistenza copre la corsa residua.
+   */
+  private async uniqueGateCode(title: string, requested?: string): Promise<string> {
+    if (requested !== undefined) {
+      const code = normalizeGateCode(requested);
+      if (!code) throw new DomainError("INVALID_GATE_CODE", "codice varco vuoto");
+      if (await this.store.getEventByGateCode(code)) {
+        throw new DomainError("GATE_CODE_TAKEN", "codice varco già in uso", 409);
+      }
+      return code;
+    }
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const code = generateGateCode(title);
+      if (!(await this.store.getEventByGateCode(code))) return code;
+    }
+    throw new DomainError("GATE_CODE_EXHAUSTED", "impossibile generare un codice varco unico", 500);
+  }
+
   async listEvents(): Promise<Event[]> {
     return this.store.listEvents();
+  }
+
+  /**
+   * REGISTRO eventi on-chain (FASE 4): assegna all'evento — UNA volta, al primo
+   * mint — un eventId on-chain sequenziale univoco e lo persiste
+   * (Event.onchainEventId). Sostituisce l'hash placeholder (collisioni possibili):
+   * su TinftTicket l'eventId è la chiave del limite anti-bagarino per-evento,
+   * quindi deve essere univoco e immutabile. L'assegnazione gira sotto lock
+   * (distribuito su Postgres): niente doppioni nemmeno tra istanze.
+   */
+  async ensureOnchainEventId(eventId: string): Promise<number> {
+    const current = (await this.getEvent(eventId)).onchainEventId;
+    if (current !== undefined) return current;
+    return this.withLock("onchain-event-registry", async () => {
+      const event = await this.getEvent(eventId); // riletto sotto lock
+      if (event.onchainEventId !== undefined) return event.onchainEventId;
+      event.onchainEventId = await this.store.nextOnchainEventId();
+      await this.store.updateEvent(event);
+      return event.onchainEventId;
+    });
   }
 
   async getEvent(id: string): Promise<Event> {
@@ -272,9 +364,43 @@ export class TicketingService {
     }
     if (event.status === "ON_SALE") return event; // idempotente
     if (event.status !== "DRAFT") throw new DomainError("NOT_DRAFT", "evento non in bozza", 409);
+    await this.assertClubPayoutReady(event.clubId);
     event.status = "ON_SALE";
     await this.store.updateEvent(event);
     return event;
+  }
+
+  /**
+   * Conclude l'evento ("Fine evento"): ON_SALE → CONCLUDED. Da qui i biglietti NON
+   * usati diventano meri NFT (fee di rivendita 0,5/0,5) ed esportabili come ricordo;
+   * i biglietti usati sono già stati bruciati all'ingresso. Solo l'organizzatore.
+   * In prod: cablare anche `TinftTicket.setEventEnd(onchainEventId, endsAt)` on-chain.
+   */
+  async concludeEvent(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    if (event.status === "CONCLUDED") return event; // idempotente
+    if (event.status !== "ON_SALE") throw new DomainError("NOT_ON_SALE", "evento non in vendita", 409);
+    event.status = "CONCLUDED";
+    await this.store.updateEvent(event);
+    return event;
+  }
+
+  /**
+   * Blocco FASE 3: un evento legato a un club va in vendita solo se il club ha
+   * completato l'onboarding Stripe Connect (può incassare). Eventi senza club
+   * (percorso legacy/test) non sono soggetti al blocco.
+   */
+  private async assertClubPayoutReady(clubId?: string): Promise<void> {
+    if (!clubId) return;
+    const club = await this.getClub(clubId);
+    if (!club.stripeAccountId || !club.stripeOnboarded) {
+      throw new DomainError(
+        "STRIPE_ONBOARDING_REQUIRED",
+        "completa l'onboarding Stripe del club prima di mettere in vendita",
+        403
+      );
+    }
   }
 
   // ------------------------------------------------ varchi / validatori (B6)
@@ -296,6 +422,38 @@ export class TicketingService {
   async listValidators(eventId: string): Promise<Validator[]> {
     await this.getEvent(eventId);
     return this.store.validatorsByEvent(eventId);
+  }
+
+  // ------------------------------------------------ codice varco (gateCode)
+  /** Rigenera il codice varco dell'evento (il vecchio smette di valere); solo l'organizzatore. */
+  async rotateGateCode(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    event.gateCode = await this.uniqueGateCode(event.title);
+    await this.store.updateEvent(event);
+    return event;
+  }
+
+  /** Revoca il codice varco: nessun validatore può più agganciarsi finché non si ruota. */
+  async revokeGateCode(eventId: string, organizerId: string): Promise<Event> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+    event.gateCode = undefined;
+    await this.store.updateEvent(event);
+    return event;
+  }
+
+  /**
+   * Aggancio staff al varco: risolve un codice inserito dal validatore nell'evento
+   * corrispondente. Codice sconosciuto o revocato → NOT_FOUND (nessun picker di eventi:
+   * il validatore resta legato al SOLO evento del codice).
+   */
+  async eventByGateCode(code: string): Promise<Event> {
+    const normalized = normalizeGateCode(code ?? "");
+    if (!normalized) throw new DomainError("INVALID_GATE_CODE", "codice varco vuoto");
+    const event = await this.store.getEventByGateCode(normalized);
+    if (!event) throw NotFound("codice varco");
+    return event;
   }
 
   // -------------------------------------------------------------- club (M9)
@@ -342,6 +500,20 @@ export class TicketingService {
       genre: input.genre,
       color: input.color
     };
+
+    // Stripe Connect: l'organizzatore collega il suo account UNA volta. Se ha già
+    // un club con account connesso lo riusa; altrimenti ne crea uno nuovo (Express).
+    const org = await this.getAccount(input.organizerId);
+    const existing = (await this.store.listClubs()).find((c) => c.organizerId === input.organizerId && c.stripeAccountId);
+    if (existing) {
+      club.stripeAccountId = existing.stripeAccountId;
+      club.stripeOnboarded = existing.stripeOnboarded;
+    } else {
+      const acct = await this.connectPort.createConnectedAccount({clubId: club.id, email: org.email, name: input.ragioneSociale});
+      club.stripeAccountId = acct.accountId;
+      club.stripeOnboarded = acct.chargesEnabled;
+    }
+
     await this.store.createClub(club);
     return club;
   }
@@ -397,7 +569,7 @@ export class TicketingService {
   async purchasePrimary(
     eventId: string,
     buyerId: string,
-    opts: {holderName?: string; tokenId?: number; txHash?: string} = {}
+    opts: {holderName?: string; tokenId?: number; txHash?: string; isSpecial?: boolean} = {}
   ): Promise<Ticket> {
     const event = await this.getEvent(eventId);
     const buyer = await this.getAccount(buyerId);
@@ -411,7 +583,8 @@ export class TicketingService {
     if (tokenId === undefined) {
       const mint = await this.chain.mintTicket({
         to: buyer.walletAddress,
-        reference: event.id, // off-chain eventId → uint on-chain (mappato dall'adapter)
+        reference: event.id,
+        onchainEventId: await this.ensureOnchainEventId(event.id), // registro eventi (FASE 4)
         priceCents: event.priceCents
       });
       tokenId = mint.tokenId;
@@ -429,7 +602,8 @@ export class TicketingService {
       exportMode: "NONE",
       exitFeeCents: 0,
       holderName: opts.holderName?.trim() || `${buyer.nome} ${buyer.cognome}`,
-      txHash
+      txHash,
+      isSpecial: opts.isSpecial || undefined
     };
     await this.store.createTicket(ticket);
     event.sold += 1;
@@ -513,12 +687,12 @@ export class TicketingService {
    *    `store.settleOrder` (transazione + lock di riga su Postgres): tutto-o-niente,
    *    nessuna finestra di doppio accredito o crash a metà scrittura.
    *
-   * Nota prod (scale-out multi-istanza): per serializzare il mint anche tra processi
-   * diversi serve un lock distribuito (es. advisory lock Postgres / Redis) all'avvio
-   * di payOrder; oggi l'accredito è comunque protetto cross-processo dal lock di riga.
+   * Scale-out multi-istanza: su Postgres il mutex per-ordine È distribuito
+   * (advisory lock transazionale in PrismaStore.withLock) — il mint è serializzato
+   * anche tra processi; l'accredito resta protetto anche dal lock di riga.
    */
   async payOrder(orderId: string): Promise<Order> {
-    return this.withOrderLock(orderId, () => this.fulfillOrder(orderId));
+    return this.withLock(`ord:${orderId}`, () => this.fulfillOrder(orderId));
   }
 
   private async fulfillOrder(orderId: string): Promise<Order> {
@@ -542,34 +716,78 @@ export class TicketingService {
     }
 
     // Accredito ATOMICO e idempotente (commissione + goodwill + stato PAID).
-    return this.store.settleOrder({
+    const settled = await this.store.settleOrder({
       orderId,
       ticketIds,
       presaleCommissionCents: order.feeTotalCents,
       buyerId: order.buyerId,
       goodwillDelta: GOODWILL_PER_TICKET * order.quantity
     });
+
+    // Email di conferma d'ordine (FASE 8): BEST-EFFORT, mai bloccante — un errore
+    // del provider email non deve far fallire un pagamento riuscito (il webhook
+    // verrebbe ritentato e l'ordine risulterebbe non evaso). Un ritento su ordine
+    // già PAID esce prima di arrivare qui → niente email doppie.
+    try {
+      const buyer = await this.getAccount(settled.buyerId);
+      const event = await this.getEvent(settled.eventId);
+      await this.email.send(
+        orderConfirmationEmail({
+          to: buyer.email,
+          buyerName: buyer.nome,
+          eventTitle: event.title,
+          venue: event.venue,
+          date: event.date,
+          quantity: settled.quantity,
+          totalCents: settled.totalCents
+        })
+      );
+    } catch {
+      // invio fallito: il pagamento resta valido; i biglietti sono comunque in app
+    }
+
+    return settled;
   }
 
   /**
-   * Mutex asincrono per-chiave (in-processo): incatena le chiamate sulla stessa
-   * chiave così che eseguano una alla volta. La catena memorizzata ingoia gli errori
-   * per non propagarli ai successivi; il chiamante riceve comunque il proprio esito.
+   * Promemoria evento (FASE 8): l'organizzatore lo invia ai possessori dei
+   * biglietti validi (ACTIVE/LISTED, non revocati), un'email per indirizzo.
+   * Gli invii falliti non interrompono gli altri; ritorna il conteggio.
    */
-  private readonly orderLocks = new Map<string, Promise<unknown>>();
-  private withOrderLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
-    const prev = this.orderLocks.get(key) ?? Promise.resolve();
-    const run = prev.then(fn, fn);
-    const tail = run.then(
-      () => {},
-      () => {}
-    );
-    this.orderLocks.set(key, tail);
-    // pulizia: se nessun'altra chiamata si è accodata nel frattempo, libera la chiave
-    void tail.then(() => {
-      if (this.orderLocks.get(key) === tail) this.orderLocks.delete(key);
-    });
-    return run;
+  async remindEvent(eventId: string, organizerId: string): Promise<{recipients: number; sent: number}> {
+    const event = await this.getEvent(eventId);
+    if (event.organizerId !== organizerId) throw new DomainError("NOT_OWNER", "non sei l'organizzatore dell'evento", 403);
+
+    const tickets = await this.store.ticketsByEvent(eventId);
+    const byEmail = new Map<string, string>(); // email → nome del possessore
+    for (const t of tickets) {
+      if (t.revoked || (t.status !== "ACTIVE" && t.status !== "LISTED")) continue;
+      const owner = await this.store.getAccount(t.ownerId);
+      if (owner && !byEmail.has(owner.email)) byEmail.set(owner.email, owner.nome);
+    }
+
+    let sent = 0;
+    for (const [to, holderName] of byEmail) {
+      try {
+        await this.email.send(
+          eventReminderEmail({to, holderName, eventTitle: event.title, venue: event.venue, date: event.date})
+        );
+        sent++;
+      } catch {
+        // continua con gli altri destinatari
+      }
+    }
+    return {recipients: byEmail.size, sent};
+  }
+
+  /**
+   * Mutex per-chiave DELEGATO allo store: in-memory è un lock in-processo; su
+   * Postgres è un advisory lock transazionale che serializza anche TRA istanze
+   * (scale-out, FASE 7). Usato per gli ordini (`ord:<id>`) e per la validazione
+   * al varco (`val:<ticketId>`).
+   */
+  private withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    return this.store.withLock(key, fn);
   }
 
   async getOrder(id: string): Promise<Order> {
@@ -628,7 +846,7 @@ export class TicketingService {
   }
 
   // -------------------------------------------------- mercato secondario (v2)
-  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +10%; solo il proprietario. */
+  /** Mette in vendita un biglietto ACTIVE rispettando il tetto +5%; solo il proprietario. */
   async listTicket(ticketId: string, ownerId: string, priceCents: number): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
     if (ticket.revoked) throw new DomainError("TICKET_REVOKED", "biglietto revocato", 409);
@@ -636,7 +854,7 @@ export class TicketingService {
     if (ticket.status !== "ACTIVE") throw new DomainError("NOT_ACTIVE", "biglietto non quotabile", 409);
     if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
     if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
-      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +10%", 400);
+      throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 400);
     }
     ticket.status = "LISTED";
     ticket.askPriceCents = priceCents;
@@ -686,7 +904,8 @@ export class TicketingService {
 
   /**
    * Acquisto sul mercato secondario: il compratore paga ask + royalty (1% sul prezzo
-   * originale), la royalty va al ledger 0,5/0,5, il costo base viaggia col token (R3),
+   * originale); la fee va al ledger secondo lo stato del token — biglietto ATTIVO
+   * → tutta a TINFT, mero NFT → 0,5/0,5 —, il costo base viaggia col token (R3),
    * il venditore riceve goodwill (~euro). Registra un Transfer PAYMENT/DONE.
    */
   async buyFromMarket(ticketId: string, buyerId: string): Promise<{
@@ -703,7 +922,9 @@ export class TicketingService {
 
     const askPriceCents = ticket.askPriceCents ?? 0;
     const royalty = royaltyCents(ticket.originalPriceCents);
-    const split = royaltySplitCents(ticket.originalPriceCents);
+    // fee 1% condizionale: biglietto ATTIVO (evento non concluso) → tutta a TINFT;
+    // mero NFT → split 0,5/0,5 — speculare a TinftTicket.resaleRoyaltyReceiver
+    const split = resaleFeeSplitCents(ticket.originalPriceCents, await this.isTicketActive(ticket));
     const paidByBuyerCents = askPriceCents + royalty;
 
     const transfer: Transfer = {
@@ -759,6 +980,18 @@ export class TicketingService {
     return this.getTicket(id);
   }
 
+  /**
+   * Biglietto ATTIVO = non usato/esportato e con evento non ancora concluso
+   * (speculare a TinftTicket.isTicketActive: `used` + "Fine evento"). I Fidelity
+   * (senza evento) sono trattati come attivi finché il carnet non è esaurito.
+   */
+  private async isTicketActive(ticket: Ticket): Promise<boolean> {
+    if (ticket.status === "USED" || ticket.status === "EXPORTED" || ticket.status === "BURNED") return false;
+    if (!ticket.eventId) return true; // Fidelity di club: nessuna Fine evento
+    const event = await this.store.getEvent(ticket.eventId);
+    return (event?.status ?? "ON_SALE") !== "CONCLUDED";
+  }
+
   // --------------------------------------------- trasferimento P2P (escrow)
   async createTransfer(
     ticketId: string,
@@ -776,10 +1009,11 @@ export class TicketingService {
       priceCents = input.priceCents ?? 0;
       if (priceCents <= 0) throw new DomainError("INVALID_PRICE", "prezzo non valido");
       if (!isResalePriceAllowed(priceCents, ticket.paidCents)) {
-        throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +10%", 409);
+        throw new DomainError("PRICE_ABOVE_CAP", "prezzo oltre il tetto +5%", 409);
       }
       royalty = royaltyCents(ticket.originalPriceCents);
-      split = royaltySplitCents(ticket.originalPriceCents);
+      // fee 1% condizionale (come buyFromMarket): attivo → TINFT; mero NFT → 0,5/0,5
+      split = resaleFeeSplitCents(ticket.originalPriceCents, await this.isTicketActive(ticket));
     }
 
     const transfer: Transfer = {
@@ -875,22 +1109,40 @@ export class TicketingService {
   }
 
   // ------------------------------------------------------------ validazione
+  /**
+   * SERIALIZZATA per biglietto: tra la lettura dello stato e la scrittura di USED
+   * c'è un confine async; senza mutex due scansioni simultanee dello stesso token
+   * leggerebbero entrambe ACTIVE → due VALID (doppio ingresso). Con il lock la
+   * seconda vede USED → DUPLICATE. Su Postgres il lock è DISTRIBUITO (advisory
+   * lock in PrismaStore.withLock): vale anche tra istanze diverse.
+   */
   async validate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
+    return this.withLock(`val:${ticketId}`, () => this.doValidate(ticketId, validatorId, scenario));
+  }
+
+  private async doValidate(ticketId: string, validatorId?: string, scenario?: "screenshot"): Promise<Validation> {
     const ticket = await this.store.getTicket(ticketId);
     let outcome: ValidationOutcome;
     if (!ticket) outcome = "FAKE";
     else if (ticket.revoked) outcome = "FAKE"; // biglietto revocato (rimborso/chargeback): accesso negato
     else if (scenario === "screenshot") outcome = "SCREENSHOT";
     else if (ticket.status === "LISTED") outcome = "ESCROW"; // in trasferimento → accesso negato
-    else if (ticket.status === "USED" || ticket.status === "EXPORTED") outcome = "DUPLICATE";
+    else if (ticket.status === "USED" || ticket.status === "EXPORTED" || ticket.status === "BURNED") outcome = "DUPLICATE";
     else outcome = "VALID";
 
     if (outcome === "VALID" && ticket) {
       if (ticket.kind === "FIDELITY") {
+        // carnet multi-ingresso: non si brucia, si consuma un ingresso alla volta
         ticket.used = (ticket.used ?? 0) + 1;
         if ((ticket.used ?? 0) >= (ticket.uses ?? 1)) ticket.status = "USED"; // carnet esaurito
       } else {
-        ticket.status = "USED";
+        // Validazione al varco on-chain: markUsed BRUCIA il biglietto normale
+        // (Signature esente). PRIMA della scrittura off-chain, così un fallimento
+        // on-chain non lascia lo stato incoerente (l'operatore ritenta). Con FakeChain
+        // è un no-op; con ViemChain è la transazione di burn reale.
+        await this.chain.markUsed?.(ticket.tokenId);
+        // Signature 1/1: validato ma NON bruciato (resta collectible); normale: BRUCIATO.
+        ticket.status = ticket.isSpecial ? "USED" : "BURNED";
       }
       await this.store.updateTicket(ticket);
     }
@@ -939,11 +1191,21 @@ export class TicketingService {
   }
 
   // ----------------------------------------------------------------- export
+  /**
+   * Export del MERO NFT sopravvissuto: chi NON è entrato può, a evento concluso,
+   * portare fuori l'NFT ricordo (fee 25% se FREE). Un biglietto bruciato all'ingresso
+   * NON esiste più → non esportabile (speculare a TinftTicket._requireExportable).
+   */
   async exportTicket(ticketId: string, ownerId: string, mode: "FREE" | "ENFORCED"): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
     if (ticket.exportMode !== "NONE") throw new DomainError("ALREADY_EXPORTED", "già esportato", 409);
-    if (ticket.status !== "USED") throw new DomainError("NOT_USED", "esportabile solo a evento concluso", 409);
+    if (ticket.status === "BURNED") throw new DomainError("TICKET_BURNED", "biglietto bruciato all'ingresso: non esportabile", 409);
+    if (ticket.status !== "ACTIVE") throw new DomainError("NOT_EXPORTABLE", "esportabile solo un biglietto sopravvissuto non usato", 409);
+    const event = await this.store.getEvent(ticket.eventId);
+    if ((event?.status ?? "ON_SALE") !== "CONCLUDED") {
+      throw new DomainError("EVENT_NOT_ENDED", "esportabile solo a evento concluso", 409);
+    }
 
     ticket.exportMode = mode;
     ticket.exitFeeCents = mode === "FREE" ? exitFeeCents(ticket.originalPriceCents) : 0;

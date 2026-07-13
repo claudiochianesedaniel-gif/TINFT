@@ -65,13 +65,24 @@ export class PaymentsService {
     const order = await this.ticketing.getOrder(orderId);
     if (order.status !== "PENDING") throw new DomainError("ORDER_NOT_PENDING", "ordine non in attesa di pagamento", 409);
 
+    // Split Connect: l'incasso dell'evento va all'account connesso del club
+    // dell'organizzatore; TINFT trattiene la commissione di prevendita come
+    // application fee. Senza club/account connesso → checkout piatta (legacy).
+    const event = await this.ticketing.getEvent(order.eventId);
+    const club = event.clubId ? await this.store.getClub(event.clubId) : undefined;
+    const split =
+      club?.stripeAccountId && club.stripeOnboarded
+        ? {destinationAccountId: club.stripeAccountId, applicationFeeCents: order.feeTotalCents}
+        : {};
+
     const session = await this.provider.createCheckout({
       kind: "PRIMARY",
       amountCents: order.totalCents,
       currency: "EUR",
       accountId: order.buyerId,
       eventId: order.eventId,
-      orderId: order.id
+      orderId: order.id,
+      ...split
     });
     const payment: Payment = {
       id: this.store.id("pay"),
@@ -87,6 +98,59 @@ export class PaymentsService {
     };
     await this.store.createPayment(payment);
     return {payment, checkoutUrl: session.url, providerRef: session.providerRef};
+  }
+
+  // ------------------------------------------------------------ Stripe Connect
+  /** Link di onboarding Stripe per il club (da mostrare all'organizzatore). */
+  async stripeOnboardingLink(clubId: string): Promise<{url: string}> {
+    const club = await this.ensureClubAccount(clubId);
+    return this.requireConnect().createOnboardingLink(club.stripeAccountId as string);
+  }
+
+  /**
+   * Rilegge lo stato dell'account connesso dal provider e aggiorna il club
+   * (per il ritorno dall'onboarding, oltre al webhook account.updated).
+   */
+  async refreshClubStripe(clubId: string): Promise<{clubId: string; stripeAccountId: string; stripeOnboarded: boolean}> {
+    const club = await this.ensureClubAccount(clubId);
+    const status = await this.requireConnect().getAccountStatus(club.stripeAccountId as string);
+    club.stripeOnboarded = status.chargesEnabled;
+    await this.store.updateClub(club);
+    return {clubId: club.id, stripeAccountId: club.stripeAccountId as string, stripeOnboarded: club.stripeOnboarded};
+  }
+
+  private requireConnect() {
+    const connect = this.provider.connect;
+    if (!connect) throw new DomainError("CONNECT_UNAVAILABLE", "il provider di pagamento non supporta Connect", 501);
+    return connect;
+  }
+
+  /**
+   * Club con account connesso garantito: i club creati prima di Connect (dati
+   * migrati/snapshot) non ne hanno uno — viene creato QUI, lazy, riusando quello
+   * di un altro club dello stesso organizzatore se esiste.
+   */
+  private async ensureClubAccount(clubId: string) {
+    const club = await this.store.getClub(clubId);
+    if (!club) throw NotFound("club");
+    if (club.stripeAccountId) return club;
+
+    const sibling = (await this.store.listClubs()).find((c) => c.organizerId === club.organizerId && c.stripeAccountId);
+    if (sibling) {
+      club.stripeAccountId = sibling.stripeAccountId;
+      club.stripeOnboarded = sibling.stripeOnboarded;
+    } else {
+      const org = await this.store.getAccount(club.organizerId);
+      const acct = await this.requireConnect().createConnectedAccount({
+        clubId: club.id,
+        email: org?.email,
+        name: club.ragioneSociale ?? club.name
+      });
+      club.stripeAccountId = acct.accountId;
+      club.stripeOnboarded = acct.chargesEnabled;
+    }
+    await this.store.updateClub(club);
+    return club;
   }
 
   /** Ingestione webhook: verifica/normalizza e processa in modo idempotente. */
@@ -111,6 +175,18 @@ export class PaymentsService {
   }
 
   private async processWebhook(event: PspEvent): Promise<WebhookResult> {
+    // Onboarding Connect completato/aggiornato: propaga charges_enabled ai club
+    // che usano quell'account connesso (sblocca/blocca la pubblicazione eventi).
+    if (event.type === "account_updated") {
+      const clubs = await this.store.clubsByStripeAccount(event.providerRef);
+      if (clubs.length === 0) return {handled: false};
+      for (const club of clubs) {
+        club.stripeOnboarded = !!event.chargesEnabled;
+        await this.store.updateClub(club);
+      }
+      return {handled: true};
+    }
+
     const payment = await this.store.paymentByProviderRef(event.providerRef);
     if (!payment) return {handled: false};
 
@@ -156,6 +232,7 @@ export class PaymentsService {
       const mint = await this.chain.mintTicket({
         to: buyer?.walletAddress,
         reference: payment.eventId,
+        onchainEventId: await this.ticketing.ensureOnchainEventId(payment.eventId), // registro (FASE 4)
         priceCents: payment.amountCents
       });
       const ticket = await this.ticketing.purchasePrimary(payment.eventId, payment.accountId, {

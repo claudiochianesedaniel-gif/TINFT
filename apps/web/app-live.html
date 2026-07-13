@@ -226,7 +226,7 @@ var MOCK = (function(){
     blog:[
       {id:'b1',slug:'guida-acquisto',tag:'GUIDA',title:'Come acquistare un biglietto NFT su TINFT',excerpt:'Dalla registrazione al wallet: il percorso completo per il tuo primo biglietto.',readMins:5},
       {id:'b2',slug:'mint-on-chain',tag:'DIETRO LE QUINTE',title:'Dietro le quinte: come funziona il mint on-chain',excerpt:'Cosa succede quando paghi: escrow, mint del token e ledger di piattaforma.',readMins:7},
-      {id:'b3',slug:'tetto-prezzo',tag:'MERCATO',title:'Mercato secondario: il tetto +10% e la royalty',excerpt:'Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.',readMins:4}
+      {id:'b3',slug:'tetto-prezzo',tag:'MERCATO',title:'Mercato secondario: il tetto +5% e la fee 1%',excerpt:'Rivendere senza secondary selvaggio: regole, royalty 1% e protezione del fan.',readMins:4}
     ],
     news:[
       {id:'n1',date:'2026-05-02',title:'TINFT apre le vendite per la stagione estiva'},
@@ -241,10 +241,10 @@ var MOCK = (function(){
   var c1={id:'club_1',organizerId:org.id,name:'Club Astra',city:'Milano',fidelityPriceCents:12000,fidelityUses:5};
   var c2={id:'club_2',organizerId:org.id,name:'Magazzino Generali',city:'Milano',fidelityPriceCents:0,fidelityUses:0};
   store.clubs.push(c1,c2);
-  function mkEvent(o){ var e={id:id('evt'),organizerId:org.id,clubId:o.clubId,title:o.title,venue:o.venue,date:o.date,type:'TICKET_NFT',priceCents:o.priceCents,capacity:o.capacity,sold:o.sold||0,status:'ON_SALE'}; store.events.push(e); return e; }
-  var e1=mkEvent({clubId:'club_1',title:'Notte Elettronica · Vol.4',venue:'Club Astra · Milano',date:'21 GIU',priceCents:3150,capacity:500,sold:312});
-  mkEvent({clubId:'club_1',title:'Blue Room · Jazz',venue:'Club Astra · Milano',date:'03 LUG',priceCents:2400,capacity:200,sold:36});
-  mkEvent({clubId:'club_2',title:'Opening Night',venue:'Magazzino Generali · Milano',date:'28 GIU',priceCents:2800,capacity:300,sold:120});
+  function mkEvent(o){ var e={id:id('evt'),organizerId:org.id,clubId:o.clubId,title:o.title,venue:o.venue,date:o.date,type:'TICKET_NFT',priceCents:o.priceCents,capacity:o.capacity,sold:o.sold||0,status:'ON_SALE',gateCode:o.gateCode}; store.events.push(e); return e; }
+  var e1=mkEvent({clubId:'club_1',title:'Notte Elettronica · Vol.4',venue:'Club Astra · Milano',date:'21 GIU',priceCents:3150,capacity:500,sold:312,gateCode:'NOTTE-7K2'});
+  mkEvent({clubId:'club_1',title:'Blue Room · Jazz',venue:'Club Astra · Milano',date:'03 LUG',priceCents:2400,capacity:200,sold:36,gateCode:'JAZZ-9R3'});
+  mkEvent({clubId:'club_2',title:'Opening Night',venue:'Magazzino Generali · Milano',date:'28 GIU',priceCents:2800,capacity:300,sold:120,gateCode:'OPEN-5X1'});
   store.tiers[e1.id] = [
     {id:'tier_1',eventId:e1.id,name:'Early Bird',priceCents:2800,note:'Disponibilità limitata',soldOut:false},
     {id:'tier_2',eventId:e1.id,name:'Intero',priceCents:3150,note:'',soldOut:false},
@@ -252,7 +252,7 @@ var MOCK = (function(){
   ];
 
   function presale(p){ return Math.round(p*0.10); }            // 10% commissione prevendita
-  function cap(paid){ return Math.floor(paid*1.10); }          // tetto +10%
+  function cap(paid){ return Math.floor(paid*1.05); }          // tetto +5%
   function royalty(orig){ return Math.floor(orig*0.01); }      // 1%
 
   function makeTicket(o){
@@ -266,7 +266,7 @@ var MOCK = (function(){
   store.accounts[seller.id]=seller;
   (function(){
     var t=makeTicket({eventId:e1.id,ownerId:seller.id,priceCents:3150,holderName:'Giulia Rossi'});
-    t.status='LISTED'; t.askPriceCents=Math.floor(3150*1.10); t.market='Re-Selling';
+    t.status='LISTED'; t.askPriceCents=Math.floor(3150*1.05); t.market='Re-Selling';
   })();
 
   function find(arr,pred){ for(var i=0;i<arr.length;i++) if(pred(arr[i])) return arr[i]; return null; }
@@ -336,7 +336,7 @@ var MOCK = (function(){
       if(m && method==='POST'){
         var lt=find(store.tickets,function(x){return x.id===m[1];}); if(!lt) return Promise.reject(new Error('biglietto non trovato'));
         if(lt.status!=='ACTIVE') return Promise.reject(new Error('biglietto non quotabile'));
-        if(body.priceCents>cap(lt.paidCents)) return Promise.reject(new Error('prezzo oltre il tetto +10%'));
+        if(body.priceCents>cap(lt.paidCents)) return Promise.reject(new Error('prezzo oltre il tetto +5%'));
         lt.status='LISTED'; lt.askPriceCents=body.priceCents; lt.market='Re-Selling'; return R(lt);
       }
       m=path.match(/^\/tickets\/([^/]+)\/unlist$/);
@@ -345,7 +345,10 @@ var MOCK = (function(){
       if(m && method==='POST'){
         var mt=find(store.tickets,function(x){return x.id===m[1];}); if(!mt||mt.status!=='LISTED') return Promise.reject(new Error('biglietto non in vendita'));
         var buyer=store.accounts[body.buyerId]||{}; var ask=mt.askPriceCents||0; var roy=royalty(mt.originalPriceCents);
-        var split={tinftCents:Math.floor(roy/2)}; split.organizerCents=roy-split.tinftCents;
+        // fee 1% condizionale: biglietto ATTIVO (evento non concluso) → tutta a TINFT; mero NFT → 0,5/0,5
+        var mev=find(store.events,function(x){return x.id===mt.eventId;});
+        var attivo=!mev||mev.status!=='CONCLUDED';
+        var split=attivo?{tinftCents:roy,organizerCents:0}:{tinftCents:Math.floor(roy/2),organizerCents:roy-Math.floor(roy/2)};
         store.ledger.royaltyTinftCents+=split.tinftCents; store.ledger.royaltyOrganizerCents+=split.organizerCents;
         mt.ownerId=body.buyerId; mt.paidCents=ask; mt.status='ACTIVE'; mt.holderName=(buyer.nome||'')+' '+(buyer.cognome||''); mt.askPriceCents=undefined; mt.market=undefined;
         return R({ticket:mt,royalty:split,paidByBuyerCents:ask+roy});
@@ -372,10 +375,31 @@ var MOCK = (function(){
       if(m && method==='GET') return R((store.validators[m[1]]||[]).slice());
       if(m && method==='POST'){ var g2={id:id('gate'),eventId:m[1],code:'VARCO-'+(1000+Math.floor(Math.random()*9000)),createdAt:Math.floor(Date.now()/1000)}; (store.validators[m[1]]=store.validators[m[1]]||[]).push(g2); return R(g2); }
 
+      // codice varco (FASE 1): aggancio staff + rotate/revoke; promemoria (FASE 8)
+      if(path==='/gate/access' && method==='POST'){
+        var code=(body&&body.code?String(body.code):'').trim().toUpperCase().replace(/\s+/g,'');
+        var gev=find(store.events,function(x){return x.gateCode===code;});
+        return gev ? R(gev) : Promise.reject(new Error('codice varco non trovato'));
+      }
+      m=path.match(/^\/events\/([^/]+)\/gate-code\/rotate$/);
+      if(m && method==='POST'){
+        var rev=find(store.events,function(x){return x.id===m[1];}); if(!rev) return Promise.reject(new Error('evento non trovato'));
+        rev.gateCode=(rev.title.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5)||'VARCO')+'-'+Math.floor(1000+Math.random()*9000);
+        return R(rev);
+      }
+      m=path.match(/^\/events\/([^/]+)\/gate-code\/revoke$/);
+      if(m && method==='POST'){ var xev=find(store.events,function(x){return x.id===m[1];}); if(!xev) return Promise.reject(new Error('evento non trovato')); xev.gateCode=undefined; return R(xev); }
+      m=path.match(/^\/events\/([^/]+)\/remind$/);
+      if(m && method==='POST'){
+        var rmev=find(store.events,function(x){return x.id===m[1];}); if(!rmev) return Promise.reject(new Error('evento non trovato'));
+        var owners={}; store.tickets.forEach(function(t){ if(t.eventId===rmev.id && t.status==='ACTIVE') owners[t.ownerId]=1; });
+        var n=Object.keys(owners).length; return R({recipients:n,sent:n});
+      }
+
       m=path.match(/^\/tickets\/([^/]+)\/validate$/);
       if(m && method==='POST'){
         var vt=find(store.tickets,function(x){return x.id===m[1];}); var out='FAKE';
-        if(vt){ if(vt.status==='LISTED')out='ESCROW'; else if(vt.status==='USED'||vt.status==='EXPORTED')out='DUPLICATE'; else { out='VALID'; if(vt.kind==='FIDELITY'){ vt.used=(vt.used||0)+1; if(vt.used>=(vt.uses||1))vt.status='USED'; } else vt.status='USED'; store._validated=(store._validated||0)+1; } }
+        if(vt){ if(vt.status==='LISTED')out='ESCROW'; else if(vt.status==='USED'||vt.status==='EXPORTED'||vt.status==='BURNED')out='DUPLICATE'; else { out='VALID'; if(vt.kind==='FIDELITY'){ vt.used=(vt.used||0)+1; if(vt.used>=(vt.uses||1))vt.status='USED'; } else if(vt.isSpecial){ vt.status='USED'; } else { vt.status='BURNED'; } store._validated=(store._validated||0)+1; } }
         return R({id:id('val'),ticketId:m[1],outcome:out,at:Math.floor(Date.now()/1000)});
       }
 
@@ -558,7 +582,7 @@ function statStrip(stats){
   }).join('') + '</div>';
 }
 function statusPill(st){
-  var map = { ACTIVE:['green','Attivo'], LISTED:['orange','In vendita'], USED:['used','Usato'], EXPORTED:['used','Esportato'] };
+  var map = { ACTIVE:['green','Attivo'], LISTED:['orange','In vendita'], USED:['used','Usato'], EXPORTED:['used','Esportato'], BURNED:['used','Bruciato al varco'] };
   var m = map[st] || ['', st];
   return '<span class="pill ' + m[0] + '">' + esc(m[1]) + '</span>';
 }
@@ -679,7 +703,7 @@ function cliBiglietti(nav){
   var me = meId();
   return aapi('/accounts/'+me+'/tickets').then(function(tks){
     var active=0,used=0,listed=0,spent=0;
-    tks.forEach(function(t){ if(t.status==='ACTIVE')active++; else if(t.status==='USED'||t.status==='EXPORTED')used++; if(t.status==='LISTED')listed++; spent+=t.paidCents||0; });
+    tks.forEach(function(t){ if(t.status==='ACTIVE')active++; else if(t.status==='USED'||t.status==='EXPORTED'||t.status==='BURNED')used++; if(t.status==='LISTED')listed++; spent+=t.paidCents||0; });
     var stats = statStrip([
       {value:active,label:'attivi',color:'#5fe0b0'},
       {value:used,label:'usati'},
@@ -687,13 +711,17 @@ function cliBiglietti(nav){
       {value:eur(spent),label:'spesa totale'}
     ]);
     var cards = tks.length ? tks.map(function(t){
-      var cap = Math.floor((t.paidCents||0)*1.10);
+      var cap = Math.floor((t.paidCents||0)*1.05);
       var actions = '';
       if(t.status==='ACTIVE'){
         actions = '<button class="sm outline" onclick="listTicket(\'' + t.id + '\',' + (t.paidCents||0) + ',' + cap + ')">Rivendi</button>';
       } else if(t.status==='LISTED'){
         actions = '<button class="sm ghost" onclick="unlistTicket(\'' + t.id + '\')">Ritira dal mercato</button>';
       }
+      // burn all'ingresso: nessuna azione (né rivendita né export) sul biglietto bruciato
+      var burnNote = t.status==='BURNED'
+        ? '<div class="faint" style="margin-top:8px;color:#ff9b9b">Hai usato questo titolo per entrare: ticket e NFT sono stati bruciati al varco.</div>'
+        : '';
       return '<div class="card">' +
         '<div class="cover" style="height:96px;background:' + cover(t.eventId||t.id) + '"><span style="position:absolute;top:10px;right:10px">' + statusPill(t.status) + '</span></div>' +
         '<div class="body">' +
@@ -701,6 +729,7 @@ function cliBiglietti(nav){
           '<div class="faint" style="margin-top:6px">token <code>#' + esc(t.tokenId) + '</code> · ' + eur(t.paidCents) + (t.kind==='FIDELITY'&&t.uses?(' · '+(t.used||0)+'/'+t.uses+' ingressi'):'') + '</div>' +
           '<div class="faint" style="margin-top:4px">intestato a ' + esc(t.holderName||'—') + '</div>' +
           (t.status==='LISTED'&&t.askPriceCents?('<div class="faint" style="margin-top:4px;color:#ffcf80">richiesto ' + eur(t.askPriceCents) + ' · tetto ' + eur(cap) + '</div>'):'') +
+          burnNote +
           (actions?('<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' + actions + '</div>'):'') +
         '</div></div>';
     }).join('') : '';
@@ -713,11 +742,11 @@ function titleForTicket(t){ return 'Biglietto NFT'; }
 
 function listTicket(id, paid, cap){
   var def = (cap/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-  var input = (typeof prompt==='function') ? prompt('Prezzo di rivendita in € (tetto +10% = ' + def + ')', def) : def;
+  var input = (typeof prompt==='function') ? prompt('Prezzo di rivendita in € (tetto +5% = ' + def + ')', def) : def;
   if(input===null || input===undefined) return;
   var cents = Math.round(parseFloat(String(input).replace(',','.'))*100);
   if(!cents || cents<=0){ toast('Prezzo non valido','err'); return; }
-  if(cents>cap){ toast('Prezzo oltre il tetto +10% (' + eur(cap) + ')','err'); return; }
+  if(cents>cap){ toast('Prezzo oltre il tetto +5% (' + eur(cap) + ')','err'); return; }
   return aapi('/tickets/'+id+'/list','POST',{ ownerId:meId(), priceCents:cents }).then(function(){ toast('Biglietto messo in vendita','ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
 }
 function unlistTicket(id){
@@ -730,7 +759,7 @@ function cliMercato(nav){
     var stats = statStrip([
       {value:items.length,label:'in vendita',color:'#ffcf80'},
       {value:minP!=null?eur(minP):'—',label:'prezzo minimo'},
-      {value:'+10%',label:'tetto rivendita',color:'#6f9eff'}
+      {value:'+5%',label:'tetto rivendita',color:'#6f9eff'}
     ]);
     var cards = items.length ? items.map(function(t){
       return '<div class="card lift">' +
@@ -744,7 +773,7 @@ function cliMercato(nav){
         '</div></div>';
     }).join('') : '';
     var html = banner() + nav + '<div class="sect-title"><h1>Mercato secondario</h1></div>' +
-      '<p class="muted" style="margin:-8px 0 16px;max-width:60ch">Biglietti rivenduti da altri clienti. Royalty all\'organizzatore inclusa, prezzo con tetto +10%.</p>' + stats +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:60ch">Biglietti rivenduti da altri clienti. Fee 1% a TINFT inclusa (biglietto attivo), prezzo con tetto +5%.</p>' + stats +
       (items.length ? ('<div class="grid">' + cards + '</div>') : '<div class="empty">Nessun biglietto in vendita ora. Mettine uno tu da <b style="color:#6f9eff">I miei biglietti</b>.</div>');
     $('content').innerHTML = html;
   });
@@ -896,65 +925,112 @@ function orgAccessi(nav){
       $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Accessi / Varchi</h1></div><div class="empty">Nessun evento. Crea prima un evento in <b style="color:#6f9eff">Club &amp; Eventi</b>.</div>';
       return;
     }
-    return Promise.all(mine.map(function(e){ return aapi('/events/'+e.id+'/validators').catch(function(){return [];}); })).then(function(lists){
-      var html = mine.map(function(e, i){
-        var gates = lists[i] || [];
-        var gHtml = gates.length ? ('<div class="listrows" style="margin-top:12px">' + gates.map(function(g){
-          return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">' + esc(g.code) + '</div><div class="faint" style="margin-top:3px">varco di validazione</div></div><span class="pill blue">Attivo</span></div>';
-        }).join('') + '</div>') : '<div class="faint" style="margin-top:10px">Nessun varco. Creane uno per abilitare la validazione in app.</div>';
-        return '<div class="panel" style="margin-bottom:14px">' +
-          '<div class="row"><div><div class="title">' + esc(e.title) + '</div><div class="muted" style="margin-top:3px">' + esc(e.date||'') + ' · ' + esc(e.venue||'') + '</div></div>' +
-          '<button class="sm outline" onclick="oCreateValidator(\'' + e.id + '\')">+ Crea varco</button></div>' +
-          gHtml + '</div>';
-      }).join('');
-      $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Accessi / Varchi</h1></div>' +
-        '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">Crea i varchi (gate) per i tuoi eventi. La validazione degli ingressi avviene esclusivamente nell\'app TINFT del validatore.</p>' + html;
-    });
+    var html = mine.map(function(e){
+      var gHtml = e.gateCode
+        ? '<div class="listrows" style="margin-top:12px"><div class="lr"><div class="grow"><div class="title" style="font-size:16px;letter-spacing:1px">' + esc(e.gateCode) + '</div><div class="faint" style="margin-top:3px">codice varco · lo staff lo inserisce in app per agganciarsi a QUESTO evento</div></div><span class="pill blue">Attivo</span></div></div>'
+        : '<div class="faint" style="margin-top:10px">Codice varco REVOCATO: nessun validatore può agganciarsi. Ruota per generarne uno nuovo.</div>';
+      return '<div class="panel" style="margin-bottom:14px">' +
+        '<div class="row"><div><div class="title">' + esc(e.title) + '</div><div class="muted" style="margin-top:3px">' + esc(e.date||'') + ' · ' + esc(e.venue||'') + '</div></div>' +
+        '<div><button class="sm outline" onclick="oRotateGate(\'' + e.id + '\')">↻ Ruota</button> ' +
+        (e.gateCode ? '<button class="sm outline" onclick="oRevokeGate(\'' + e.id + '\')">Revoca</button> ' : '') +
+        '<button class="sm outline" onclick="oRemind(\'' + e.id + '\')">✉ Promemoria</button></div></div>' +
+        gHtml + '</div>';
+    }).join('');
+    $('content').innerHTML = banner() + nav + '<div class="sect-title"><h1>Accessi / Varchi</h1></div>' +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">Ogni evento ha il suo codice varco: lo staff lo inserisce nell\'app e resta agganciato SOLO a quell\'evento. Ruota il codice per invalidare il vecchio; revoca per sospendere gli accessi staff. Il promemoria email va ai possessori dei biglietti validi.</p>' + html;
   });
 }
-function oCreateValidator(eventId){
-  return aapi('/events/'+eventId+'/validators','POST',{ organizerId:meId() }).then(function(g){ toast('Varco creato · ' + (g&&g.code?g.code:''), 'ok'); return render(); }).catch(function(e){ toast(e.message,'err'); });
+function oRotateGate(eventId){
+  return aapi('/events/'+eventId+'/gate-code/rotate','POST',{ organizerId:meId() })
+    .then(function(e){ toast('Nuovo codice varco · ' + (e&&e.gateCode?e.gateCode:''), 'ok'); return render(); })
+    .catch(function(e){ toast(e.message,'err'); });
+}
+function oRevokeGate(eventId){
+  return aapi('/events/'+eventId+'/gate-code/revoke','POST',{ organizerId:meId() })
+    .then(function(){ toast('Codice varco revocato', 'ok'); return render(); })
+    .catch(function(e){ toast(e.message,'err'); });
+}
+function oRemind(eventId){
+  return aapi('/events/'+eventId+'/remind','POST',{ organizerId:meId() })
+    .then(function(r){ toast('Promemoria inviato · ' + (r?r.sent:0) + '/' + (r?r.recipients:0) + ' destinatari', 'ok'); })
+    .catch(function(e){ toast(e.message,'err'); });
 }
 
 /* =========================================================================
-   VALIDATORE
-   Lists the client's active tickets and validates them, showing the outcome.
-   (The backend validate endpoint just needs an authenticated user; the
-   organizer/validator token is used here.)
+   VALIDATORE — flusso reale (FASI 1+2):
+   1) lo staff inserisce il CODICE VARCO dell'evento (POST /gate/access) e resta
+      agganciato SOLO a quell'evento — nessun picker di eventi;
+   2) la validazione passa dal QR rotante del possessore (GET access-token con il
+      token del cliente, che qui convive nella stessa demo) e da POST /validate/scan.
+   In DEMO offline lo scan ricade sull'endpoint legacy per-ticket del mock.
    ========================================================================= */
 function renderValidatore(){
+  // non ancora agganciato → schermata codice varco (mai una lista di eventi)
+  if(!ctx.staffGate){
+    $('content').innerHTML = banner() + '<div class="sect-title"><span class="eyebrow acc">Varco · accesso staff</span><h1>Modalità Staff</h1></div>' +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">Inserisci il <b>codice varco</b> che ti ha dato l\'organizzatore: resterai agganciato SOLO a quell\'evento.</p>' +
+      '<div class="panel"><div class="row" style="gap:10px"><input id="gatecode" placeholder="es. NOTTE-7K2" style="flex:1;text-transform:uppercase" onkeydown="if(event.key===\'Enter\')gateBind()">' +
+      '<button class="sm green" onclick="gateBind()">Collega varco</button></div>' +
+      '<div class="faint" style="margin-top:12px">Codici demo: NOTTE-7K2 · JAZZ-9R3 · OPEN-5X1</div></div>';
+    return Promise.resolve();
+  }
+  var gate = ctx.staffGate;
   var clientId = ctx.auth.cliente ? ctx.auth.cliente.accountId : null;
   if(!clientId) return Promise.resolve($('content').innerHTML = '<div class="empty">Cliente non inizializzato.</div>');
-  // read client tickets using the client's own token (ownership-gated endpoint)
   var clientTok = ctx.auth.cliente.token;
+  var gateBanner = '<div class="panel" style="margin-bottom:14px"><div class="row"><div><div class="eyebrow acc">Varco collegato</div>' +
+    '<div class="title" style="margin-top:6px">' + esc(gate.title) + ' · <span style="letter-spacing:1px">' + esc(gate.gateCode||'') + '</span></div>' +
+    '<div class="faint" style="margin-top:3px">' + esc(gate.date||'') + ' · ' + esc(gate.venue||'') + ' — validazioni consentite SOLO per questo evento</div></div>' +
+    '<button class="sm outline" onclick="gateUnbind()">Scollega</button></div></div>';
   return api('/accounts/'+clientId+'/tickets', 'GET', undefined, clientTok).then(function(tks){
-    var active = tks.filter(function(t){ return t.status==='ACTIVE'; });
-    var others = tks.filter(function(t){ return t.status!=='ACTIVE'; });
+    var mine = tks.filter(function(t){ return t.eventId===gate.id; }); // solo l'evento del varco
+    var active = mine.filter(function(t){ return t.status==='ACTIVE'; });
+    var others = mine.filter(function(t){ return t.status!=='ACTIVE'; });
     var stats = statStrip([
       {value:active.length,label:'da validare',color:'#5fe0b0'},
-      {value:others.filter(function(t){return t.status==='USED'||t.status==='EXPORTED';}).length,label:'già usati'},
-      {value:tks.length,label:'totali'}
+      {value:others.filter(function(t){return t.status==='USED'||t.status==='EXPORTED';}).length,label:'già entrati'},
+      {value:mine.length,label:'di questo evento'}
     ]);
     var list = active.length ? ('<div class="listrows">' + active.map(function(t){
-      return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">' + esc(t.kind==='FIDELITY'?'Fidelity':'Biglietto NFT') + '</div>' +
-        '<div class="faint" style="margin-top:3px">token #' + esc(t.tokenId) + ' · ' + esc(t.holderName||'—') + (t.kind==='FIDELITY'&&t.uses?(' · '+(t.used||0)+'/'+t.uses):'') + '</div></div>' +
-        '<button class="sm green" onclick="doValidate(\'' + t.id + '\')">Valida</button></div>';
-    }).join('') + '</div>') : '<div class="empty">Nessun biglietto attivo. Acquista qualcosa dal profilo <b style="color:#6f9eff">Cliente</b>.</div>';
+      return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">Biglietto NFT</div>' +
+        '<div class="faint" style="margin-top:3px">token #' + esc(t.tokenId) + ' · ' + esc(t.holderName||'—') + '</div></div>' +
+        '<button class="sm green" onclick="doValidate(\'' + t.id + '\')">Scansiona QR</button></div>';
+    }).join('') + '</div>') : '<div class="empty">Nessun biglietto attivo del cliente demo per questo evento. Acquista dal profilo <b style="color:#6f9eff">Cliente</b>.</div>';
     var usedList = others.length ? ('<div class="sect-title" style="margin-top:24px"><span class="eyebrow">Storico</span></div><div class="listrows">' + others.map(function(t){
       return '<div class="lr"><div class="grow"><div class="title" style="font-size:14px">Biglietto NFT</div><div class="faint" style="margin-top:3px">token #' + esc(t.tokenId) + '</div></div>' + statusPill(t.status) + '</div>';
     }).join('') + '</div>') : '';
-    $('content').innerHTML = banner() + '<div class="sect-title"><span class="eyebrow acc">Varco · validazione</span><h1>Validatore</h1></div>' +
-      '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">Scansiona e valida i biglietti attivi. Esito: valido, duplicato (già usato), escrow (in trasferimento) o falso.</p>' +
+    $('content').innerHTML = banner() + '<div class="sect-title"><span class="eyebrow acc">Varco · validazione</span><h1>Validatore</h1></div>' + gateBanner +
+      '<p class="muted" style="margin:-8px 0 16px;max-width:62ch">La scansione legge il QR a rotazione del possessore e lo verifica sul server. Esiti: valido, duplicato, screenshot (scaduto), escrow, falso.</p>' +
       stats + list + usedList;
   });
 }
-function doValidate(ticketId){
-  return aapi('/tickets/'+ticketId+'/validate','POST',{}).then(function(v){
-    var out = v && v.outcome ? v.outcome : 'FAKE';
-    var labels = { VALID:'VALIDO ✓', DUPLICATE:'DUPLICATO · già usato', ESCROW:'ESCROW · in trasferimento', SCREENSHOT:'SCREENSHOT · non valido', FAKE:'FALSO · non riconosciuto' };
-    toast('Esito: ' + (labels[out]||out), out==='VALID' ? 'ok' : 'err');
+function gateBind(){
+  var code = $('gatecode') ? $('gatecode').value : '';
+  if(!code || !code.trim()){ toast('Inserisci il codice varco','err'); return; }
+  return aapi('/gate/access','POST',{ code:code }).then(function(ev){
+    ctx.staffGate = ev;
+    toast('Varco collegato · ' + ev.title, 'ok');
     return render();
   }).catch(function(e){ toast(e.message,'err'); });
+}
+function gateUnbind(){ ctx.staffGate = null; return render(); }
+function doValidate(ticketId){
+  // DEMO offline: il mock non firma QR → endpoint legacy per-ticket
+  if(ctx.mock){
+    return aapi('/tickets/'+ticketId+'/validate','POST',{}).then(showOutcome).catch(function(e){ toast(e.message,'err'); });
+  }
+  // flusso REALE (FASE 2, solo-online): QR rotante del possessore → scan server-side
+  var clientTok = ctx.auth.cliente.token;
+  return api('/tickets/'+ticketId+'/access-token','GET',undefined,clientTok)
+    .then(function(r){ return aapi('/validate/scan','POST',{ token:r.token }); })
+    .then(showOutcome)
+    .catch(function(e){ toast('Offline o errore: validazione sospesa · ' + e.message, 'err'); });
+}
+function showOutcome(v){
+  var out = v && v.outcome ? v.outcome : 'FAKE';
+  var labels = { VALID:'VALIDO ✓', DUPLICATE:'DUPLICATO · già usato', ESCROW:'ESCROW · in trasferimento', SCREENSHOT:'SCREENSHOT · QR scaduto', FAKE:'FALSO · non riconosciuto' };
+  toast('Esito: ' + (labels[out]||out), out==='VALID' ? 'ok' : 'err');
+  return render();
 }
 
 /* =========================================================================

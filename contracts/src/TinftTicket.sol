@@ -12,7 +12,9 @@ import {ITransferValidator} from "./interfaces/ITransferValidator.sol";
 /// @notice Biglietto ERC-721 con trasferimenti *enforced* (ERC-721C) + royalty
 ///         EIP-2981 + anti-bagarinaggio + uscita controllata (export).
 ///
-/// @dev    M1 transfer enforced · M2 royalty 1% / `originalPrice` · M3 costo base
+/// @dev    M1 transfer enforced · M2 fee di rivendita 1% / `originalPrice`
+///         (biglietto ATTIVO → 100% a TINFT; mero NFT dopo la Fine evento →
+///         split 0,5/0,5, vedi `resaleRoyaltyReceiver`) · M3 costo base
 ///         che viaggia col token · M4 limite 3/evento per identità (`hash(CF)`) ·
 ///         M5 validazione (`markUsed`) ed export post-evento:
 ///         `exportFree` (fee 25% + sgancio dalla policy) / `exportEnforced`
@@ -36,7 +38,7 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     struct TicketData {
         uint256 eventId;
         uint256 originalPrice; // prezzo originale (face) — base immutabile della royalty 1% (R1)
-        uint256 paid; // costo base corrente — base del tetto +10% (R2/R3), aggiornato a ogni vendita
+        uint256 paid; // costo base corrente — base del tetto +5% (R2/R3), aggiornato a ogni vendita
     }
 
     /// @notice validator esterno consultato a ogni trasferimento reale
@@ -49,8 +51,14 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     mapping(uint256 tokenId => TicketData data) private _ticket;
     /// @notice se true, il token è soggetto alla transfer policy (default al mint)
     mapping(uint256 tokenId => bool bound) public policyBound;
-    /// @notice biglietto validato al varco → "usato"/collectible, esportabile
+    /// @notice biglietto validato al varco. Per i biglietti NORMALI la validazione
+    ///         BRUCIA il token (`_burn`), quindi `used` resta true come traccia ma
+    ///         `ownerOf` reverte. Per i biglietti Signature (`isSpecial`) resta true
+    ///         senza burn: il collectible sopravvive.
     mapping(uint256 tokenId => bool isUsed) public used;
+    /// @notice biglietto Signature/special (1/1 dell'organizzatore): NON viene mai
+    ///         bruciato all'ingresso, resta per sempre come pezzo da collezione.
+    mapping(uint256 tokenId => bool special) public isSpecial;
     /// @notice regime d'uscita registrato sul token (definitivo)
     mapping(uint256 tokenId => ExportMode mode) public exportModeOf;
     /// @notice moduli di vendita autorizzati (escrow) a registrare le vendite
@@ -61,21 +69,30 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     mapping(address account => bytes32 identityHash) public identityOf;
     /// @notice biglietti correntemente "controllati" da un'identità per evento (R4)
     mapping(bytes32 identityHash => mapping(uint256 eventId => uint256 count)) public heldCount;
+    /// @notice "Fine evento" per eventId (epoch seconds). 0 = non impostata → i
+    ///         biglietti dell'evento sono considerati ATTIVI (evento non concluso).
+    mapping(uint256 eventId => uint256 endsAt) public eventEndOf;
 
     event TransferValidatorUpdated(address indexed validator);
     event PlatformTreasuryUpdated(address indexed treasury);
     event SaleOperatorUpdated(address indexed operator, bool allowed);
     event ValidatorOperatorUpdated(address indexed operator, bool allowed);
     event IdentitySet(address indexed account, bytes32 indexed identityHash);
+    event EventEndSet(uint256 indexed eventId, uint256 endsAt);
     event TicketMinted(uint256 indexed tokenId, address indexed to, uint256 indexed eventId, uint256 price);
+    event SpecialMinted(uint256 indexed tokenId, address indexed to, uint256 indexed eventId);
     event PaidUpdated(uint256 indexed tokenId, uint256 newPaid);
     event TicketUsed(uint256 indexed tokenId);
+    event TicketBurned(uint256 indexed tokenId);
     event Exported(uint256 indexed tokenId, ExportMode mode, uint256 exitFee);
 
     error NotSaleOperator();
     error NotValidatorOperator();
     error NotTicketOwner();
     error NotUsed();
+    error TicketAlreadyUsed();
+    error TokenInEscrow();
+    error EventNotEnded();
     error AlreadyExported();
     error TreasuryNotSet();
     error WrongExitFee(uint256 expected, uint256 sent);
@@ -117,20 +134,42 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         emit IdentitySet(account, identityHash);
     }
 
+    /// @notice Registra la "Fine evento" di un eventId (epoch seconds). Prima di
+    ///         quel momento il biglietto è ATTIVO (fee di rivendita 1% tutta a
+    ///         TINFT); dopo è un mero NFT (split 0,5/0,5). La imposta il backend.
+    function setEventEnd(uint256 eventId, uint256 endsAt) external onlyOwner {
+        eventEndOf[eventId] = endsAt;
+        emit EventEndSet(eventId, endsAt);
+    }
+
     // ---------------------------------------------------------------------- mint
-    /// @notice Conia un biglietto verso `to` al prezzo `price` (face). Applica il
-    ///         limite 3/evento per identità (R4).
+    /// @notice Conia un biglietto d'ingresso verso `to` al prezzo `price` (face).
+    ///         Applica il limite 3/evento per identità (R4). Alla validazione VALID
+    ///         il token viene BRUCIATO (vedi `markUsed`).
     function mint(address to, uint256 eventId, uint256 price) external onlyOwner returns (uint256 tokenId) {
         bytes32 id = identityOf[to];
         if (id != bytes32(0)) {
             uint256 c = ++heldCount[id][eventId];
             if (c > MAX_PER_EVENT) revert EventLimitReached(id, eventId);
         }
+        tokenId = _mintTicket(to, eventId, price);
+        emit TicketMinted(tokenId, to, eventId, price);
+    }
+
+    /// @notice Conia un biglietto Signature/special (1/1 collectible dell'organizzatore):
+    ///         NON conta nel limite 3/evento (non è un biglietto d'ingresso) e NON
+    ///         viene mai bruciato all'ingresso — resta per sempre nella collezione.
+    function mintSpecial(address to, uint256 eventId, uint256 price) external onlyOwner returns (uint256 tokenId) {
+        tokenId = _mintTicket(to, eventId, price);
+        isSpecial[tokenId] = true;
+        emit SpecialMinted(tokenId, to, eventId);
+    }
+
+    function _mintTicket(address to, uint256 eventId, uint256 price) private returns (uint256 tokenId) {
         tokenId = _nextId++;
         _ticket[tokenId] = TicketData({eventId: eventId, originalPrice: price, paid: price});
         policyBound[tokenId] = true;
         _safeMint(to, tokenId);
-        emit TicketMinted(tokenId, to, eventId, price);
     }
 
     // ----------------------------------------------------------------- views
@@ -148,6 +187,27 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     function royaltyDue(uint256 tokenId) external view returns (uint256) {
         _requireOwned(tokenId);
         return (_ticket[tokenId].originalPrice * ROYALTY_BPS) / 10_000;
+    }
+
+    /// @notice true se il biglietto è ATTIVO: non ancora validato al varco E prima
+    ///         della "Fine evento" del suo eventId (fine non impostata = attivo).
+    ///         Un biglietto usato/esportato o post-evento è un mero NFT
+    ///         (collectible, Market Collection).
+    function isTicketActive(uint256 tokenId) public view returns (bool) {
+        _requireOwned(tokenId);
+        if (used[tokenId]) return false; // validato → collectible
+        uint256 end = eventEndOf[_ticket[tokenId].eventId];
+        return end == 0 || block.timestamp < end;
+    }
+
+    /// @notice Destinatario della fee di rivendita 1% secondo lo stato del token:
+    ///         biglietto ATTIVO → 100% a TINFT (`platformTreasury`); mero NFT →
+    ///         split 0,5/0,5 (receiver EIP-2981). Se la tesoreria non è impostata
+    ///         si ripiega sullo split, così una vendita non può mai bloccarsi.
+    function resaleRoyaltyReceiver(uint256 tokenId) external view returns (address) {
+        if (isTicketActive(tokenId) && platformTreasury != address(0)) return platformTreasury;
+        (address receiver,) = royaltyInfo(tokenId, 0);
+        return receiver;
     }
 
     /// @notice Fee d'uscita per l'export libero: 25% del prezzo originale (R5).
@@ -179,17 +239,38 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         }
     }
 
-    // ------------------------------------------------------- validazione + export (M5)
-    /// @notice Marca il biglietto come usato (validazione al varco) → collectible esportabile.
+    // ------------------------------------------------------- validazione + burn (M5)
+    /// @notice Validazione al varco (esito VALID). Per un biglietto NORMALE l'ingresso
+    ///         BRUCIA definitivamente il token (`_burn`): dopo, `ownerOf` reverte, il
+    ///         token non è più listabile/trasferibile/esportabile e lo slot 3/evento
+    ///         dell'identità viene liberato. Per un biglietto **Signature** (`isSpecial`)
+    ///         non c'è burn: resta come pezzo da collezione, ancora trasferibile.
+    ///         Idempotenza: un token già bruciato non esiste più → `ownerOf` reverte.
     function markUsed(uint256 tokenId) external {
         if (!isValidatorOperator[msg.sender]) revert NotValidatorOperator();
-        _requireOwned(tokenId);
+        address holder = ownerOf(tokenId); // reverte se il token non esiste (già bruciato)
+        // difesa: un token in vendita è detenuto da un modulo di vendita (escrow) — non
+        // va bruciato mentre è in listing (si validerebbe un biglietto messo in vendita).
+        if (isSaleOperator[holder]) revert TokenInEscrow();
         used[tokenId] = true;
         emit TicketUsed(tokenId);
+
+        if (!isSpecial[tokenId]) {
+            // libera lo slot anti-bagarino dell'identità prima di distruggere il token
+            bytes32 id = identityOf[holder];
+            uint256 eventId = _ticket[tokenId].eventId;
+            if (id != bytes32(0) && heldCount[id][eventId] > 0) {
+                heldCount[id][eventId]--;
+            }
+            _burn(tokenId); // burn definitivo ERC-721 → Transfer(holder, address(0), tokenId)
+            emit TicketBurned(tokenId);
+        }
     }
 
-    /// @notice (A) Rilascio completo: incassa la fee 25% e sgancia il token dalla
-    ///         policy → da qui è liberamente trasferibile (royalty best-effort).
+    /// @notice (A) Rilascio completo del **mero NFT sopravvissuto** (biglietto NON usato
+    ///         per entrare, a evento concluso): incassa la fee 25% e sgancia il token
+    ///         dalla policy → da qui è liberamente trasferibile (royalty best-effort).
+    ///         Un biglietto usato è già stato bruciato: non esiste più, non è esportabile.
     function exportFree(uint256 tokenId) external payable nonReentrant {
         _requireExportable(tokenId);
         if (platformTreasury == address(0)) revert TreasuryNotSet();
@@ -213,9 +294,14 @@ contract TinftTicket is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         emit Exported(tokenId, ExportMode.Enforced, 0);
     }
 
+    /// @dev Esportabile solo il **mero NFT sopravvissuto**: il token deve esistere
+    ///      (owner check), NON essere stato usato per entrare (i biglietti usati
+    ///      normali sono bruciati; un Signature usato resta collectible ma non si
+    ///      "esporta") e l'evento dev'essere concluso (non più attivo).
     function _requireExportable(uint256 tokenId) private view {
         if (ownerOf(tokenId) != _msgSender()) revert NotTicketOwner();
-        if (!used[tokenId]) revert NotUsed();
+        if (used[tokenId]) revert TicketAlreadyUsed();
+        if (isTicketActive(tokenId)) revert EventNotEnded();
         if (exportModeOf[tokenId] != ExportMode.None) revert AlreadyExported();
     }
 

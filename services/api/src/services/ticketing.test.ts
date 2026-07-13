@@ -41,16 +41,29 @@ describe("TicketingService", () => {
     await expect(s.service.purchasePrimary(s.event.id, buyer.id)).rejects.toThrowError(/max 3/);
   });
 
-  it("rifiuta la rivendita oltre il tetto +10% e calcola la royalty (R2/R1)", async () => {
+  it("rifiuta la rivendita oltre il tetto +5% e calcola la fee 1% (R2/R1): biglietto ATTIVO → tutta a TINFT", async () => {
     const seller = await client(s.service, "sara", "idSara");
     const t = await s.service.purchasePrimary(s.event.id, seller.id); // paid = PRICE
-    await expect(s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 11_001})).rejects.toThrowError(/tetto/);
-    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 11_000});
+    await expect(s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 10_501})).rejects.toThrowError(/tetto/);
+    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 10_500});
     expect(xfer.status).toBe("ESCROW");
     expect(xfer.royaltyCents).toBe(100); // 1% di PRICE
+    // biglietto ATTIVO (evento non concluso): l'1% è TUTTO di TINFT
+    expect(xfer.royaltyTinftCents).toBe(100);
+    expect(xfer.royaltyOrganizerCents).toBe(0);
+    expect(await s.service.getEvent(s.event.id)).toBeDefined();
+  });
+
+  it("rivendita post-evento (mero NFT, evento CONCLUDED): fee 1% con split 0,5/0,5", async () => {
+    const seller = await client(s.service, "sara2", "idSara2");
+    const t = await s.service.purchasePrimary(s.event.id, seller.id);
+    const event = await s.service.getEvent(s.event.id);
+    event.status = "CONCLUDED";
+    await s.store.updateEvent(event);
+    const xfer = await s.service.createTransfer(t.id, seller.id, {mode: "PAYMENT", priceCents: 9_000});
+    expect(xfer.royaltyCents).toBe(100);
     expect(xfer.royaltyTinftCents).toBe(50);
     expect(xfer.royaltyOrganizerCents).toBe(50);
-    expect(await s.service.getEvent(s.event.id)).toBeDefined();
   });
 
   it("alla vendita il token passa al compratore e il costo base lo segue (R3)", async () => {
@@ -87,29 +100,49 @@ describe("TicketingService", () => {
     expect((await s.service.ticketsOf(seller.id))[0]!.status).toBe("ACTIVE");
   });
 
-  it("validazione: VALID→USED, poi DUPLICATE; in escrow ESCROW; inesistente FAKE; screenshot", async () => {
+  it("validazione: VALID→BURNED (biglietto normale bruciato), poi DUPLICATE; escrow ESCROW; inesistente FAKE; screenshot", async () => {
     const buyer = await client(s.service, "marco", "idMarco");
     const t = await s.service.purchasePrimary(s.event.id, buyer.id);
     expect((await s.service.validate(t.id)).outcome).toBe("VALID");
-    expect(s.store.tickets.get(t.id)!.status).toBe("USED");
+    expect(s.store.tickets.get(t.id)!.status).toBe("BURNED"); // entrare brucia il biglietto normale
     expect((await s.service.validate(t.id)).outcome).toBe("DUPLICATE");
     expect((await s.service.validate("inesistente")).outcome).toBe("FAKE");
 
     const t2 = await s.service.purchasePrimary(s.event.id, (await client(s.service, "giulia", "idGiulia")).id);
     await s.service.createTransfer(t2.id, t2.ownerId, {mode: "PAYMENT", priceCents: 9_000});
     expect((await s.service.validate(t2.id)).outcome).toBe("ESCROW");
+    // un biglietto bruciato non ridà VALID: lo screenshot su di esso è comunque negato
     expect((await s.service.validate(t.id, undefined, "screenshot")).outcome).toBe("SCREENSHOT");
   });
 
-  it("export: free incassa la fee 25%, enforced no; richiede biglietto usato; una sola volta", async () => {
+  it("validazione Signature (1/1): VALID → USED, NON bruciato (resta collectible)", async () => {
+    const buyer = await client(s.service, "vip", "idVip");
+    const t = await s.service.purchasePrimary(s.event.id, buyer.id, {isSpecial: true});
+    expect((await s.service.validate(t.id)).outcome).toBe("VALID");
+    expect(s.store.tickets.get(t.id)!.status).toBe("USED"); // sopravvive
+  });
+
+  it("export: solo il SOPRAVVISSUTO (non usato, evento concluso) è esportabile; il bruciato no", async () => {
     const buyer = await client(s.service, "marco", "idMarco");
     const t = await s.service.purchasePrimary(s.event.id, buyer.id);
+    // un secondo biglietto che verrà bruciato all'ingresso (acquistato mentre è ON_SALE)
+    const t2 = await s.service.purchasePrimary(s.event.id, (await client(s.service, "luca", "idLuca")).id);
+    await s.service.validate(t2.id); // burn
+
+    // evento non concluso → il sopravvissuto non è ancora esportabile
     await expect(s.service.exportTicket(t.id, buyer.id, "FREE")).rejects.toThrowError(/concluso/);
-    await s.service.validate(t.id); // USED
+
+    // concludo l'evento: il biglietto NON usato diventa mero NFT esportabile
+    const ev = await s.service.getEvent(s.event.id);
+    ev.status = "CONCLUDED";
+    await s.store.updateEvent(ev);
     const exported = await s.service.exportTicket(t.id, buyer.id, "FREE");
     expect(exported.exportMode).toBe("FREE");
     expect(exported.exitFeeCents).toBe(exitFeeCents(PRICE)); // 2500
     expect(exported.status).toBe("EXPORTED");
     await expect(s.service.exportTicket(t.id, buyer.id, "ENFORCED")).rejects.toThrowError(/esportato/);
+
+    // il biglietto bruciato all'ingresso non è esportabile nemmeno post-evento
+    await expect(s.service.exportTicket(t2.id, t2.ownerId, "FREE")).rejects.toThrowError(/bruciato/);
   });
 });

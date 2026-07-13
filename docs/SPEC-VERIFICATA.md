@@ -1,5 +1,16 @@
 # TINFT — Specifica verificata (fonte di verità per l'implementazione)
 
+> ⚠️ **NOTA (2026-07): alcune regole di questo documento sono SUPERSEDED.** Riflettono i
+> prototipi originali. Le **regole correnti** (implementate e testate in `contracts/` +
+> `services/api/`) sono:
+> - **Prevendita 10%** sul primo acquisto (solo TINFT) — non 4%/5%.
+> - **Fee di rivendita 1%**: biglietto **attivo** → tutta a **TINFT**; **mero NFT** post-evento → **0,5%+0,5%** (non split fisso).
+> - **Tetto rivendita +5%**.
+> - **Limite 3 biglietti/evento** per identità (non 2).
+> - **Burn all'ingresso**: entrare brucia il biglietto normale (Signature 1/1 esenti).
+>
+> Fonte di verità corrente: `src/domain/rules.ts`, `contracts/src/*.sol`, `README.md`, `DEV-HANDOFF.md`.
+
 > Documento prodotto **leggendo riga per riga la logica dei prototipi** (i blocchi
 > `<script data-dc-script>` dei file `.dc.html`), non solo le descrizioni testuali.
 > Ogni regola qui sotto ha il riferimento `file:riga` da cui è stata estratta, così
@@ -41,19 +52,18 @@ con **passkey/biometria**; **recovery legato all'identità SPID**.
 
 | # | Regola | Formula esatta (dal prototipo) | Riferimento |
 |---|--------|--------------------------------|-------------|
-| R1 | **Royalty 1% sul prezzo ORIGINALE**, split 0,5%+0,5%, a carico del compratore | `royC = round(price·0,005, 2)` (organizzatore); `royT = round(price·0,005, 2)` (TINFT); `royalty = royC+royT`; il compratore paga `prezzo + royalty` | `App:1661`, `App:1740-1742`, `App:1282` |
+| R1 | **Fee di rivendita 1% sul prezzo ORIGINALE** (a carico del compratore). ⚠️ CORRENTE: biglietto **attivo** → 100% TINFT; **mero NFT** post-evento → split 0,5%+0,5% | `royC = round(price·0,005, 2)` (organizzatore); `royT = round(price·0,005, 2)` (TINFT); `royalty = royC+royT`; il compratore paga `prezzo + royalty` | `App:1661`, `App:1740-1742`, `App:1282` |
 | R2 | **Tetto rivendita +5%** sul costo base del venditore | `cap = round(paid·1,05, 2)`; rifiuto se `prezzo > cap + 0,001` | `App:1274-1276` |
 | R3 | **Costo base viaggia col token** | su trasferimento a pagamento il nuovo `paid = prezzo`; su regalo resta il `paid` precedente | `App:1743` |
-| R4 | **Limite 2 per evento per identità** | acquisto/secondario: conta i biglietti `owner==identità && stesso evento && status∉{usato,exported}`; blocco se `≥ 2` | `App:1277-1278`, `App:1658-1659` |
+| R4 | **Limite 3 per evento per identità** (CORRENTE; il prototipo storico usava 2) | acquisto/secondario: conta i biglietti dell'identità sullo stesso evento; blocco se `≥ 3` | `App:1277-1278`, `App:1658-1659` |
 | R5 | **Export (A) rilascio libero, fee 25%** | `exitFee = round(price·0,25, 2)`; `status='exported'`, `exportMode='free'` → fuori dalla rete royalty | `App:1769`, `App:1300` |
 | R6 | **Export (B) enforced** | `exitFee = 0`, `exportMode='enforced'` → royalty 1% resta attiva per sempre | `App:1769`, `App:1440` |
 | R7 | **Escrow P2P a pagamento** | `commitTransfer`: token tolto al venditore, record `status='escrow'`, `ttl=600s` (demo), `createdAt`; `acceptTransfer` assegna al compratore + accredita venditore; `reclaim`/timeout → torna al venditore | `App:1734-1764`, `_checkExpiry App:1722-1727` |
 | R8 | **Trasferimento regalo** | `mode='regalo'`, `status='pending'`, gratuito; il destinatario accetta/rifiuta | `App:1747-1749`, `App:1752-1763` |
-| R9 | **Commissione primario** | payout evento = `round(price·0,95)` → fee piattaforma **5%** | `App:1795`, `Sito` (publish) |
-| R10 | **Commissione primario (vista aggregata)** | console: `commissioni = round(ricavi·0,04)` → **4%** | `App:1182`, `App:1213`, `Console:290` |
+| R9 | **Prevendita primario (CORRENTE)** | commissione **10%** sul primo acquisto, a carico del compratore, solo TINFT (era 5% nel prototipo storico) | `rules.ts:presaleCommissionCents` |
+| R10 | ~~Commissione aggregata 4%~~ (SUPERSEDED) | unificata nella **prevendita 10%** (R9) | — |
 
-> ⚠️ **R9 ≠ R10**: il prototipo usa **5%** quando crea l'evento (payout 95%) ma **4%** nella vista
-> ricavi aggregati. Vedi questione aperta Q1.
+> ✅ **Risolto**: prevendita unica **10%** (R9). La vecchia doppia commissione 4%/5% è superata.
 
 ---
 
@@ -61,7 +71,7 @@ con **passkey/biometria**; **recovery legato all'identità SPID**.
 
 ### 2.1 Ciclo di vita del biglietto (`status`)
 ```
-attivo ──(validazione al varco)──► usato   (collectible / "mero NFT")
+attivo ──(validazione al varco)──► BRUCIATO (biglietto normale distrutto); i Signature 1/1 → usato (collectible)
   │                                   │
   ├──(messa in vendita)──► vendita    └──(export, scelta cliente)──► exported
   │        │                                        ├─ exportMode='free'     (libero, fuori royalty)
@@ -96,7 +106,7 @@ regalo:     pending ─(accept)─► done                ──(reject/timeout)
 ## 4. Mappatura on-chain / off-chain
 | Regola | On-chain (contratti, Base) | Off-chain (backend/PSP/SPID) |
 |---|---|---|
-| R1 royalty 1% split | EIP-2981 + SplitRoyalty 0,5/0,5; trattenuta via modulo vendita TINFT + Transfer Validator (ERC-721C) | calcolo importo euro, instradamento PSP |
+| R1 fee 1% (attivo→TINFT; mero NFT→0,5/0,5) | EIP-2981 + SplitRoyalty; `resaleRoyaltyReceiver` sceglie il destinatario; Transfer Validator (ERC-721C) | calcolo importo euro, instradamento PSP |
 | R2/R3 tetto +5% e costo base | `paid` per token; rifiuto `prezzo > paid·1,05` | UI prezzo, validazione lato API |
 | R4 limite 2/evento | `mapping hash(CF) → eventId → count ≤ 2` | verifica identità SPID, CF cifrato off-chain |
 | R5/R6 export | `exportFree()` (incassa 25% + delist dalla policy) / `exportEnforced()` | incasso fee in euro |
@@ -110,9 +120,7 @@ regalo:     pending ─(accept)─► done                ──(reject/timeout)
 ## 5. Questioni aperte / incongruenze rilevate in fase di verifica
 *(le risolvo come indicato salvo tua diversa indicazione — sono il valore del "verifichiamo prima")*
 
-- **Q1 — Commissione primario 4% o 5%?** Il prototipo usa entrambi (payout 95% vs aggregato 4%).
-  *Proposta:* fissare **un** valore (consiglio 5%, coerente col payout) e usarlo ovunque. Questa fee
-  è di **piattaforma/PSP**, non nel contratto.
+- **Q1 — RISOLTO**: prevendita **10%** sul primo acquisto (solo TINFT, a carico del compratore). Fee di piattaforma, non nel contratto.
 - **Q2 — Mercato "Re-Selling" vs trasferimento P2P diretto.** Il P2P diretto applica il tetto +5%
   (`App:1274`); il mercato secondario lista al **costo base** (`paid`, `App:1145`) senza markup.
   *Proposta:* applicare lo **stesso** tetto +5% anche al listing di mercato.

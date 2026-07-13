@@ -9,7 +9,7 @@
 
 export const BPS_DENOMINATOR = 10_000;
 export const ROYALTY_BPS = 100; // 1% del prezzo originale (R1)
-export const RESALE_CAP_BPS = 11_000; // tetto +10% sul costo base (R2)
+export const RESALE_CAP_BPS = 10_500; // tetto +5% sul costo base (R2)
 export const EXIT_FEE_BPS = 2_500; // fee d'uscita export libero 25% (R5)
 export const MAX_PER_EVENT = 3; // max biglietti per evento per identità (R4)
 export const PRESALE_COMMISSION_BPS = 1_000; // commissione di prevendita 10% sul PRIMO acquisto, solo TINFT, a carico del compratore (R10)
@@ -27,14 +27,25 @@ export interface RoyaltySplit {
   organizerCents: number;
 }
 
-/** Ripartizione 0,5%/0,5%; l'eventuale resto (importo dispari) va all'organizzatore. */
+/** Ripartizione 0,5%/0,5% (mero NFT); l'eventuale resto (importo dispari) va all'organizzatore. */
 export function royaltySplitCents(originalPriceCents: number): RoyaltySplit {
   const royalty = royaltyCents(originalPriceCents);
   const tinftCents = Math.floor(royalty / 2);
   return { tinftCents, organizerCents: royalty - tinftCents };
 }
 
-/** Prezzo massimo di rivendita = costo base · 1,10 (troncato). */
+/**
+ * Fee di rivendita 1% CONDIZIONALE allo stato del token (decisione committente,
+ * speculare a TinftTicket.resaleRoyaltyReceiver):
+ *  - biglietto ATTIVO (prima della Fine evento — Market Re-Selling) → 1% TUTTO a TINFT;
+ *  - mero NFT (dopo la Fine evento — Market Collection) → split 0,5/0,5.
+ */
+export function resaleFeeSplitCents(originalPriceCents: number, ticketActive: boolean): RoyaltySplit {
+  if (ticketActive) return { tinftCents: royaltyCents(originalPriceCents), organizerCents: 0 };
+  return royaltySplitCents(originalPriceCents);
+}
+
+/** Prezzo massimo di rivendita = costo base · 1,05 (troncato). */
 export function resaleCapCents(paidCents: number): number {
   return Math.floor((paidCents * RESALE_CAP_BPS) / BPS_DENOMINATOR);
 }
@@ -76,6 +87,38 @@ export interface OrderTotal {
 export function clampOrderQuantity(quantity: number): number {
   const q = Math.floor(quantity) || 1;
   return Math.max(1, Math.min(MAX_PER_ORDER, q));
+}
+
+// ---------------------------------------------------------------------------
+// Codice varco (gateCode) — non economico ma regola di dominio: ogni evento ha
+// un codice unico con cui lo staff si aggancia al SOLO suo varco (niente picker).
+// ---------------------------------------------------------------------------
+
+/** Alfabeto senza caratteri ambigui (niente 0/O, 1/I/L) per codici leggibili a voce. */
+const GATE_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+export const GATE_CODE_SUFFIX_LENGTH = 4;
+
+/** Normalizza un codice varco per confronto/persistenza: trim, maiuscole, niente spazi interni. */
+export function normalizeGateCode(code: string): string {
+  return code.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+/**
+ * Genera un codice varco leggibile dal titolo dell'evento: prefisso di max 5
+ * lettere/cifre del titolo (fallback "VARCO") + 4 caratteri casuali non ambigui,
+ * es. "Notte Elettronica" → "NOTTE-7K2M". L'unicità è garantita dal chiamante
+ * (retry sul lookup) e dal vincolo unique in persistenza.
+ */
+export function generateGateCode(title: string, random: () => number = Math.random): string {
+  const prefix = title
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 5) || "VARCO";
+  let suffix = "";
+  for (let i = 0; i < GATE_CODE_SUFFIX_LENGTH; i++) {
+    suffix += GATE_CODE_ALPHABET[Math.floor(random() * GATE_CODE_ALPHABET.length)];
+  }
+  return `${prefix}-${suffix}`;
 }
 
 /** Totale checkout primario: (prezzo + commissione di prevendita 10%) × quantità. */

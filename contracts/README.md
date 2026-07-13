@@ -22,16 +22,16 @@ In CI vengono ripristinate con `actions/checkout` (`submodules: recursive`).
 
 | Contratto | Ruolo |
 |---|---|
-| `TinftTicket` | ERC-721 + EIP-2981; *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (royalty 1%, R1) e `paid` (tetto +10%, R2/R3). Identità `hash(CF)` + limite **3/evento** (R4). Validazione (`markUsed`) ed export: `exportFree` (fee 25% + sgancio) / `exportEnforced` (royalty per sempre) (R5/R6). |
+| `TinftTicket` | ERC-721 + EIP-2981; *bound* alla policy al mint. Memorizza `eventId`, `originalPrice` (fee 1%, R1), `paid` (tetto +5%, R2/R3) e la "Fine evento" (`eventEndOf`, per la fee condizionale). Identità `hash(CF)` + limite **3/evento** (R4). Validazione al varco (`markUsed`): per un biglietto NORMALE **BRUCIA** definitivamente il token (`_burn`), per un **Signature** (`isSpecial`, `mintSpecial`) no. Export del MERO NFT sopravvissuto (non usato, evento concluso): `exportFree` (fee 25% + sgancio) / `exportEnforced` (royalty per sempre) (R5/R6). |
 | `TinftTransferValidator` | Allowlist di operatori; `validateTransfer` fa revert se il caller non è un modulo TINFT autorizzato. |
-| `TinftRoyaltySplit` | Split royalty **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
-| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock + **tetto +10%**), `pay` (release atomico token+prezzo+royalty, costo base + conteggio 3/evento), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
+| `TinftRoyaltySplit` | Split royalty del **mero NFT** (post-evento): **0,5% TINFT + 0,5% organizzatore** (due wallet distinti), destinatario EIP-2981. Sul biglietto **attivo** la fee 1% va invece 100% a TINFT (`resaleRoyaltyReceiver`). Pattern *pull-payment*: l'incasso non può mai fallire/bloccarsi; i beneficiari ritirano con `withdraw()`. |
+| `TinftEscrow` | Escrow P2P a pagamento: `list` (lock + **tetto +5%**), `pay` (release atomico token+prezzo+fee: biglietto ATTIVO → 1% tutto a TINFT, mero NFT → split 0,5/0,5; costo base + conteggio 3/evento), `reclaim` (timeout), `cancel`. `ReentrancyGuard` + checks-effects-interactions. |
 | `ITransferValidator` | Interfaccia del validator. |
 
 ### Modello di enforcement
 Durante la vita "viva" del biglietto, un trasferimento passa solo se avviato da un
 **operatore in allowlist** (i moduli TINFT di vendita/escrow/regalo). Un trasferimento
-diretto wallet-to-wallet fa **revert** → la royalty 1% e il tetto +10% restano enforced
+diretto wallet-to-wallet fa **revert** → la fee 1% e il tetto +5% restano enforced
 sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 (`policyBound=false`) e diventerà liberamente trasferibile.
 
@@ -49,7 +49,7 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 ### Definition of Done — M3 (coperta dai test)
 - ✅ il compratore paga → riceve il token e il venditore i fondi in **una** tx (`test_PaySettlesAtomically`)
 - ✅ senza pagamento entro il `ttl`, `reclaim()` restituisce il token al venditore (`test_ReclaimAfterTtlReturnsToSeller`)
-- ✅ il costo base viaggia col token (R3) e la royalty 1% va allo split 0,5/0,5
+- ✅ il costo base viaggia col token (R3); fee di rivendita 1%: biglietto attivo → tutta a TINFT, mero NFT → split 0,5/0,5
 - ✅ sicurezza: reentrancy del venditore non ruba né blocca (`test_ReentrantSellerCannotExploit`)
 
 ### Definition of Done — M4 (coperta dai test)
@@ -61,7 +61,8 @@ sul secondario. In `exportFree()` (M5) il token verrà sganciato dalla policy
 ### Definition of Done — M5 (coperta dai test)
 - ✅ dopo `exportFree` il token è trasferibile liberamente; fee 25% incassata dalla tesoreria (`test_ExportFreeUnbindsAndChargesFee`)
 - ✅ dopo `exportEnforced` il trasferimento diretto resta bloccato e una vendita applica ancora la royalty 1% (`test_ExportEnforcedKeepsRoyaltyEnforced`)
-- ✅ export solo a evento concluso (`markUsed`), solo dal proprietario, una sola volta (`test_ExportRequiresUsed`, `test_ExportOnlyOwner`, `test_CannotExportTwice`)
+- ✅ **burn all'ingresso**: `markUsed` su biglietto normale → `ownerOf` reverte (burn definitivo); Signature esente e ancora trasferibile; un token bruciato non è listabile/trasferibile/esportabile (`TinftBurnOnEntry.t.sol`)
+- ✅ export solo del sopravvissuto (non usato) a evento concluso, solo dal proprietario, una sola volta (`test_ExportRequiresEventEnded`, `test_UsedTicketNotExportable`, `test_ExportOnlyOwner`, `test_CannotExportTwice`)
 
 ## Sicurezza (hardening pre-audit)
 - **Ownable2Step** su ticket/validator/escrow (ownership a 2 fasi; owner = multisig consigliato).

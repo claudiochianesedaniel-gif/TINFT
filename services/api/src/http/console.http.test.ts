@@ -149,19 +149,19 @@ describe("API HTTP v2 — content / console / KYC (B5–B7)", () => {
     const order = (await post("/orders", {buyerId: seller.account.id, eventId: ev.id, quantity: 1}, seller.headers)).json();
     const paid = (await post(`/orders/${order.id}/pay`, {}, seller.headers)).json();
     const ticketId = paid.ticketIds[0];
-    // secondario: royalty 1% di 3150 = 31 → TINFT 15
+    // secondario su biglietto ATTIVO: fee 1% di 3150 = 31 → TUTTA a TINFT
     await post(`/tickets/${ticketId}/list`, {ownerId: seller.account.id, priceCents: 3_000}, seller.headers);
     await post(`/market/${ticketId}/buy`, {buyerId: buyerAcc.account.id}, buyerAcc.headers);
-    // export libero: 25% di 3150 = 787 (serve biglietto USED)
-    await post(`/tickets/${ticketId}/validate`, {}, buyerAcc.headers);
+    // export libero del SOPRAVVISSUTO (non entra): a evento concluso, fee d'uscita 25% di 3150 = 787
+    await post(`/events/${ev.id}/conclude`, {organizerId: o.account.id}, o.headers);
     await post(`/tickets/${ticketId}/export`, {ownerId: buyerAcc.account.id, mode: "FREE"}, buyerAcc.headers);
 
     const rev = await get("/platform/revenue", ADMIN);
     expect(rev.statusCode).toBe(200);
     expect(rev.json().presaleCommissionCents).toBe(315);
-    expect(rev.json().royaltyTinftCents).toBe(15);
+    expect(rev.json().royaltyTinftCents).toBe(31);
     expect(rev.json().exitFeeCents).toBe(787);
-    expect(rev.json().totalCents).toBe(315 + 15 + 787);
+    expect(rev.json().totalCents).toBe(315 + 31 + 787);
     expect(rev.json().gmvPrimaryCents).toBe(3_150);
     expect(rev.json().p2pCount).toBe(1);
   });
