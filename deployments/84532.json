@@ -1,8 +1,8 @@
 {
   "chainId": 84532,
-  "owner": "0x62D33B415BCF37226a7c135403Ce3519f6434726",
-  "ticket": "0x87044b22dd89798e2ba15a38454f72aaf3ec1f37",
-  "escrow": "0xc6cf9e9b27cc82231bc7be7165ff76396775bee6",
-  "transferValidator": "0xbc9ba32631b9aec8f35aa512333a4d5532cdf5ba",
-  "royaltySplit": "0xb2af00f24caee8ece9a4cd11e6ce7f2d24193d1c"
+  "owner": "0x78c984c5131D6A4d6b9630e2064979c02F45f9eC",
+  "ticket": "0x0ecaf2e665256bbc86f8c7c992cbd3d44843db5d",
+  "escrow": "0xd67976f3fd7f66655768fbfac7c812d2ec97de36",
+  "transferValidator": "0x67d2a46f41a211509c5f7a8ed8f9c88b435f70c9",
+  "royaltySplit": "0x82ffea524da8935039fa0479e41ac6ce0c2c6280"
 }
