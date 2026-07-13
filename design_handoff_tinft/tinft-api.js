@@ -1,192 +1,112 @@
-/*
- * tinft-api.js — wrapper `window.TINFT_API` per collegare il Prototipo App (.dc.html)
- * all'API reale (services/api). Zero dipendenze: usa solo `fetch`.
- *
- * Base URL (in ordine di priorità):
- *   1) window.TINFT_API_BASE  (impostalo prima di caricare questo file)
- *   2) <meta name="tinft-api-base" content="https://...">
- *   3) ?api=... nella query string
- *   4) http://localhost:3001  (default: backend `pnpm dev`)
- *
- * Esempio: <script>window.TINFT_API_BASE='https://tinft-api.onrender.com'</script>
- *          <script src="./tinft-api.js"></script>
- *
- * Ogni metodo che richiede autenticazione riceve il `token` di sessione (da login()).
- * I metodi non lanciano su 4xx/5xx: rilanciano un Error con il messaggio dell'API,
- * così il prototipo può gestire il fallback (try/catch) come già fa.
- */
+/* TINFT — client API reale (backend live su Render).
+   Esposto come window.TINFT_API. Tutte le funzioni restituiscono Promise.
+   Caricato come <script src> nell'helmet del Design Component. */
 (function () {
-  "use strict";
+  var BASE = 'https://tinft-api.onrender.com';
 
-  function resolveBase() {
-    if (typeof window !== "undefined" && window.TINFT_API_BASE) return String(window.TINFT_API_BASE);
-    try {
-      var meta = document.querySelector('meta[name="tinft-api-base"]');
-      if (meta && meta.content) return meta.content;
-    } catch (e) {}
-    try {
-      var q = new URLSearchParams(location.search).get("api");
-      if (q) return q;
-    } catch (e) {}
-    return "http://localhost:3001";
-  }
-
-  var BASE = resolveBase().replace(/\/+$/, "");
-
-  /** fetch JSON con Bearer opzionale; lancia Error(message dell'API) su non-2xx. */
-  async function req(method, path, opts) {
+  async function jf(method, path, opts) {
     opts = opts || {};
-    var headers = {"content-type": "application/json"};
-    if (opts.token) headers["authorization"] = "Bearer " + opts.token;
-    var res;
-    try {
-      res = await fetch(BASE + path, {
-        method: method,
-        headers: headers,
-        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
-      });
-    } catch (netErr) {
-      throw new Error("rete non raggiungibile: " + (netErr && netErr.message ? netErr.message : "offline"));
-    }
-    var text = await res.text();
-    var data = null;
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        data = text;
-      }
-    }
-    if (!res.ok) {
-      var msg = data && data.message ? data.message : "HTTP " + res.status;
+    var headers = { 'content-type': 'application/json' };
+    if (opts.token) headers['authorization'] = 'Bearer ' + opts.token;
+    var r = await fetch(BASE + path, {
+      method: method,
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    var d = null;
+    try { d = await r.json(); } catch (e) { d = null; }
+    if (!r.ok) {
+      var msg = (d && (d.message || d.error)) || ('HTTP ' + r.status);
       var err = new Error(msg);
-      err.status = res.status;
-      err.code = data && data.error ? data.error : undefined;
+      err.status = r.status; err.data = d;
       throw err;
     }
-    return data;
+    return d;
   }
 
-  var API = {
-    /** base URL effettivo (utile per debug). */
-    baseUrl: function () {
-      return BASE;
+  window.TINFT_API = {
+    BASE: BASE,
+    raw: jf,
+    // salute / warm-up (la free instance dorme: primo colpo ~50s)
+    warm: function () { return fetch(BASE + '/ready').then(function (r) { return r.ok; }).catch(function () { return false; }); },
+    // auth
+    login: function (email, password) { return jf('POST', '/auth/login', { body: { email: email, password: password } }); },
+    registerStart: function (b) { return jf('POST', '/auth/register/email', { body: b }); },
+    registerVerify: function (email, code) { return jf('POST', '/auth/register/email/verify', { body: { email: email, code: code } }); },
+    createAccount: function (b) { return jf('POST', '/accounts', { body: b }); },
+    // eventi
+    events: function () { return jf('GET', '/events'); },
+    tiers: function (eventId) { return jf('GET', '/events/' + eventId + '/tiers'); },
+    createEvent: function (b, token) { return jf('POST', '/events', { body: b, token: token }); },
+    publishEvent: function (eventId, token) { return jf('POST', '/events/' + eventId + '/publish', { token: token }); },
+    addTier: function (eventId, b, token) { return jf('POST', '/events/' + eventId + '/tiers', { body: b, token: token }); },
+    // ordini / pagamento
+    createOrder: function (buyerId, eventId, quantity, token, tierId) {
+      var body = { buyerId: buyerId, eventId: eventId, quantity: quantity };
+      if (tierId) body.tierId = tierId;
+      return jf('POST', '/orders', { body: body, token: token });
     },
+    payOrder: function (orderId, token) { return jf('POST', '/orders/' + orderId + '/pay', { token: token }); },
+    checkout: function (orderId, token) { return jf('POST', '/orders/' + orderId + '/checkout', { token: token }); },
+    getOrder: function (orderId, token) { return jf('GET', '/orders/' + orderId, { token: token }); },
+    // biglietti
+    tickets: function (accountId, token) { return jf('GET', '/accounts/' + accountId + '/tickets', { token: token }); },
+    orders: function (accountId, token) { return jf('GET', '/accounts/' + accountId + '/orders', { token: token }); },
+    accessToken: function (ticketId, token) { return jf('GET', '/tickets/' + ticketId + '/access-token', { token: token }); },
+    // validazione al varco
+    scan: function (accessToken, token) { return jf('POST', '/validate/scan', { body: { token: accessToken }, token: token }); },
+    // mercato secondario
+    market: function () { return jf('GET', '/market'); },
+    listTicket: function (ticketId, ownerId, priceCents, token) { return jf('POST', '/tickets/' + ticketId + '/list', { body: { ownerId: ownerId, priceCents: priceCents }, token: token }); },
+    buyMarket: function (ticketId, buyerId, token) { return jf('POST', '/market/' + ticketId + '/buy', { body: { buyerId: buyerId }, token: token }); }
+  };
+})();
 
-    /** ping di salute — sveglia l'istanza Render "addormentata" prima dei flussi. */
-    warm: function () {
-      return req("GET", "/health").catch(function () {
-        return {status: "cold"};
+/* Firebase Authentication (email-link, passwordless) — gira tutto lato client.
+   Richiede gli script firebase-app-compat + firebase-auth-compat caricati prima. */
+(function () {
+  var FB_CONFIG = {
+    apiKey: 'AIzaSyB-bN-taI4fY5sJ4UTtmy1fN3eDNdQ2dG8',
+    authDomain: 'tinft-e2281.firebaseapp.com',
+    projectId: 'tinft-e2281',
+    storageBucket: 'tinft-e2281.firebasestorage.app',
+    messagingSenderId: '1084170754147',
+    appId: '1:1084170754147:web:d05f9b151716391d6ac056'
+  };
+  window.TINFT_FB = {
+    ready: false,
+    _auth: null,
+    init: function () {
+      try {
+        if (window.firebase && !this._auth) {
+          if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+          this._auth = firebase.auth();
+          this.ready = true;
+        }
+      } catch (e) {}
+      return this.ready;
+    },
+    available: function () { return !!window.firebase; },
+    _settings: function () { return { url: location.origin + location.pathname, handleCodeInApp: true }; },
+    sendLink: function (email) {
+      this.init();
+      try { localStorage.setItem('tinft_fb_email', email); } catch (e) {}
+      return this._auth.sendSignInLinkToEmail(email, this._settings());
+    },
+    isLink: function () {
+      this.init();
+      try { return this._auth.isSignInWithEmailLink(location.href); } catch (e) { return false; }
+    },
+    completeLink: function () {
+      this.init();
+      var email = '';
+      try { email = localStorage.getItem('tinft_fb_email') || ''; } catch (e) {}
+      if (!email) { email = (window.prompt('Conferma la tua email per completare l\u2019accesso') || ''); }
+      return this._auth.signInWithEmailLink(email, location.href).then(function (res) {
+        try { localStorage.removeItem('tinft_fb_email'); } catch (e) {}
+        try { history.replaceState(null, '', location.origin + location.pathname); } catch (e) {}
+        return res.user;
       });
-    },
-
-    // -------- auth
-    login: function (email, password) {
-      return req("POST", "/auth/login", {body: {email: email, password: password}});
-    },
-    createAccount: function (input) {
-      return req("POST", "/accounts", {body: input});
-    },
-    registerStart: function (input) {
-      return req("POST", "/auth/register/email", {body: input});
-    },
-    registerVerify: function (email, code) {
-      return req("POST", "/auth/register/email/verify", {body: {email: email, code: code}});
-    },
-    /** login veloce OIDC (Apple/Google): idToken verificato lato server. */
-    oidc: function (provider, idToken) {
-      return req("POST", "/auth/oidc", {body: {provider: provider, idToken: idToken}});
-    },
-
-    // -------- eventi & tier
-    events: function () {
-      return req("GET", "/events");
-    },
-    event: function (id) {
-      return req("GET", "/events/" + id);
-    },
-    tiers: function (eventId) {
-      return req("GET", "/events/" + eventId + "/tiers");
-    },
-    /** crea evento; gateCode opzionale (campo di prima classe, niente workaround |VC:..|). */
-    createEvent: function (input, token) {
-      return req("POST", "/events", {body: input, token: token});
-    },
-    publishEvent: function (eventId, organizerId, token) {
-      return req("POST", "/events/" + eventId + "/publish", {body: {organizerId: organizerId}, token: token});
-    },
-    concludeEvent: function (eventId, organizerId, token) {
-      return req("POST", "/events/" + eventId + "/conclude", {body: {organizerId: organizerId}, token: token});
-    },
-    addTier: function (eventId, input, token) {
-      // il backend richiede organizerId nel body per la fascia; se assente, l'handler lo ricava dal token via assertSelf
-      var body = {name: input.name, priceCents: input.priceCents, note: input.note};
-      if (input.organizerId) body.organizerId = input.organizerId;
-      return req("POST", "/events/" + eventId + "/tiers", {body: body, token: token});
-    },
-    remind: function (eventId, organizerId, token) {
-      return req("POST", "/events/" + eventId + "/remind", {body: {organizerId: organizerId}, token: token});
-    },
-
-    // -------- codice varco (gateCode)
-    /** aggancio staff: risolve il codice nell'evento (mai un picker). */
-    gateAccess: function (code, token) {
-      return req("POST", "/gate/access", {body: {code: code}, token: token});
-    },
-    rotateGateCode: function (eventId, organizerId, token) {
-      return req("POST", "/events/" + eventId + "/gate-code/rotate", {body: {organizerId: organizerId}, token: token});
-    },
-    revokeGateCode: function (eventId, organizerId, token) {
-      return req("POST", "/events/" + eventId + "/gate-code/revoke", {body: {organizerId: organizerId}, token: token});
-    },
-
-    // -------- ordini / checkout
-    createOrder: function (buyerId, eventId, quantity, token) {
-      return req("POST", "/orders", {body: {buyerId: buyerId, eventId: eventId, quantity: quantity}, token: token});
-    },
-    getOrder: function (orderId, token) {
-      return req("GET", "/orders/" + orderId, {token: token});
-    },
-    payOrder: function (orderId, token) {
-      return req("POST", "/orders/" + orderId + "/pay", {body: {}, token: token});
-    },
-    checkout: function (orderId, token) {
-      return req("POST", "/orders/" + orderId + "/checkout", {body: {}, token: token});
-    },
-
-    // -------- biglietti & mercato
-    tickets: function (accountId, token) {
-      return req("GET", "/accounts/" + accountId + "/tickets", {token: token});
-    },
-    listTicket: function (ticketId, ownerId, priceCents, token) {
-      return req("POST", "/tickets/" + ticketId + "/list", {body: {ownerId: ownerId, priceCents: priceCents}, token: token});
-    },
-    unlistTicket: function (ticketId, ownerId, token) {
-      return req("POST", "/tickets/" + ticketId + "/unlist", {body: {ownerId: ownerId}, token: token});
-    },
-    market: function () {
-      return req("GET", "/market");
-    },
-    buyMarket: function (ticketId, buyerId, token) {
-      return req("POST", "/market/" + ticketId + "/buy", {body: {buyerId: buyerId}, token: token});
-    },
-
-    // -------- validazione al varco (solo-online, server-side)
-    /** QR a rotazione del possessore (token firmato dal server, chiave mai sul telefono). */
-    accessToken: function (ticketId, token) {
-      return req("GET", "/tickets/" + ticketId + "/access-token", {token: token});
-    },
-    /** scan staff: restituisce { outcome, holderName, meta } tra i 5 esiti. */
-    scan: function (qrToken, staffToken) {
-      return req("POST", "/validate/scan", {body: {token: qrToken}, token: staffToken});
-    },
-
-    /** chiamata generica (per endpoint non ancora incapsulati). */
-    raw: function (method, path, opts) {
-      return req(method, path, opts || {});
     }
   };
-
-  if (typeof window !== "undefined") window.TINFT_API = API;
-  if (typeof module !== "undefined" && module.exports) module.exports = API;
 })();
