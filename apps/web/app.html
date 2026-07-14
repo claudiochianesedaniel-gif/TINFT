@@ -1044,7 +1044,7 @@
                 <sc-if value="{{ stViewLista }}">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px"><span style="font-weight:700;font-size:20px;letter-spacing:-0.01em">Lista ingressi</span><span style="font-size:11px;color:#8c8c8c">{{ staffEntries }} / {{ staffCap }}</span></div>
                   <div style="display:flex;gap:8px">
-                    <div style="flex:1;background:#141415;border:1px solid #262628;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px"><span style="color:#8c8c8c;font-size:12px">⌕</span><input value="{{ staffQuery }}" onInput="{{ onStaffQuery }}" placeholder="Cerca nome o codice biglietto" style="flex:1;background:transparent;border:none;outline:none;color:#ececec;font-family:inherit;font-size:12px"/></div>
+                    <div style="flex:1;background:#141415;border:1px solid #262628;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:8px"><span style="color:#8c8c8c;font-size:12px">⌕</span><input value="{{ staffQuery }}" onInput="{{ onStaffQuery }}" placeholder="Username TINFT (@utente) o codice biglietto" style="flex:1;background:transparent;border:none;outline:none;color:#ececec;font-family:inherit;font-size:12px"/></div>
                     <span onClick="{{ staffSearch }}" style="background:#1f2c4a;border:1px solid #2f3f6a;color:#bcd0ff;font-size:11px;font-weight:700;padding:0 15px;display:flex;align-items:center;border-radius:8px;cursor:pointer">Cerca</span>
                   </div>
                   <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c;margin:18px 0 9px">Statistiche serata</div>
@@ -1665,7 +1665,7 @@ class Component extends DCLogic {
       var rawVenue=String(e.venue||'');
       var vm=rawVenue.match(/\|VC:([A-Z0-9\-]+)\|/i);
       var cleanVenue=rawVenue.replace(/\s*\|VC:[A-Z0-9\-]+\|\s*/i,'').trim();
-      var vcode=vm?vm[1].toUpperCase():self._vcodeFor(e);
+      var vcode=(e.gateCode?String(e.gateCode).toUpperCase():(vm?vm[1].toUpperCase():self._vcodeFor(e)));
       var en=self._enrich(e.title);
       var price=(e.priceCents||0)/100, cap=e.capacity||0, sold=e.sold||0;
       var soldPct=cap?Math.min(100,Math.round(sold/cap*100)):0;
@@ -1676,7 +1676,7 @@ class Component extends DCLogic {
       m[e.id]={
         id:e.id, beId:e.id, short:((e.title||'').split('\u00b7')[0].trim())||e.title, title:e.title, sub:cleanVenue+' \u00b7 '+city, city:city,
         date:e.date||'da definire', time:en.time, genre:en.genre, gkey:en.gkey, type:(String(e.type||'').indexOf('TICKET')>=0?'TICKET NFT':(e.type||'TICKET NFT')),
-        art:en.art, soldPct:soldPct, sold:sold, cap:cap, capacity:cap, weekend:en.weekend, status:e.status,
+        art:((self.state.posterByEv||{})[e.id])||en.art, soldPct:soldPct, sold:sold, cap:cap, capacity:cap, weekend:en.weekend, status:e.status,
         org:en.org, orgInitials:en.orgInitials, desc:en.desc, lineup:en.lineup, priceCents:e.priceCents,
         vcode:vcode, tiers:tiers
       };
@@ -1766,7 +1766,7 @@ class Component extends DCLogic {
   closeVarco(){ clearInterval(this._varcoT); this.setState({ appView:'home' }); }
 
   // ---- staff / varco ----
-  toStaff(){ this.setState({ profile:'staffgate', staffCodeInput:'', staffCodeErr:'', scan:null }); }
+  toStaff(){ this.setState({ profile:'staffgate', staffCodeInput:'', staffCodeErr:'', scan:null }); this._refreshEvents(); }
   onStaffCode(v){ this.setState({ staffCodeInput:v, staffCodeErr:'' }); }
   staffCodeSubmit(){ const code=(this.state.staffCodeInput||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,''); if(code.length<3){ this.setState({ staffCodeErr:'Inserisci il codice del varco (min. 3 caratteri)' }); return; } const EV=this.EV(); const norm=(v)=>String(v||'').toUpperCase().replace(/[^A-Z0-9\-]/g,''); const id=Object.keys(EV).find(k=>norm(EV[k].vcode)===code); /* Il codice digitato È la fonte di verità: il varco si apre sempre. Se l'evento è noto su questo dispositivo lo agganciamo per etichetta/statistiche; altrimenti resta in modalità "solo codice" e valida comunque i QR che portano questo codice. */ this.setState({ profile:'staff', staffView:'varco', staffGateCode:code, staffEvId:(id||this.state.staffEvId), staffLocked:true, staffCodeErr:'', scan:null }); }
   toOrg(){ this.setState({ profile:'org' }); }
@@ -1782,7 +1782,7 @@ class Component extends DCLogic {
   }
   _enterRole(role, acc){
     if(role==='org'){ this.setState({ profile:'org', orgView:'dash' }); }
-    else if(role==='staff'){ this.setState({ profile:'staffgate', staffLocked:false, staffCodeInput:'', staffCodeErr:'', scan:null }); }
+    else if(role==='staff'){ this.setState({ profile:'staffgate', staffLocked:false, staffCodeInput:'', staffCodeErr:'', scan:null }); this._refreshEvents(); }
     else { this.setState({ profile:'cliente', appView:'home' }); this._refreshClient(); }
   }
   async appLogin(){
@@ -1827,14 +1827,14 @@ class Component extends DCLogic {
       this.setState(s=>({ scan:res, scanLog:[res, ...s.scanLog].slice(0,8), entries: res.status==='valid'? s.entries+1 : s.entries }));
     }catch(e){ const res={ status:'invalid', holder:'Errore NFC', tier:(e.message||'errore'), code:'#----', time:tm, gate:this.state.staffGate, method:'NFC' }; this.setState(s=>({ scan:res, scanLog:[res, ...s.scanLog].slice(0,8) })); }
   }
-  staffSearch(){ const q=(this.state.staffQuery||'').trim(); if(!q) return; const r={ status:'valid', holder:q, tier:'verifica manuale', code:'#MAN', time:this._now(), gate:this.state.staffGate, method:'Manuale' }; this.setState(s=>({ scan:r, entries:s.entries+1, scanLog:[r, ...s.scanLog].slice(0,8), staffQuery:'' })); }
+  staffSearch(){ const q=(this.state.staffQuery||'').trim(); if(!q) return; const isCode=/^#|BIGLIETTO|TKT/i.test(q); const uname=isCode?q:('@'+q.replace(/^@/,'').toLowerCase()); const r={ status:'valid', holder:uname, tier:'verifica manuale · username univoco', code:'#MAN', time:this._now(), gate:this.state.staffGate, method:'Manuale' }; this.setState(s=>({ scan:r, entries:s.entries+1, scanLog:[r, ...s.scanLog].slice(0,8), staffQuery:'' })); }
   simUsed(){ const r={ status:'used', holder:'Marco Bianchi', tier:'Intero', code:'#1A2B', time:this._now(), gate:this.state.staffGate, method:'NFC' }; this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8) })); }
   simInvalid(){ const r={ status:'invalid', holder:'Titolo non riconosciuto', tier:'non emesso da TINFT', code:'#0000', time:this._now(), gate:this.state.staffGate, method:'—' }; this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8) })); }
   clearScan(){ this.setState({ scan:null }); }
   toggleOnline(){ this.setState(s=>({ online:!s.online, scan:null })); }
   toggleVarcoQR(){ this.setState(s=>({ varcoQR:!s.varcoQR })); }
-  openTransfer(){ this.setState({ appView:'transfer', giftTo:'', giftErr:'' }); }
-  confirmTransfer(){ const v=(this.state.giftTo||'').trim(); if(!v){ this.setState({ giftErr:'empty' }); return; }
+  openTransfer(){ const tk=this.state.myTickets.find(t=>t.id===this.state.ticketId); if(tk&&(tk.used||tk.burned||tk.exported||tk.listed)){ this._toastMsg((tk.burned||tk.used)?'Biglietto bruciato al varco: non trasferibile':(tk.exported?'NFT esportato: non trasferibile qui':'Biglietto in vendita: non trasferibile')); return; } this.setState({ appView:'transfer', giftTo:'', giftErr:'' }); }
+  confirmTransfer(){ const _tk=this.state.myTickets.find(t=>t.id===this.state.ticketId); if(_tk&&(_tk.used||_tk.burned||_tk.exported||_tk.listed)){ this._toastMsg('Biglietto non trasferibile'); this.setState({appView:'ticket'}); return; } const v=(this.state.giftTo||'').trim(); if(!v){ this.setState({ giftErr:'empty' }); return; }
     const norm=v.toLowerCase(); const ok=this.regUsers().some(u=>u===norm||u.split('@')[0]===norm);
     if(!ok){ this.setState({ giftErr:'notreg' }); return; }
     const id=this.state.ticketId;
@@ -1969,9 +1969,10 @@ class Component extends DCLogic {
     const priceCents=Math.round((Number(valid[0].price)||0)*100);
     this._toastMsg('Pubblico l’evento sul backend…');
     const manual=String(f.vcode||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,'');
-    const venue = f.luogo.trim() + (manual ? ' |VC:'+manual+'|' : '');
+    const venue = f.luogo.trim();
     try{
-      const ev=await window.TINFT_API.createEvent({ organizerId:orgId, title:f.titolo.trim(), venue:venue, date:f.data.trim(), priceCents:priceCents, capacity:cap, type:'TICKET_NFT' }, otok);
+      const ev=await window.TINFT_API.createEvent({ organizerId:orgId, title:f.titolo.trim(), venue:venue, date:f.data.trim(), priceCents:priceCents, capacity:cap, type:'TICKET_NFT', gateCode:(manual||undefined) }, otok);
+      if(f.poster){ try{ this.setState(s=>({ posterByEv:{...(s.posterByEv||{}), [ev.id]: f.poster } })); }catch(pe){} }
       try{ await window.TINFT_API.raw('POST','/events/'+ev.id+'/publish',{ body:{ organizerId:orgId }, token:otok }); }catch(e){}
       try{ for(const t of valid){ await window.TINFT_API.addTier(ev.id, { name:t.tipo.trim(), priceCents:Math.round((Number(t.price)||0)*100), quantity:Number(t.qty)||0 }, otok); } }catch(e){}
       const finalCode = manual || this._vcodeFor(ev);
