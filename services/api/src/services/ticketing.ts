@@ -252,6 +252,7 @@ export class TicketingService {
     capacity: number;
     status?: EventStatus;
     gateCode?: string;
+    signatureDrops?: boolean;
   }): Promise<Event> {
     await this.getAccount(input.organizerId);
     if (input.priceCents < 0 || input.capacity <= 0) {
@@ -271,7 +272,8 @@ export class TicketingService {
       capacity: input.capacity,
       sold: 0,
       status: input.status ?? "ON_SALE",
-      gateCode: await this.uniqueGateCode(input.title, input.gateCode)
+      gateCode: await this.uniqueGateCode(input.title, input.gateCode),
+      signatureDrops: input.signatureDrops || undefined
     };
     await this.store.createEvent(event);
     return event;
@@ -608,7 +610,36 @@ export class TicketingService {
     await this.store.createTicket(ticket);
     event.sold += 1;
     await this.store.updateEvent(event);
+    await this.maybeAwardSignatureDrop(event, buyer.id, ticket.holderName);
     return ticket;
+  }
+
+  /**
+   * Signature drops (a sorpresa): se l'evento ha `signatureDrops` attivo, il biglietto
+   * n.1 (primo acquirente), quello a metà capienza e l'ultimo fanno scattare il dono di
+   * un NFT Signature 1/1 (isSpecial, mai bruciato) allo stesso acquirente. Il cliente non
+   * sa in anticipo se sarà lui. A livello store (il ChainPort non conia special): basta
+   * per la demo. Off di default → nessun impatto sui flussi/test esistenti.
+   */
+  private async maybeAwardSignatureDrop(event: Event, buyerId: string, holderName: string): Promise<void> {
+    if (!event.signatureDrops) return;
+    const cap = event.capacity;
+    const milestones = new Set<number>([1, Math.ceil(cap / 2), cap]);
+    if (!milestones.has(event.sold)) return;
+    const special: Ticket = {
+      id: this.store.id("tkt"),
+      eventId: event.id,
+      ownerId: buyerId,
+      tokenId: await this.store.nextTokenId(),
+      originalPriceCents: 0,
+      paidCents: 0,
+      status: "ACTIVE",
+      exportMode: "NONE",
+      exitFeeCents: 0,
+      holderName,
+      isSpecial: true
+    };
+    await this.store.createTicket(special);
   }
 
   // -------------------------------------------------------------- tier (v2)
