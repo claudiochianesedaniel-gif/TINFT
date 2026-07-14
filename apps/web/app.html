@@ -413,7 +413,7 @@
               <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px">
                 <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:20px"><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Incassi (primario)</div><div style="font-weight:700;font-size:26px;margin-top:6px">{{ consoleTot }}</div></div>
                 <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:20px"><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Ingressi registrati</div><div style="font-weight:700;font-size:26px;margin-top:6px;color:#35cf93">{{ consoleEntered }}</div></div>
-                <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:20px"><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Royalty secondario</div><div style="font-weight:700;font-size:26px;margin-top:6px;color:#84a9ff">1%</div></div>
+                <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:20px"><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Royalty secondario</div><div style="font-weight:700;font-size:26px;margin-top:6px;color:#84a9ff">0,5%</div></div>
               </div>
               <h3 style="font-weight:700;font-size:20px;margin-top:32px;margin-bottom:14px">Eventi &amp; vendite</h3>
               <div style="display:flex;flex-direction:column;gap:1px;background:#1d1d1f;border:1px solid #1d1d1f;border-radius:13px;overflow:hidden">
@@ -1140,7 +1140,7 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
                   <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Incassi</div><div style="font-weight:700;font-size:20px;margin-top:5px">{{ consoleTot }}</div></div>
                   <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Ingressi live</div><div style="font-weight:700;font-size:20px;margin-top:5px;color:#35cf93">{{ consoleEntered }}</div></div>
-                  <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Royalty · 721C</div><div style="font-weight:700;font-size:20px;margin-top:5px;color:#84a9ff">1%</div></div>
+                  <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Royalty · 721C</div><div style="font-weight:700;font-size:20px;margin-top:5px;color:#84a9ff">0,5%</div></div>
                   <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Eventi attivi</div><div style="font-weight:700;font-size:20px;margin-top:5px">3</div></div>
                 </div>
                 <div onClick="{{ orgStripe }}" style="margin-top:14px;background:#141415;border:1px solid {{ stripeBd }};border-radius:13px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px">
@@ -1227,7 +1227,7 @@
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px">
                     <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Incassi totali</div><div style="font-weight:700;font-size:19px;margin-top:5px">{{ consoleTot }}</div></div>
-                    <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Royalty · 721C</div><div style="font-weight:700;font-size:19px;margin-top:5px;color:#84a9ff">1%</div></div>
+                    <div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:14px"><div style="font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">Royalty · 721C</div><div style="font-weight:700;font-size:19px;margin-top:5px;color:#84a9ff">0,5%</div></div>
                   </div>
                   <div style="display:flex;flex-direction:column;gap:1px;background:#262628;border:1px solid #262628;border-radius:13px;overflow:hidden;margin-top:14px">
                     <sc-for list="{{ orgProfileRows }}" as="r" hint-placeholder-count="5">
@@ -2277,7 +2277,7 @@ class Component extends DCLogic {
       orgProfileRows:[
         {g:'⛉',t:'Dati fiscali e ragione sociale',s:(S.orgAccount&&S.orgAccount.piva)||'P.IVA IT01234567890',on:()=>this._toastMsg('Dati fiscali · sezione demo')},
         {g:'⮃',t:'Accredito incassi (IBAN)',s:'IT60 •••• •••• 4421 · ogni 7 giorni',on:()=>this._toastMsg('Accredito impostato su IBAN •••• 4421')},
-        {g:'%',t:'Commissione sul secondario',s:'1% a TINFT · dopo l’evento 0,5%+0,5% · enforced on-chain (ERC-721C)',on:()=>this._toastMsg('Secondario: 1% a TINFT prima dell’evento · 0,5% TINFT + 0,5% organizzatore dopo')},
+        {g:'%',t:'Royalty organizzatore sul secondario',s:'0,5% all’organizzatore (dopo l’evento) · enforced on-chain (ERC-721C)',on:()=>this._toastMsg('Royalty organizzatore 0,5% sul secondario (dopo l’evento). Prima dell’evento la fee 1% va tutta a TINFT.')},
         {g:'⊞',t:'Staff e codici varco',s:'Genera i codici da consegnare allo staff',on:()=>this._toastMsg('Codici varco generati per i tuoi eventi')},
         {g:'§',t:'Termini, fatturazione e privacy',s:'Documenti e condizioni TINFT',on:()=>this._toastMsg('Documenti · sezione demo')}
       ],
@@ -2294,7 +2294,7 @@ class Component extends DCLogic {
       trust:[{k:'100%',v:'da smartphone'},{k:'0',v:'lettori esterni'},{k:'NFC',v:'+ QR dinamico'},{k:'721C',v:'royalty on-chain'}],
       steps:[{n:'1',t:'Crea il wallet',b:'Identità verificata in app. Il wallet TINFT è pronto in pochi secondi, senza seed da gestire.'},{n:'2',t:'Acquista in euro',b:'Paghi con carta, Apple Pay o Google Pay. Il biglietto diventa un NFT nominativo, intestato solo a te.'},{n:'3',t:'Entri col telefono',b:'Al varco mostri il QR o avvicini in NFC. Nessun lettore, nessun tornello.'}],
       orgPerks:[{icon:'◆',t:'Emissione in un clic',b:'Carica l\u2019artwork, TINFT conia i titoli.'},{icon:'%',t:'Royalty sul secondario',b:'Percentuale garantita on-chain.'},{icon:'✓',t:'Accessi live',b:'Validi dallo smartphone dello staff.'}],
-      orgStats:[{k:'4%',v:'commissione sul primario, tutto incluso'},{k:'1%',v:'commissione TINFT sul secondario (0,5%+0,5% dopo l’evento)'},{k:'0',v:'hardware: validi dal telefono dello staff'}],
+      orgStats:[{k:'4%',v:'commissione sul primario, tutto incluso'},{k:'0,5%',v:'royalty organizzatore sul secondario (dopo l’evento)'},{k:'0',v:'hardware: validi dal telefono dello staff'}],
       artists:[{initials:'CW',name:'Charlotte de Witte',genre:'Techno',color:'#3a4d7a'},{initials:'AB',name:'Adam Beyer',genre:'Techno',color:'#5a3a6a'},{initials:'BR',name:'Blue Room Quartet',genre:'Jazz',color:'#3a5a6a'},{initials:'MA',name:'Mind Against',genre:'Melodic',color:'#6a4a3a'}],
       news:[{date:'12 GIU',title:'TINFT apre la vendita per la stagione estiva dei club di Milano'},{date:'05 GIU',title:'Royalty enforced: ora ogni rivendita riconosce la percentuale all\u2019organizzatore'},{date:'28 MAG',title:'Accesso NFC in beta: ingressi col telefono in tap, senza inquadrare il QR'}],
       cityChips:[{label:'Tutte',on:()=>this.setState({fCity:'Tutte'}),...chip(S.fCity==='Tutte')},{label:'Milano',on:()=>this.setState({fCity:'Milano'}),...chip(S.fCity==='Milano')},{label:'Torino',on:()=>this.setState({fCity:'Torino'}),...chip(S.fCity==='Torino')},{label:'Bologna',on:()=>this.setState({fCity:'Bologna'}),...chip(S.fCity==='Bologna')},{label:'Roma',on:()=>this.setState({fCity:'Roma'}),...chip(S.fCity==='Roma')}],
