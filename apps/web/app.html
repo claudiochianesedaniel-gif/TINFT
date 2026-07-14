@@ -1430,11 +1430,11 @@
                     <div style="display:flex;justify-content:space-between;background:#0d0d0e;padding:11px 13px"><span style="font-size:12px;color:#9a9a9c">Venditore</span><span style="font-size:12px;font-weight:600">{{ mkt.seller }}</span></div>
                     <div style="display:flex;justify-content:space-between;background:#0d0d0e;padding:11px 13px"><span style="font-size:12px;color:#9a9a9c">Tipo di titolo</span><span style="font-size:12px;font-weight:600">{{ mkt.tier }}</span></div>
                     <div style="display:flex;justify-content:space-between;background:#0d0d0e;padding:11px 13px"><span style="font-size:12px;color:#9a9a9c">Prezzo nominale</span><span style="font-size:12px;font-weight:600">{{ mkt.orig }}</span></div>
-                    <div style="display:flex;justify-content:space-between;background:#0d0d0e;padding:11px 13px"><span style="font-size:12px;color:#9a9a9c">Royalty all'organizzatore</span><span style="font-size:12px;font-weight:600;color:#84a9ff">{{ mkt.royalty }}</span></div>
+                    <div style="display:flex;justify-content:space-between;background:#0d0d0e;padding:11px 13px"><span style="font-size:12px;color:#9a9a9c">Commissione TINFT</span><span style="font-size:12px;font-weight:600;color:#84a9ff">{{ mkt.royalty }}</span></div>
                   </div>
                   <div style="margin-top:12px;display:flex;gap:9px;background:rgba(53,207,147,.08);border:1px solid rgba(53,207,147,.3);border-radius:8px;padding:11px 13px;font-size:11.5px;color:#bfe9d4;line-height:1.5"><span style="color:#35cf93;flex-shrink:0">◇</span> Titolo nominativo verificato on-chain: passa subito nel tuo wallet TINFT, intestato a te.</div>
                   <div onClick="{{ mkt.buy }}" style="margin-top:14px;background:#4f7cf0;color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;padding:15px;border-radius:8px;cursor:pointer;transition:background .15s ease" style-hover="background:#5d86f3">{{ mkt.buyLabel }}</div>
-                  <div style="text-align:center;font-size:10px;color:#5a5a5c;margin-top:9px">Acquisto simulato · max 3 titoli per evento</div>
+                  <div style="text-align:center;font-size:10px;color:#5a5a5c;margin-top:9px">Trasferimento in escrow · max 3 titoli per evento</div>
                 </div>
               </div>
             </div>
@@ -1923,12 +1923,13 @@ class Component extends DCLogic {
     return raw.map(t=>{ const st=String(t.status||'ACTIVE').toUpperCase(); return {
       id:t.id, evId:t.eventId, tier:(t.tierName||'Intero'), price:((t.paidCents!=null?t.paidCents:t.originalPriceCents)||0)/100,
       holder:t.holderName||'Marco Bianchi', tokenId:t.tokenId, txHash:t.txHash, beStatus:st,
-      used: st==='USED'||st==='REDEEMED', listed: st==='LISTED', exported: (t.exportMode&&t.exportMode!=='NONE')||st==='EXPORTED'
+      used: st==='USED'||st==='REDEEMED'||st==='BURNED', burned: st==='BURNED', special: !!(t.isSpecial||t.special), listed: st==='LISTED', exported: (t.exportMode&&t.exportMode!=='NONE')||st==='EXPORTED'
     }; });
   }
   _normMarket(raw){
     if(!Array.isArray(raw)) return [];
-    return raw.map(m=>({ id:(m.ticketId||m.id), beTicketId:(m.ticketId||m.id), evId:(m.eventId||m.evId), seller:(m.sellerName||m.seller||'Utente TINFT'), tier:(m.tierName||m.tier||'Intero'), price:((m.priceCents!=null?m.priceCents:(m.listPriceCents||0))/100), sold:false }));
+    return raw.map(m=>{ const cents=(m.askPriceCents!=null?m.askPriceCents:(m.priceCents!=null?m.priceCents:(m.listPriceCents||0)));
+      return { id:(m.ticketId||m.id), beTicketId:(m.ticketId||m.id), evId:(m.eventId||m.evId), title:(m.title||m.eventTitle||''), seller:(m.sellerName||m.seller||'Utente TINFT'), tier:(m.tierName||m.tier||'Intero'), price:(cents/100), royalty:((m.royaltyCents||0)/100), cap:((m.capCents||0)/100), sold:false }; });
   }
   async _doPurchase(ctx){
     const evId = ctx==='site'? this.state.evId : this.state.appEvId;
@@ -1985,8 +1986,13 @@ class Component extends DCLogic {
   componentDidUpdate(prevProps, prevState){
     if(this.state.appView==='varco' && prevState.appView!=='varco'){ setTimeout(()=>this._drawTicketQR(), 70); clearInterval(this._qrRotT); this._qrRotT=setInterval(()=>this._drawTicketQR(), 25000); }
     if(prevState.appView==='varco' && this.state.appView!=='varco'){ clearInterval(this._qrRotT); }
+    // Tempo reale: mentre il cliente guarda i biglietti/varco, ricarica dal server
+    // così, appena il validatore convalida, appare "Bruciato al varco" senza refresh manuale.
+    const inTk=(this.state.profile==='cliente' && this.state.token && (this.state.appView==='biglietti'||this.state.appView==='ticket'||this.state.appView==='varco'));
+    if(inTk && !this._tkPoll){ this._tkPoll=setInterval(()=>{ this._refreshClient(); }, 7000); }
+    if(!inTk && this._tkPoll){ clearInterval(this._tkPoll); this._tkPoll=null; }
   }
-  componentWillUnmount(){ clearTimeout(this._tt); clearInterval(this._qrT); clearInterval(this._varcoT); clearInterval(this._qrRotT); this._stopCam && this._stopCam(); }
+  componentWillUnmount(){ clearTimeout(this._tt); clearInterval(this._qrT); clearInterval(this._varcoT); clearInterval(this._qrRotT); clearInterval(this._tkPoll); this._stopCam && this._stopCam(); }
   async _hmac(msg){ try{ const k=await crypto.subtle.importKey('raw', new TextEncoder().encode('TINFT-DEMO-KEY-2026'), {name:'HMAC',hash:'SHA-256'}, false, ['sign']); const s=await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(msg)); return Array.from(new Uint8Array(s)).map(b=>b.toString(16).padStart(2,'0')).join(''); }catch(e){ return 'nocrypto'; } }
   async _localToken(tk){ const ev=this.EV()[tk.evId]||{}; const vcode=String(tk.vcode||ev.vcode||'').toUpperCase(); const holder=String(tk.holder||(this.state.account&&this.state.account.name)||'Titolare'); const body=['TINFT',tk.evId,vcode,tk.id,holder].join('|'); const sig=(await this._hmac(body)).slice(0,16); return body+'|'+sig; }
   async _ticketToken(){ const S=this.state; const tk=S.myTickets.find(t=>t.id===S.ticketId)||S.myTickets[0]; if(!tk) return '';
@@ -2134,14 +2140,14 @@ class Component extends DCLogic {
     const ae={ art:ae0.art, type:ae0.type, genre:ae0.genre, title:ae0.title, sub:ae0.sub, date:ae0.date, desc:ae0.desc };
 
     // tickets (with status)
-    const stat=(tk)=> tk.exported? {statusLabel:'NFT esportato',statusColor:'#bcd0ff',statusBg:'rgba(79,124,240,.1)',statusBorder:'rgba(79,124,240,.3)'} : tk.used? {statusLabel:'Usato',statusColor:'#8c8c8c',statusBg:'#1a1a1b',statusBorder:'#262628'} : tk.gifted? {statusLabel:'Regalato · in attesa',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : tk.listed? {statusLabel:'In vendita',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : {statusLabel:'Valido',statusColor:'#35cf93',statusBg:'rgba(53,207,147,.1)',statusBorder:'rgba(53,207,147,.3)'};
+    const stat=(tk)=> tk.exported? {statusLabel:'NFT esportato',statusColor:'#bcd0ff',statusBg:'rgba(79,124,240,.1)',statusBorder:'rgba(79,124,240,.3)'} : tk.burned? {statusLabel:'Bruciato al varco',statusColor:'#ff8a5c',statusBg:'rgba(255,93,72,.12)',statusBorder:'rgba(255,93,72,.35)'} : (tk.used&&tk.special)? {statusLabel:'Usato',statusColor:'#8c8c8c',statusBg:'#1a1a1b',statusBorder:'#262628'} : tk.used? {statusLabel:'Bruciato al varco',statusColor:'#ff8a5c',statusBg:'rgba(255,93,72,.12)',statusBorder:'rgba(255,93,72,.35)'} : tk.gifted? {statusLabel:'Regalato · in attesa',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : tk.listed? {statusLabel:'In vendita',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : {statusLabel:'Valido',statusColor:'#35cf93',statusBg:'rgba(53,207,147,.1)',statusBorder:'rgba(53,207,147,.3)'};
     const tList=S.myTickets.map(tk=>{ const e=EV[tk.evId]||{}; return { id:tk.id, title:e.title||tk.evId, sub:(e.sub||''), tier:tk.tier, holder:tk.holder, art:e.art, ...stat(tk), onOpen:()=>this.openTicket(tk.id) }; });
     const liveTk=S.myTickets.filter(t=>!t.used && !t.listed && !t.pendingPost);
     const nextTk=liveTk[liveTk.length-1]; const nextE=nextTk?EV[nextTk.evId]:null;
     const curTk=S.myTickets.find(t=>t.id===S.ticketId)||S.myTickets[0]; const curE=curTk?EV[curTk.evId]:null;
 
     // market display
-    const market=S.market.map(m=>{ const e=EV[m.evId]||{}; const orig=this.minP(e); const over=m.price>orig; const scarce=(e.soldPct||0)>=65; return { id:m.id, art:e.art, title:e.title||m.evId, seller:m.seller, tier:m.tier, price:eur(m.price), orig:eur(orig), diffLabel:over?('+'+eur(m.price-orig)+' sul nominale'):'al nominale', diffColor:over?'#f0a64f':'#35cf93', royalty:'10%', sold:!!m.sold, avail:!m.sold, scarce:scarce&&!m.sold, open:()=>this.marketOpen(m.id), buy:()=>this.marketBuy(m.id), cardOpacity:m.sold?0.5:1, cardCursor:m.sold?'default':'pointer', stateLabel:m.sold?'Venduto':(scarce?'Primario esaurito':'') }; });
+    const market=S.market.map(m=>{ const e=EV[m.evId]||{}; const orig=this.minP(e); const over=m.price>orig; const scarce=(e.soldPct||0)>=65; return { id:m.id, art:e.art, title:e.title||m.evId, seller:m.seller, tier:m.tier, price:eur(m.price), orig:eur(orig), diffLabel:over?('+'+eur(m.price-orig)+' sul nominale'):'al nominale', diffColor:over?'#f0a64f':'#35cf93', royalty:'1%', sold:!!m.sold, avail:!m.sold, scarce:scarce&&!m.sold, open:()=>this.marketOpen(m.id), buy:()=>this.marketBuy(m.id), cardOpacity:m.sold?0.5:1, cardCursor:m.sold?'default':'pointer', stateLabel:m.sold?'Venduto':(scarce?'Primario esaurito':'') }; });
     const mktSel=S.mktPreviewId? S.market.find(x=>x.id===S.mktPreviewId):null;
     const mktSelE=mktSel? (EV[mktSel.evId]||{}):{};
 
@@ -2295,7 +2301,7 @@ class Component extends DCLogic {
       market, marketEmpty:market.length===0,
       marketClose:()=>this.marketClose(),
       mktPreviewOpen:!!mktSel,
-      mkt: mktSel? { art:mktSelE.art, title:mktSelE.title, sub:mktSelE.sub||'', date:mktSelE.date||'', genre:mktSelE.genre||'', seller:mktSel.seller, tier:mktSel.tier, price:eur(mktSel.price), orig:eur(this.minP(mktSelE)), royalty:'10%', soldW:(mktSelE.soldPct||0)+'%', buyLabel:'Compra · '+eur(mktSel.price), buy:()=>this.marketBuy(mktSel.id) } : { art:'',title:'',sub:'',date:'',genre:'',seller:'',tier:'',price:'',orig:'',royalty:'',soldW:'0%',buyLabel:'',buy:()=>{} },
+      mkt: mktSel? { art:mktSelE.art, title:mktSelE.title, sub:mktSelE.sub||'', date:mktSelE.date||'', genre:mktSelE.genre||'', seller:mktSel.seller, tier:mktSel.tier, price:eur(mktSel.price), orig:eur(this.minP(mktSelE)), royalty:'1%', soldW:(mktSelE.soldPct||0)+'%', buyLabel:'Compra · '+eur(mktSel.price), buy:()=>this.marketBuy(mktSel.id) } : { art:'',title:'',sub:'',date:'',genre:'',seller:'',tier:'',price:'',orig:'',royalty:'',soldW:'0%',buyLabel:'',buy:()=>{} },
       profileRows:[{g:'◇',t:'I miei biglietti',on:()=>this.tabBiglietti()},{g:'⧉',t:'Ricevute e fatture',on:()=>this.openRicevute()},{g:'⛉',t:'Identità e sicurezza',on:()=>this.openSecurity()},{g:'§',t:'Termini, Privacy e Cookie',on:()=>this.openLegal()},{g:'◔',t:'Rivedi onboarding',on:()=>this.openOnboard()}],
       ricevute:S.myTickets.filter(t=>t.price>0).map(t=>{const e=EV[t.evId]||{};return {title:e.title||t.evId, tier:t.tier, price:eur(t.price), fee:eur(Math.round(t.price*0.10*100)/100), tot:eur(Math.round(t.price*1.04*100)/100), num:'TINFT-'+String(t.id).slice(-5).toUpperCase()};}), ricevuteEmpty:S.myTickets.filter(t=>t.price>0).length===0,
       onboardSteps:[{g:'◇',t:'Accesso e identità',b:'Accedi con Apple o Google; identità ed età (18+) verificate con SPID. Biglietti nominativi, niente bagarini.'},{g:'⊞',t:'Wallet automatico',b:'Creiamo il tuo wallet TINFT. Nessuna frase segreta da gestire.'},{g:'⌁',t:'Entri in NFC',b:'Al varco avvicini il telefono allo staff. Il QR resta solo come fallback.'}],
