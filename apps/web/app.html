@@ -1911,7 +1911,11 @@ class Component extends DCLogic {
     try{
       const tks=await window.TINFT_API.tickets(accId, token);
       const norm=this._normTickets(tks);
+      const prevIds=new Set((this.state.myTickets||[]).map(t=>t.id));
+      const gotSpecial=this._tkLoaded && norm.some(t=>t.special && !t.used && !prevIds.has(t.id));
+      this._tkLoaded=true;
       this.setState(s=>{ const has=norm.some(t=>t.id===s.ticketId); return { myTickets:norm, ticketId: has? s.ticketId : (norm[0]?norm[0].id:s.ticketId) }; });
+      if(gotSpecial){ this._toastMsg('🎁 Sorpresa! Hai ricevuto un NFT Signature 1/1 · da collezione, non si brucia'); }
     }catch(e){}
   }
   async _refreshEvents(){ try{ const evs=await window.TINFT_API.events(); if(Array.isArray(evs)&&evs.length){ this.setState({ realEvents:evs }); this._loadTiers(evs); } }catch(e){} }
@@ -1971,7 +1975,7 @@ class Component extends DCLogic {
     const manual=String(f.vcode||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,'');
     const venue = f.luogo.trim();
     try{
-      const ev=await window.TINFT_API.createEvent({ organizerId:orgId, title:f.titolo.trim(), venue:venue, date:f.data.trim(), priceCents:priceCents, capacity:cap, type:'TICKET_NFT', gateCode:(manual||undefined) }, otok);
+      const ev=await window.TINFT_API.createEvent({ organizerId:orgId, title:f.titolo.trim(), venue:venue, date:f.data.trim(), priceCents:priceCents, capacity:cap, type:'TICKET_NFT', gateCode:(manual||undefined), signatureDrops:((Number(f.nftSpecial)||0)>0) }, otok);
       if(f.poster){ try{ this.setState(s=>({ posterByEv:{...(s.posterByEv||{}), [ev.id]: f.poster } })); }catch(pe){} }
       try{ await window.TINFT_API.raw('POST','/events/'+ev.id+'/publish',{ body:{ organizerId:orgId }, token:otok }); }catch(e){}
       try{ for(const t of valid){ await window.TINFT_API.addTier(ev.id, { name:t.tipo.trim(), priceCents:Math.round((Number(t.price)||0)*100), quantity:Number(t.qty)||0 }, otok); } }catch(e){}
@@ -2141,7 +2145,7 @@ class Component extends DCLogic {
     const ae={ art:ae0.art, type:ae0.type, genre:ae0.genre, title:ae0.title, sub:ae0.sub, date:ae0.date, desc:ae0.desc };
 
     // tickets (with status)
-    const stat=(tk)=> tk.exported? {statusLabel:'NFT esportato',statusColor:'#bcd0ff',statusBg:'rgba(79,124,240,.1)',statusBorder:'rgba(79,124,240,.3)'} : tk.burned? {statusLabel:'Bruciato al varco',statusColor:'#ff8a5c',statusBg:'rgba(255,93,72,.12)',statusBorder:'rgba(255,93,72,.35)'} : (tk.used&&tk.special)? {statusLabel:'Usato',statusColor:'#8c8c8c',statusBg:'#1a1a1b',statusBorder:'#262628'} : tk.used? {statusLabel:'Bruciato al varco',statusColor:'#ff8a5c',statusBg:'rgba(255,93,72,.12)',statusBorder:'rgba(255,93,72,.35)'} : tk.gifted? {statusLabel:'Regalato · in attesa',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : tk.listed? {statusLabel:'In vendita',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : {statusLabel:'Valido',statusColor:'#35cf93',statusBg:'rgba(53,207,147,.1)',statusBorder:'rgba(53,207,147,.3)'};
+    const stat=(tk)=> tk.exported? {statusLabel:'NFT esportato',statusColor:'#bcd0ff',statusBg:'rgba(79,124,240,.1)',statusBorder:'rgba(79,124,240,.3)'} : tk.burned? {statusLabel:'Bruciato al varco',statusColor:'#ff8a5c',statusBg:'rgba(255,93,72,.12)',statusBorder:'rgba(255,93,72,.35)'} : (tk.used&&tk.special)? {statusLabel:'Usato',statusColor:'#8c8c8c',statusBg:'#1a1a1b',statusBorder:'#262628'} : tk.used? {statusLabel:'Bruciato al varco',statusColor:'#ff8a5c',statusBg:'rgba(255,93,72,.12)',statusBorder:'rgba(255,93,72,.35)'} : tk.special? {statusLabel:'Signature 1/1',statusColor:'#ffcf80',statusBg:'rgba(255,207,128,.12)',statusBorder:'rgba(255,207,128,.35)'} : tk.gifted? {statusLabel:'Regalato · in attesa',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : tk.listed? {statusLabel:'In vendita',statusColor:'#f0a64f',statusBg:'rgba(240,166,79,.1)',statusBorder:'rgba(240,166,79,.3)'} : {statusLabel:'Valido',statusColor:'#35cf93',statusBg:'rgba(53,207,147,.1)',statusBorder:'rgba(53,207,147,.3)'};
     const tList=S.myTickets.map(tk=>{ const e=EV[tk.evId]||{}; return { id:tk.id, title:e.title||tk.evId, sub:(e.sub||''), tier:tk.tier, holder:tk.holder, art:e.art, ...stat(tk), onOpen:()=>this.openTicket(tk.id) }; });
     const liveTk=S.myTickets.filter(t=>!t.used && !t.listed && !t.pendingPost);
     const nextTk=liveTk[liveTk.length-1]; const nextE=nextTk?EV[nextTk.evId]:null;

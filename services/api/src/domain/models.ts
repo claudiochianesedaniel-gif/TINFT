@@ -83,6 +83,10 @@ export interface Event {
   // registro eventi on-chain (FASE 4): eventId uint usato da TinftTicket.mint e dal
   // limite anti-bagarino per-evento; assegnato UNA volta al primo mint, poi immutabile.
   onchainEventId?: number;
+  // "Signature drops": se true, a sorpresa il 1° acquirente, quello a metà vendite e
+  // l'ultimo ricevono in regalo un NFT Signature 1/1 (isSpecial, mai bruciato). Il
+  // cliente non sa se sarà lui il fortunato. Off di default (non tocca i test esistenti).
+  signatureDrops?: boolean;
 }
 
 export interface Ticket {

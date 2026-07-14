@@ -591,6 +591,7 @@ export function buildServer(
       capacity: number;
       status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
       gateCode?: string;
+      signatureDrops?: boolean;
     };
   }>(
     "/events",
@@ -606,7 +607,8 @@ export function buildServer(
             priceCents: INT_NONNEG,
             capacity: INT_POS,
             status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]},
-            gateCode: STR
+            gateCode: STR,
+            signatureDrops: {type: "boolean"}
           },
           ["organizerId", "title", "venue", "date", "priceCents", "capacity"]
         )
