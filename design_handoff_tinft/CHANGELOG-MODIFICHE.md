@@ -36,6 +36,7 @@
 - **Locandina**: l'immagine caricata dall'organizzatore ora è conservata (data URL) e **mostrata** come arte dell'evento.
 - **Ricerca manuale al varco**: riferita allo **username TINFT** (@utente) per evitare omonimi.
 - **Dashboard**: "Royalty · 721C" 10% → **1%**; badge stati biglietto: Attivo · In vendita · **Signature 1/1** · **Bruciato al varco** · Usato(Signature) · Esportato.
+- **Prevendita 10% sul pulsante di acquisto**: il pulsante mostrava il prezzo base; ora mostra il **totale con prevendita** (es. €26,40) + breakdown "Prezzo + prevendita 10% → a TINFT". Il backend addebitava già il 10% (`presaleCommissionCents`, `totalCents = base*1.10`); era solo la label.
 
 ## 5 · NFT Signature "a sorpresa" (nuova feature)
 - Se l'organizzatore imposta **NFT speciali > 0**, l'evento attiva i **signature drops**.
