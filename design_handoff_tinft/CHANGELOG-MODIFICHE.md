@@ -85,4 +85,4 @@ Il blueprint crea il database **free** `tinft-db`; le migrazioni girano allo sta
 ## Cosa resta a design/committente
 - Rifinire graficamente le 3 aree mantenendo il design system Netlify (già condiviso da tutti i ruoli).
 - Per Stripe reale: chiavi test su Render. Per burn on-chain sui biglietti demo: comprarli dall'app (mint on-chain).
-- Signature on-chain (ora il drop è a livello store): opzionale, `mintSpecial` sul contratto esiste già.
+- Postgres su Render: il piano **free scade dopo 30 giorni** → passare a un piano a pagamento se la demo dura di più.
