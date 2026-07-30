@@ -1775,7 +1775,26 @@ class Component extends DCLogic {
   // ---- staff / varco ----
   toStaff(){ this.setState({ profile:'staffgate', staffCodeInput:'', staffCodeErr:'', scan:null }); this._refreshEvents(); }
   onStaffCode(v){ this.setState({ staffCodeInput:v, staffCodeErr:'' }); }
-  staffCodeSubmit(){ const code=(this.state.staffCodeInput||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,''); if(code.length<3){ this.setState({ staffCodeErr:'Inserisci il codice del varco (min. 3 caratteri)' }); return; } const EV=this.EV(); const norm=(v)=>String(v||'').toUpperCase().replace(/[^A-Z0-9\-]/g,''); const id=Object.keys(EV).find(k=>norm(EV[k].vcode)===code); /* Il codice digitato È la fonte di verità: il varco si apre sempre. Se l'evento è noto su questo dispositivo lo agganciamo per etichetta/statistiche; altrimenti resta in modalità "solo codice" e valida comunque i QR che portano questo codice. */ this.setState({ profile:'staff', staffView:'varco', staffGateCode:code, staffEvId:(id||this.state.staffEvId), staffLocked:true, staffCodeErr:'', scan:null }); }
+  async staffCodeSubmit(){ const code=(this.state.staffCodeInput||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,''); if(code.length<3){ this.setState({ staffCodeErr:'Inserisci il codice del varco (min. 3 caratteri)' }); return; }
+    /* Il varco lo risolve il SERVER: il codice e' univoco lato backend. Prima si cercava
+       l'evento solo tra quelli caricati sul telefono e, se non lo trovava, restava agganciato
+       all'evento sbagliato -> ogni scansione dava "non valido". */
+    try{
+      const tok=await this._scanToken();
+      if(tok){
+        const ev=await window.TINFT_API.gateAccess(code, tok);
+        if(ev&&ev.id){
+          await this._refreshEvents();
+          this.setState({ profile:'staff', staffView:'varco', staffGateCode:code, staffEvId:ev.id, staffGateVerified:true, staffLocked:true, staffCodeErr:'', scan:null });
+          this._toastMsg('Varco collegato · '+(ev.title||code));
+          return;
+        }
+      }
+    }catch(e){
+      if(e&&(e.status===404||/non trovato/i.test(e.message||''))){ this.setState({ staffCodeErr:'Codice varco non valido o revocato' }); return; }
+      /* rete assente: si prosegue col riconoscimento locale qui sotto */
+    }
+    const EV=this.EV(); const norm=(v)=>String(v||'').toUpperCase().replace(/[^A-Z0-9\-]/g,''); const id=Object.keys(EV).find(k=>norm(EV[k].vcode)===code); /* Il codice digitato È la fonte di verità: il varco si apre sempre. Se l'evento è noto su questo dispositivo lo agganciamo per etichetta/statistiche; altrimenti resta in modalità "solo codice" e valida comunque i QR che portano questo codice. */ this.setState({ profile:'staff', staffView:'varco', staffGateCode:code, staffEvId:(id||this.state.staffEvId), staffLocked:true, staffCodeErr:'', scan:null }); }
   toOrg(){ this.setState({ profile:'org' }); }
   toCliente(){ this.setState({ profile:'cliente', staffLocked:false, scan:null, appView:'profilo' }); }
   _roleFromAccount(acc, email){
@@ -1966,6 +1985,10 @@ class Component extends DCLogic {
           else if(saved.token&&saved.account&&await this._sessionValid(saved)){ const extra=(saved.role==='org')?{ orgToken:saved.token, orgAccount:saved.account }:{}; this.setState(Object.assign({ token:saved.token, account:saved.account, loggedIn:true }, extra)); this._enterRole(saved.role, saved.account); }
           else { this.setState({ loggedIn:false, authMode:'login' }); }
         } else { this.setState({ loggedIn:false, authMode:'login' }); }
+        /* Backend online e nessuna sessione: via i biglietti demo di esempio. Hanno un QR
+           finto (firmato sul telefono) e al varco darebbero "QR non TINFT", facendo sembrare
+           rotta la validazione. Con il server attivo i biglietti arrivano solo dal login. */
+        if(this.state.backend==='online' && !this.state.token){ this.setState({ myTickets:[] }); }
       }
     }catch(e){}
     this._refreshMarket();
@@ -2088,14 +2111,24 @@ class Component extends DCLogic {
   closeScanner(){ this._stopCam(); this.setState({ scannerOpen:false }); }
   async _scanToken(){ if(this.state.token) return this.state.token; if(this.state.orgToken) return this.state.orgToken; if(this._scanTok) return this._scanTok; try{ const r=await window.TINFT_API.login('org@tinft.io','demo123'); this._scanTok=r.token; return r.token; }catch(e){ return null; } }
   _mapServerScan(sc, tm, gate){ const o=String(sc&&sc.outcome||'').toUpperCase(); const meta=(sc&&sc.meta)||{}; const holder=(sc&&sc.holderName)||'Biglietto'; const code='#'+String(meta.ticketId||'----').slice(-4);
-    if(o==='VALID' && this.state.staffEvId && meta.eventId && String(meta.eventId)!==String(this.state.staffEvId)){ return { status:'invalid', holder:holder, tier:'evento diverso da questo varco', code:code, time:tm, gate:gate, method:'QR' }; }
+    /* Si scarta un VALID del server SOLO se il varco e' stato agganciato per codice e
+   verificato dal server stesso: prima bastava un staffEvId ereditato dal primo evento
+   in elenco per trasformare ogni ingresso valido in "non valido". */
+    if(o==='VALID' && this.state.staffGateVerified && this.state.staffEvId && meta.eventId && String(meta.eventId)!==String(this.state.staffEvId)){ return { status:'invalid', holder:holder, tier:'biglietto di un altro evento', code:code, time:tm, gate:gate, method:'QR' }; }
     const map={ VALID:{s:'valid',t:'ingresso confermato · verificato dal server'}, DUPLICATE:{s:'used',t:'già validato · doppio ingresso'}, SCREENSHOT:{s:'invalid',t:'screenshot: QR scaduto, serve il codice live'}, ESCROW:{s:'invalid',t:'biglietto in vendita/trasferimento'}, FAKE:{s:'invalid',t:'biglietto falso o firma non valida'} };
     const mm=map[o]||{s:'invalid',t:'esito: '+(o||'sconosciuto')}; return { status:mm.s, holder:holder, tier:mm.t, code:code, time:tm, gate:gate, method:'QR' };
   }
   async _onScan(text){ this._stopCam(); const tm=this._now(); const gate=this.state.staffGate; const raw=String(text||'').trim(); let r=null;
     // Token del server (JWT) → validazione REALE server-side (VALID/DUPLICATE/SCREENSHOT/FAKE)
-    if(/^eyJ/.test(raw)){ const tok=await this._scanToken(); if(tok){ try{ const sc=await window.TINFT_API.scan(raw, tok); r=this._mapServerScan(sc, tm, gate); }catch(e){ r=null; } } }
-    // Fallback: token locale demo (TINFT|...) o backend non raggiungibile
+    if(/^eyJ/.test(raw)){
+      const tok=await this._scanToken();
+      if(!tok){ r={ status:'invalid', holder:'Validatore non autenticato', tier:'accedi per validare', code:'#----', time:tm, gate:gate, method:'QR' }; }
+      else { try{ const sc=await window.TINFT_API.scan(raw, tok); r=this._mapServerScan(sc, tm, gate); }
+        catch(e){ /* il QR e' del server: NON ripiegare sul controllo locale, direbbe "QR non TINFT"
+                     nascondendo il vero motivo (rete assente, sessione scaduta, ecc.) */
+          r={ status:'invalid', holder:'Validazione non riuscita', tier:(e&&e.message)||'server non raggiungibile', code:'#----', time:tm, gate:gate, method:'QR' }; } }
+    }
+    // QR non del server: biglietto demo locale (TINFT|...) — verifica firma e varco sul telefono
     if(!r){ r=await this._validateToken(raw); }
     this.setState(s=>({ scannerOpen:false, scan:r, scanLog:[r, ...s.scanLog].slice(0,8), entries: r.status==='valid'? s.entries+1 : s.entries })); }
   async _validateToken(text){ const tm=this._now(); const gate=this.state.staffGate; const parts=String(text||'').split('|'); if(parts.length<6 || parts[0]!=='TINFT'){ return { status:'invalid', holder:'QR non TINFT', tier:'formato non riconosciuto', code:'#----', time:tm, gate:gate, method:'QR' }; } const evId=parts[1], vcode=parts[2], ticketId=parts[3], holder=parts[4], sig=parts[5]; const body=['TINFT',evId,vcode,ticketId,holder].join('|'); const expect=(await this._hmac(body)).slice(0,16); if(sig!==expect){ return { status:'invalid', holder:'Firma non valida', tier:'biglietto contraffatto', code:'#'+String(ticketId).slice(-4), time:tm, gate:gate, method:'QR' }; } const norm=(v)=>String(v||'').toUpperCase().replace(/[^A-Z0-9\-]/g,''); const gateCode=norm(this.state.staffGateCode); const boundEv=this.EV()[this.state.staffEvId]||{}; const boundCode=norm(boundEv.vcode); const qrCode=norm(vcode); const codeOk = gateCode ? (qrCode===gateCode) : (qrCode===boundCode); if(!codeOk){ return { status:'invalid', holder:holder||'Biglietto', tier:'biglietto di un altro varco', code:'#'+String(ticketId).slice(-4), time:tm, gate:gate, method:'QR' }; } const key='tinft_used_'+vcode; let used=[]; try{ used=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){} if(used.indexOf(ticketId)>=0){ return { status:'used', holder:holder||'Biglietto', tier:'già validato a questo varco', code:'#'+String(ticketId).slice(-4), time:tm, gate:gate, method:'QR' }; } used.push(ticketId); try{ localStorage.setItem(key, JSON.stringify(used)); }catch(e){} return { status:'valid', holder:holder||'Biglietto', tier:'ingresso confermato', code:'#'+String(ticketId).slice(-4), time:tm, gate:gate, method:'QR' }; }
