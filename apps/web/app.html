@@ -1916,7 +1916,32 @@ class Component extends DCLogic {
   toggleAge(){ this.setState(s=>({ ageOk:!s.ageOk })); }
   authToggleConsent(){ this.setState(s=>({ authConsent:!s.authConsent, authErr:'' })); }
   _toast(){ clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({ toast:null }), 2600); }
-  componentDidMount(){ this._restorePub(); this._qrT=setInterval(()=>this.setState(s=>({ qrTick:(s.qrTick||0)+1 })), 3000); this._boot(); }
+  componentDidMount(){ this._restorePub(); this._qrT=setInterval(()=>this.setState(s=>({ qrTick:(s.qrTick||0)+1 })), 3000); this._installAuthGuard(); this._boot(); }
+  /* Verifica che la sessione salvata sia ancora buona PRIMA di entrare: meglio un login
+     in piu' che un utente dentro l'app con un token morto (non potrebbe comprare nulla). */
+  async _sessionValid(saved){
+    try{ await window.TINFT_API.tickets(saved.account.id, saved.token); return true; }
+    catch(e){
+      if(e&&e.status===401){ try{ localStorage.removeItem('tinft_session'); }catch(x){} return false; }
+      return true;   // errore di rete: non buttiamo via una sessione probabilmente valida
+    }
+  }
+  /* Sessione non piu' valida (token scaduto dopo 7 giorni, oppure account ricreato da un
+     redeploy): senza questo, l'app restava bloccata su "token scaduto" e non si poteva
+     comprare ne' fare altro. Ora pulisce la sessione e riporta al login. */
+  _installAuthGuard(){
+    if(!window.TINFT_API) return;
+    window.TINFT_API.onAuthError=()=>{
+      if(this._authRecovering) return;      // una sola volta, anche con piu' chiamate in parallelo
+      this._authRecovering=true;
+      try{ localStorage.removeItem('tinft_session'); }catch(e){}
+      this.setState({ token:null, orgToken:null, account:null, orgAccount:null, loggedIn:false,
+        myTickets:[], profile:'cliente', appView:'home', authOpen:true, authMode:'login',
+        authErr:'Sessione scaduta · accedi di nuovo' });
+      this._toastMsg('Sessione scaduta · accedi di nuovo');
+      setTimeout(()=>{ this._authRecovering=false; }, 3000);
+    };
+  }
   _restorePub(){ try{ var arr=JSON.parse(localStorage.getItem('tinft_pub_events')||'[]'); if(Array.isArray(arr)&&arr.length){ this.setState({ pubEvents:arr }); } }catch(e){} }
   _persistPub(pub){ try{ var arr=JSON.parse(localStorage.getItem('tinft_pub_events')||'[]'); if(!Array.isArray(arr)) arr=[]; arr.unshift(pub); localStorage.setItem('tinft_pub_events', JSON.stringify(arr.slice(0,40))); }catch(e){} }
   _api(){ return window.TINFT_API; }
@@ -1938,7 +1963,7 @@ class Component extends DCLogic {
         const saved=JSON.parse(localStorage.getItem('tinft_session')||'null');
         if(saved&&saved.role){
           if(saved.local){ this.setState({ loggedIn:true, account:saved.account||null }); this._enterRole(saved.role, saved.account||null); }
-          else if(saved.token&&saved.account){ const extra=(saved.role==='org')?{ orgToken:saved.token, orgAccount:saved.account }:{}; this.setState(Object.assign({ token:saved.token, account:saved.account, loggedIn:true }, extra)); this._enterRole(saved.role, saved.account); }
+          else if(saved.token&&saved.account&&await this._sessionValid(saved)){ const extra=(saved.role==='org')?{ orgToken:saved.token, orgAccount:saved.account }:{}; this.setState(Object.assign({ token:saved.token, account:saved.account, loggedIn:true }, extra)); this._enterRole(saved.role, saved.account); }
           else { this.setState({ loggedIn:false, authMode:'login' }); }
         } else { this.setState({ loggedIn:false, authMode:'login' }); }
       }

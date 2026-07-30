@@ -19,6 +19,12 @@
       var msg = (d && (d.message || d.error)) || ('HTTP ' + r.status);
       var err = new Error(msg);
       err.status = r.status; err.data = d;
+      // Sessione non piu' valida (token scaduto, firma non valida, account rimosso da un
+      // redeploy): senza questo aggancio l'utente resta bloccato su "token scaduto" senza
+      // poter fare nulla. L'app ci si registra per pulire la sessione e tornare al login.
+      if (r.status === 401 && opts.token && typeof window.TINFT_API.onAuthError === 'function') {
+        try { window.TINFT_API.onAuthError(err); } catch (e2) {}
+      }
       throw err;
     }
     return d;
