@@ -1989,6 +1989,13 @@ class Component extends DCLogic {
            finto (firmato sul telefono) e al varco darebbero "QR non TINFT", facendo sembrare
            rotta la validazione. Con il server attivo i biglietti arrivano solo dal login. */
         if(this.state.backend==='online' && !this.state.token){ this.setState({ myTickets:[] }); }
+        /* Eventi creati sul telefono quando il server non rispondeva: restano salvati nel
+           browser e compaiono in elenco, ma sul server NON esistono. Provando a comprarli
+           l'app rispondeva "evento non trovato". Con il backend online si eliminano. */
+        if(this.state.backend==='online' && (this.state.pubEvents||[]).length){
+          try{ localStorage.removeItem('tinft_pub_events'); }catch(e){}
+          this.setState({ pubEvents:[] });
+        }
       }
     }catch(e){}
     this._refreshMarket();
@@ -2066,7 +2073,14 @@ class Component extends DCLogic {
     if(!valid.length){ this._toastMsg('Aggiungi almeno un tipo di biglietto con quantità'); return; }
     let otok=this.state.orgToken, oacc=this.state.orgAccount;
     if(!otok){ try{ const r=await window.TINFT_API.login('org@tinft.io','demo123'); otok=r.token; oacc=r.account; this.setState({ orgToken:otok, orgAccount:oacc }); }catch(e){ this._toastMsg('Login organizzatore non riuscito'); return; } }
-    const orgId=(oacc&&oacc.id)||'acc_1';
+    /* L'id dell'organizzatore deve venire dall'account collegato. Prima c'era un ripiego
+       su 'acc_1', un id che non esiste piu': il server rispondeva 403, l'app ripiegava in
+       silenzio su un evento LOCALE e all'acquisto usciva "evento non trovato". */
+    if(!oacc||!oacc.id){
+      try{ const r=await window.TINFT_API.login('org@tinft.io','demo123'); otok=r.token; oacc=r.account; this.setState({ orgToken:otok, orgAccount:oacc }); }
+      catch(e){ this._toastMsg('Accedi come organizzatore per pubblicare l’evento'); return; }
+    }
+    const orgId=oacc.id;
     const cap=valid.reduce((a,t)=>a+(Number(t.qty)||0),0);
     const priceCents=Math.round((Number(valid[0].price)||0)*100);
     this._toastMsg('Pubblico l’evento sul backend…');
@@ -2081,8 +2095,12 @@ class Component extends DCLogic {
       await this._refreshEvents();
       this.setState({ orgView:'dash', orgF:{titolo:'',luogo:'',data:'',ora:'',genere:'',poster:'',nftArt:'',nftSame:true,nftSpecial:'3',early:false,earlyDate:'',vcode:''}, toast:'Evento pubblicato sul backend · codice varco '+finalCode+' (valido su ogni telefono)' }); this._toast();
     }catch(e){
-      // Backend non raggiungibile: ripiego sulla creazione locale (solo su questo telefono)
-      this._toastMsg('Backend non raggiungibile · evento salvato solo su questo dispositivo');
+      /* Solo se il SERVER non risponde si ripiega sull'evento locale. Per ogni altro errore
+         (403, dati non validi, locandina troppo grande) si mostra il motivo: creare un evento
+         che esiste solo sul telefono lo rende non acquistabile — "evento non trovato". */
+      const offline=!e||!e.status;
+      if(!offline){ this._toastMsg('Evento non pubblicato: '+((e&&e.message)||'errore')+' · riprova'); return; }
+      this._toastMsg('Server non raggiungibile · evento salvato solo su questo dispositivo');
       this.orgEmit();
     }
   }
