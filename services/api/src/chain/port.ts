@@ -32,4 +32,11 @@ export interface ChainPort {
    * non la implementano (mock legacy) lasciano la transizione solo off-chain.
    */
   markUsed?(tokenId: number): Promise<{txHash: string}>;
+  /**
+   * Saldo in wei del wallet che firma mint e burn. Serve al monitoraggio: se finisce
+   * il gas, gli acquisti smettono di essere coniati on-chain e il problema, senza
+   * questa metrica, si scopre solo quando un utente si lamenta.
+   * Opzionale: gli adapter senza chiave (o i fake) restituiscono `undefined`.
+   */
+  gasBalanceWei?(): Promise<bigint | undefined>;
 }

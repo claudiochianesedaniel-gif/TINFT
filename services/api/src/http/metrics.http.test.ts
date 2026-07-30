@@ -27,4 +27,52 @@ describe("HTTP — request-id + /metrics (osservabilità)", () => {
     expect(res.body).toContain("tinft_http_requests_total");
     expect(res.body).toContain("tinft_process_uptime_seconds");
   });
+
+  it("senza adapter on-chain non espone metriche di gas (FakeChain non ha un wallet)", async () => {
+    const res = await app.inject({method: "GET", url: "/metrics"});
+    expect(res.body).not.toContain("tinft_chain_gas_balance_wei");
+    const ready = await app.inject({method: "GET", url: "/ready"});
+    expect(ready.json()).not.toHaveProperty("gasWei");
+  });
+
+  it("con adapter on-chain espone il saldo gas e segnala quando è sotto soglia", async () => {
+    const LOW = 1_000n; // ben sotto la soglia di allarme (0,00005 ETH)
+    const withGas = buildServer({
+      store: new MemoryStore(),
+      chain: {
+        mintTicket: async () => ({tokenId: 1, txHash: "0x1"}),
+        gasBalanceWei: async () => LOW
+      }
+    });
+    try {
+      const metrics = await withGas.inject({method: "GET", url: "/metrics"});
+      expect(metrics.body).toContain(`tinft_chain_gas_balance_wei ${LOW}`);
+      expect(metrics.body).toContain("tinft_chain_gas_low 1"); // allarme acceso
+
+      const ready = await withGas.inject({method: "GET", url: "/ready"});
+      expect(ready.json()).toMatchObject({ready: true, gasWei: LOW.toString(), lowGas: true});
+    } finally {
+      await withGas.close();
+    }
+  });
+
+  it("un errore RPC sul saldo non fa fallire /ready (il servizio resta utilizzabile)", async () => {
+    const flaky = buildServer({
+      store: new MemoryStore(),
+      chain: {
+        mintTicket: async () => ({tokenId: 1, txHash: "0x1"}),
+        gasBalanceWei: async () => {
+          throw new Error("RPC irraggiungibile");
+        }
+      }
+    });
+    try {
+      const ready = await flaky.inject({method: "GET", url: "/ready"});
+      expect(ready.statusCode).toBe(200);
+      expect(ready.json()).toMatchObject({ready: true});
+      expect(ready.json()).not.toHaveProperty("lowGas");
+    } finally {
+      await flaky.close();
+    }
+  });
 });

@@ -79,7 +79,7 @@ export function buildServer(
   } = {}
 ): FastifyInstance {
   const store: Store = opts.store ?? new MemoryStore();
-  const chain = opts.chain ?? chainFromEnv() ?? new FakeChain();
+  const chain: ChainPort = opts.chain ?? chainFromEnv() ?? new FakeChain();
   const verifier = opts.verifier ?? new FakeSpid();
   // Stesso provider per ticketing (onboarding Connect alla creazione club) e payments
   // (checkout con split); stessa istanza `chain` per l'acquisto primario/ordini e il flusso PSP.
@@ -115,6 +115,22 @@ export function buildServer(
     const key = `${req.method}:${reply.statusCode}`;
     httpCounts.set(key, (httpCounts.get(key) ?? 0) + 1);
   });
+  // Soglia di allarme sul gas: ~0,00005 ETH copre poche decine di mint+burn.
+  const LOW_GAS_WEI = 50_000_000_000_000n; // 0,00005 ETH
+  let gasCache: {wei: bigint | undefined; at: number} = {wei: undefined, at: 0};
+  /** Saldo gas con cache 60s: l'RPC non va interrogato a ogni /ready o /metrics. */
+  async function readGasBalanceWei(): Promise<bigint | undefined> {
+    if (!chain.gasBalanceWei) return undefined;
+    const now = Date.now();
+    if (now - gasCache.at < 60_000) return gasCache.wei;
+    try {
+      gasCache = {wei: await chain.gasBalanceWei(), at: now};
+    } catch {
+      gasCache = {wei: undefined, at: now};
+    }
+    return gasCache.wei;
+  }
+
   app.get("/metrics", async (_req, reply) => {
     const lines = [
       "# HELP tinft_http_requests_total Totale richieste HTTP per metodo e stato.",
@@ -129,6 +145,19 @@ export function buildServer(
       "# TYPE tinft_process_uptime_seconds gauge",
       `tinft_process_uptime_seconds ${Math.floor(process.uptime())}`
     );
+    // Gas del wallet che firma mint e burn: da mettere sotto alert (se va a zero,
+    // gli acquisti non vengono più coniati on-chain).
+    const gasWei = await readGasBalanceWei();
+    if (gasWei !== undefined) {
+      lines.push(
+        "# HELP tinft_chain_gas_balance_wei Saldo del wallet che firma le transazioni on-chain.",
+        "# TYPE tinft_chain_gas_balance_wei gauge",
+        `tinft_chain_gas_balance_wei ${gasWei.toString()}`,
+        "# HELP tinft_chain_gas_low 1 se il saldo è sotto la soglia di allarme.",
+        "# TYPE tinft_chain_gas_low gauge",
+        `tinft_chain_gas_low ${gasWei < LOW_GAS_WEI ? 1 : 0}`
+      );
+    }
     reply.header("content-type", "text/plain; version=0.0.4");
     return lines.join("\n") + "\n";
   });
@@ -269,7 +298,11 @@ export function buildServer(
     } catch {
       storeOk = false;
     }
-    return {ready: true, store: storeOk};
+    // Gas del wallet che firma mint/burn: sotto soglia gli acquisti smettono di essere
+    // coniati on-chain. Non blocca il readiness (il servizio resta usabile), ma lo segnala.
+    const gas = await readGasBalanceWei();
+    const lowGas = gas !== undefined && gas < LOW_GAS_WEI;
+    return {ready: true, store: storeOk, ...(gas !== undefined ? {gasWei: gas.toString(), lowGas} : {})};
   });
 
   // -------- account
