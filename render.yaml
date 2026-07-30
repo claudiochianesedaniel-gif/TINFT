@@ -58,10 +58,11 @@ services:
     autoDeploy: true
     healthCheckPath: /ready
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: tinft-db-staging # database DEDICATO: non tocca mai i dati di produzione
-          property: connectionString
+      # NIENTE DATABASE_URL: Render consente un solo database free per account (quello di
+      # produzione). Senza, il backend usa lo store in-memory con i dati demo (SEED_DEMO=1):
+      # per lo staging va benissimo — anzi, ogni deploy riparte da uno stato pulito e non
+      # può in nessun caso toccare i dati reali. Per provare le migrazioni, collegare qui
+      # un database a pagamento dedicato.
       - key: TICKET_ADDRESS
         value: "0x0ecaf2e665256bbc86f8c7c992cbd3d44843db5d"
       - key: CHAIN_ID
@@ -90,9 +91,6 @@ databases:
   - name: tinft-db
     plan: free
     postgresMajorVersion: "16"
-
-  # Database di staging: separato da quello di produzione, così le prove
-  # (e le migrazioni nuove) non possono corrompere i dati reali.
-  - name: tinft-db-staging
-    plan: free
-    postgresMajorVersion: "16"
+# Nota: Render permette UN SOLO database free per account. Lo staging gira quindi
+# con lo store in-memory (vedi sopra). Se in futuro serve un database anche lì,
+# aggiungerlo qui con un piano a pagamento e reinserire DATABASE_URL nel servizio.
