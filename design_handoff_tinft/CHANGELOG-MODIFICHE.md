@@ -49,6 +49,13 @@
 - **Backend**: onboarding Stripe Connect reale (`/clubs/:id/stripe/onboarding-link`) + split fee. Richiede `STRIPE_SECRET_KEY` test su Render per essere reale.
 - **App**: card "Pagamenti · Stripe Connect" nella dashboard con **onboarding simulato** (demo, senza chiavi).
 
+## 6-bis · Audit finale (riga per riga) — correzioni economiche
+- Lista info: **"4% commissione sul primario"** → **"10% prevendita sul primario (solo TINFT)"** (residuo di vecchia tariffa).
+- **Ricevute**: totale calcolato `×1.04` → **`×1.10`** (coerente con la fee 10% mostrata nella stessa riga).
+- Copy rivendita (scheda evento, pannello rivendita, FAQ): non dice più "royalty all'organizzatore" sul secondario **prima** dell'evento. Ora: **1% tutta a TINFT prima**; **0,5% + 0,5% dopo**.
+- Stat org-facing ("Royalty · 721C", "Royalty secondario"): **0,5%** (royalty organizzatore, solo post-evento).
+- Verificato: **nessun residuo** `+10%` / "royalty 10%" in nessuna pagina di `apps/web`.
+
 ## 7 · Test
 - Contratti **92/92** · API **194 passed + 4 skip** (Postgres-gated). Sintassi app verificata (`node --check`).
 
