@@ -23,4 +23,6 @@ ENV WEB_DIR=/app/apps/web
 EXPOSE 3001
 
 WORKDIR /app/services/api
-CMD ["pnpm", "dev"]
+# `start` applica le migrazioni Prisma quando DATABASE_URL è presente (Postgres
+# gestito su Render) e poi avvia l'API; senza DATABASE_URL parte in-memory.
+CMD ["pnpm", "start"]

@@ -21,6 +21,12 @@ export interface ChainPort {
   /** Conia il biglietto sul contratto TinftTicket e restituisce tokenId + txHash. */
   mintTicket(params: MintParams): Promise<MintResult>;
   /**
+   * Conia un NFT **Signature 1/1** (`TinftTicket.mintSpecial`): non conta nel
+   * limite 3/evento e NON viene mai bruciato al varco — resta da collezione.
+   * Opzionale: gli adapter che non la implementano restano solo off-chain.
+   */
+  mintSpecial?(params: MintParams): Promise<MintResult>;
+  /**
    * Validazione al varco on-chain (`TinftTicket.markUsed`): per un biglietto NORMALE
    * BRUCIA definitivamente il token; un Signature resta. Opzionale: gli adapter che
    * non la implementano (mock legacy) lasciano la transizione solo off-chain.

@@ -20,13 +20,13 @@ export async function seedDemo(store: Store, ticketing: TicketingService): Promi
   if ((await store.listEvents()).length > 0) return {seeded: false};
   const ph = hashPassword(DEMO_PASSWORD);
 
-  const org = await ticketing.createAccount({role: "ORGANIZER", nome: "Club Astra", cognome: "Eventi", email: DEMO.organizer});
+  const org = await ticketing.createAccount({role: "ORGANIZER", nome: "Club Astra", cognome: "Eventi", email: DEMO.organizer, username: "clubastra"});
   Object.assign(org, {passwordHash: ph, kycStatus: "VERIFIED"});
   await store.updateAccount(org);
-  const cli = await ticketing.createAccount({role: "CLIENTE", nome: "Marco", cognome: "Bianchi", email: DEMO.client, cf: "BNCMRC90A01F205X", cfHash: "0xdemocli"});
+  const cli = await ticketing.createAccount({role: "CLIENTE", nome: "Marco", cognome: "Bianchi", email: DEMO.client, cf: "BNCMRC90A01F205X", cfHash: "0xdemocli", username: "marco"});
   Object.assign(cli, {passwordHash: ph, verified: true});
   await store.updateAccount(cli);
-  const cli2 = await ticketing.createAccount({role: "CLIENTE", nome: "Giulia", cognome: "Verdi", email: DEMO.client2, cf: "VRDGLI90A41F205Y", cfHash: "0xdemocli2"});
+  const cli2 = await ticketing.createAccount({role: "CLIENTE", nome: "Giulia", cognome: "Verdi", email: DEMO.client2, cf: "VRDGLI90A41F205Y", cfHash: "0xdemocli2", username: "giulia"});
   Object.assign(cli2, {passwordHash: ph, verified: true});
   await store.updateAccount(cli2);
 

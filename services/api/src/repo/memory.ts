@@ -80,6 +80,12 @@ export class MemoryStore implements Store {
     return [...this.accounts.values()].find((a) => a.email.trim().toLowerCase() === target);
   }
 
+  async getAccountByUsername(username: string): Promise<Account | undefined> {
+    const target = username.trim().toLowerCase().replace(/^@/, "");
+    if (!target) return undefined;
+    return [...this.accounts.values()].find((a) => (a.username ?? "").trim().toLowerCase() === target);
+  }
+
   async getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined> {
     return [...this.accounts.values()].find((a) => (provider === "apple" ? a.appleSub : a.googleSub) === subject);
   }

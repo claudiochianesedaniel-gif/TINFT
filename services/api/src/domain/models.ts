@@ -33,6 +33,10 @@ export interface Account {
   zip?: string;
   province?: string;
   phone?: string;
+  // Etichetta pubblica (@handle), univoca e case-insensitive: è il modo in cui un
+  // utente viene cercato, riceve un biglietto in regalo ed è verificato a mano al
+  // varco (niente omonimi). Obbligatoria per i CLIENTI, opzionale per gli altri.
+  username?: string;
   verified: boolean;
   walletAddress?: string;
   goodwill: number;
@@ -87,6 +91,9 @@ export interface Event {
   // l'ultimo ricevono in regalo un NFT Signature 1/1 (isSpecial, mai bruciato). Il
   // cliente non sa se sarà lui il fortunato. Off di default (non tocca i test esistenti).
   signatureDrops?: boolean;
+  // Locandina dell'evento come data URL (`data:image/...;base64,...`), caricata
+  // dall'organizzatore. Limite POSTER_MAX_BYTES: niente storage esterno da gestire.
+  posterDataUrl?: string;
 }
 
 export interface Ticket {

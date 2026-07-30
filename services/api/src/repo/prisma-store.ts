@@ -106,6 +106,7 @@ export class PrismaStore implements Store {
       zip: r.zip ?? undefined,
       province: r.province ?? undefined,
       phone: r.phone ?? undefined,
+      username: r.username ?? undefined,
       verified: r.verified,
       walletAddress: r.walletAddress ?? undefined,
       goodwill: r.goodwill,
@@ -132,6 +133,7 @@ export class PrismaStore implements Store {
       zip: a.zip ?? null,
       province: a.province ?? null,
       phone: a.phone ?? null,
+      username: a.username ?? null,
       verified: a.verified,
       walletAddress: a.walletAddress ?? null,
       goodwill: a.goodwill,
@@ -176,7 +178,9 @@ export class PrismaStore implements Store {
       sold: r.sold,
       status: r.status,
       gateCode: r.gateCode ?? undefined,
-      onchainEventId: r.onchainEventId == null ? undefined : Number(r.onchainEventId)
+      onchainEventId: r.onchainEventId == null ? undefined : Number(r.onchainEventId),
+      signatureDrops: r.signatureDrops || undefined,
+      posterDataUrl: r.posterDataUrl ?? undefined
     };
   }
 
@@ -260,6 +264,15 @@ export class PrismaStore implements Store {
   async getAccountByOidcSub(provider: "apple" | "google", subject: string): Promise<Account | undefined> {
     const r = await this.prisma.account.findFirst({
       where: provider === "apple" ? {appleSub: subject} : {googleSub: subject}
+    });
+    return r ? this.toAccount(r) : undefined;
+  }
+
+  async getAccountByUsername(username: string): Promise<Account | undefined> {
+    const target = username.trim().toLowerCase().replace(/^@/, "");
+    if (!target) return undefined;
+    const r = await this.prisma.account.findFirst({
+      where: {username: {equals: target, mode: "insensitive"}}
     });
     return r ? this.toAccount(r) : undefined;
   }
@@ -395,7 +408,9 @@ export class PrismaStore implements Store {
         sold: event.sold,
         status: event.status,
         gateCode: event.gateCode ?? null,
-        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId)
+        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId),
+        signatureDrops: event.signatureDrops ?? false,
+        posterDataUrl: event.posterDataUrl ?? null
       }
     });
     return event;
@@ -415,7 +430,9 @@ export class PrismaStore implements Store {
         sold: event.sold,
         status: event.status,
         gateCode: event.gateCode ?? null,
-        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId)
+        onchainEventId: event.onchainEventId == null ? null : BigInt(event.onchainEventId),
+        signatureDrops: event.signatureDrops ?? false,
+        posterDataUrl: event.posterDataUrl ?? null
       }
     });
     return event;

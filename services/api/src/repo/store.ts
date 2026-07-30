@@ -41,6 +41,8 @@ export interface Store {
   // -------- account -----------------------------------------------------------
   getAccount(id: string): Promise<Account | undefined>;
   getAccountByEmail(email: string): Promise<Account | undefined>;
+  /** Account per username pubblico (@handle), confronto case-insensitive. */
+  getAccountByUsername(username: string): Promise<Account | undefined>;
   listAccounts(): Promise<Account[]>;
   createAccount(account: Account): Promise<Account>;
   updateAccount(account: Account): Promise<Account>;

@@ -104,7 +104,7 @@ model Account {
   zip           String?
   province      String?
   phone         String?
-  username      String?
+  username      String?     @unique // etichetta pubblica (@handle): ricerca, regali, varco
   passwordHash  String? // hash scrypt (salt:hash) per il login email/password
   // login veloce OIDC (Sign in with Apple / Google): sub stabile del provider
   appleSub      String?     @unique
@@ -179,6 +179,8 @@ model Event {
   gateCode          String?     @unique // codice varco per lo staff (null = revocato)
   onchainCollection String? // indirizzo collezione ERC-721 su Base
   onchainEventId    BigInt? // eventId on-chain
+  signatureDrops    Boolean     @default(false) // NFT Signature a sorpresa (1°/metà/ultimo acquirente)
+  posterDataUrl     String? // locandina inline (data URL, max 2 MB)
   createdAt         DateTime    @default(now())
 
   tiers      Tier[]

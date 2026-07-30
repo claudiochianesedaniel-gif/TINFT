@@ -523,7 +523,7 @@
 
                 <sc-if value="{{ aReg4 }}">
                   <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-                    <div><div style="background:#0d0d0e;border:1px solid {{ bdUser }};border-radius:8px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">NOME UTENTE</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
+                    <div><div style="background:#0d0d0e;border:1px solid {{ bdUser }};border-radius:8px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">USERNAME PUBBLICO (@)</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
                     <div><div style="background:#0d0d0e;border:1px solid {{ bdPwd }};border-radius:8px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">PASSWORD</div><input value="{{ afPwd }}" onInput="{{ onPwdA }}" type="password" placeholder="min 6 caratteri" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;letter-spacing:0.1em"/></div><sc-if value="{{ fePwdShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ fePwd }}</div></sc-if></div>
                     <div onClick="{{ authToggleConsent }}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:2px"><div style="width:20px;height:20px;border-radius:5px;border:1px solid {{ consentBd }};background:{{ consentBg }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;margin-top:1px">{{ consentCheck }}</div><span style="font-size:11.5px;color:#9a9a9c;line-height:1.45">Accetto <span style="color:#84a9ff">Termini</span> e <span style="color:#84a9ff">Privacy</span> · acconsento al trattamento di CF, residenza e data di nascita per i titoli nominativi.</span></div>
                   </div>
@@ -817,7 +817,7 @@
               <div style="padding:18px 20px 0;display:flex;flex-direction:column;align-items:center">
                 <div style="width:72px;height:72px;border-radius:50%;background:#1f2c4a;border:1px solid #2f3f6a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;color:#84a9ff">{{ userInitials }}</div>
                 <div style="font-weight:700;font-size:19px;margin-top:13px">{{ userName }}</div>
-                <div style="font-size:12px;color:#8c8c8c;margin-top:3px">{{ userEmail }}</div>
+                <div style="font-size:12px;color:#8c8c8c;margin-top:3px">{{ userEmail }}</div><sc-if value="{{ hasHandle }}"><div style="font-size:12.5px;color:#84a9ff;font-weight:600;margin-top:2px">{{ userHandle }}</div></sc-if>
                 <div style="margin-top:11px;display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#35cf93;background:rgba(53,207,147,.1);border:1px solid rgba(53,207,147,.3);padding:6px 11px;border-radius:8px">● Identità verificata</div>
               </div>
               <div style="margin:18px 20px 0;background:linear-gradient(135deg,#1a2545,#141415);border:1px solid #2f3f6a;border-radius:13px;padding:18px">
@@ -845,7 +845,7 @@
               </div>
               <div style="padding:18px 20px 0">
                 <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">A quale amico su TINFT</div>
-                <div style="margin-top:8px;background:#0d0d0e;border:1px solid #262628;border-radius:8px;padding:13px 14px"><input value="{{ giftTo }}" onInput="{{ onGiftTo }}" placeholder="username o email TINFT" style="width:100%;background:transparent;border:none;outline:none;color:#ececec;font-family:inherit;font-size:14px"/></div>
+                <div style="margin-top:8px;background:#0d0d0e;border:1px solid #262628;border-radius:8px;padding:13px 14px"><input value="{{ giftTo }}" onInput="{{ onGiftTo }}" placeholder="@username TINFT del destinatario" style="width:100%;background:transparent;border:none;outline:none;color:#ececec;font-family:inherit;font-size:14px"/></div>
                 <div style="font-size:11px;color:#8c8c8c;margin-top:8px;line-height:1.5">Il regalo resta dentro TINFT: il destinatario <b style="color:#bcbcbc">deve essere registrato</b>. <span style="color:#84a9ff">(prova: giulia, luca, sara)</span></div>
                 <sc-if value="{{ giftEmpty }}"><div style="margin-top:12px;font-size:12px;color:#ff8a96">Inserisci un destinatario.</div></sc-if>
                 <sc-if value="{{ giftNotReg }}">
@@ -1100,7 +1100,7 @@
                   <div style="display:flex;flex-direction:column;align-items:center;padding-top:4px">
                     <div style="width:72px;height:72px;border-radius:18px;background:rgba(240,166,79,.14);border:1px solid rgba(240,166,79,.4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:#f0a64f">{{ userInitials }}</div>
                     <div style="font-weight:700;font-size:19px;margin-top:13px">{{ userName }}</div>
-                    <div style="font-size:12px;color:#8c8c8c;margin-top:3px">{{ userEmail }}</div>
+                    <div style="font-size:12px;color:#8c8c8c;margin-top:3px">{{ userEmail }}</div><sc-if value="{{ hasHandle }}"><div style="font-size:12.5px;color:#84a9ff;font-weight:600;margin-top:2px">{{ userHandle }}</div></sc-if>
                     <div style="margin-top:11px;display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#f0a64f;background:rgba(240,166,79,.1);border:1px solid rgba(240,166,79,.3);padding:6px 11px;border-radius:8px">⊞ Validatore · varco</div>
                   </div>
                   <div style="margin-top:18px;background:linear-gradient(135deg,#16233d,#141415);border:1px solid #2f3f6a;border-radius:13px;padding:14px 15px;display:flex;align-items:center;gap:11px">
@@ -1550,7 +1550,7 @@
 
                 <sc-if value="{{ aReg4 }}">
                   <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-                    <div><div style="background:#141415;border:1px solid {{ bdUser }};border-radius:11px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">NOME UTENTE</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
+                    <div><div style="background:#141415;border:1px solid {{ bdUser }};border-radius:11px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">USERNAME PUBBLICO (@)</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
                     <div><div style="background:#141415;border:1px solid {{ bdPwd }};border-radius:11px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">PASSWORD</div><input value="{{ afPwd }}" onInput="{{ onPwdA }}" type="password" placeholder="min 6 caratteri" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;letter-spacing:0.1em"/></div><sc-if value="{{ fePwdShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ fePwd }}</div></sc-if></div>
                     <div onClick="{{ authToggleConsent }}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:2px"><div style="width:20px;height:20px;border-radius:5px;border:1px solid {{ consentBd }};background:{{ consentBg }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;margin-top:1px">{{ consentCheck }}</div><span style="font-size:11.5px;color:#9a9a9c;line-height:1.45">Accetto <span style="color:#84a9ff">Termini</span> e <span style="color:#84a9ff">Privacy</span> · acconsento al trattamento di CF, residenza e data di nascita per i titoli nominativi.</span></div>
                   </div>
@@ -1681,7 +1681,7 @@ class Component extends DCLogic {
       m[e.id]={
         id:e.id, beId:e.id, short:((e.title||'').split('\u00b7')[0].trim())||e.title, title:e.title, sub:cleanVenue+' \u00b7 '+city, city:city,
         date:e.date||'da definire', time:en.time, genre:en.genre, gkey:en.gkey, type:(String(e.type||'').indexOf('TICKET')>=0?'TICKET NFT':(e.type||'TICKET NFT')),
-        art:((self.state.posterByEv||{})[e.id])||en.art, soldPct:soldPct, sold:sold, cap:cap, capacity:cap, weekend:en.weekend, status:e.status,
+        art:(e.posterDataUrl||((self.state.posterByEv||{})[e.id])||en.art), soldPct:soldPct, sold:sold, cap:cap, capacity:cap, weekend:en.weekend, status:e.status,
         org:en.org, orgInitials:en.orgInitials, desc:en.desc, lineup:en.lineup, priceCents:e.priceCents,
         vcode:vcode, tiers:tiers
       };
@@ -1832,14 +1832,57 @@ class Component extends DCLogic {
       this.setState(s=>({ scan:res, scanLog:[res, ...s.scanLog].slice(0,8), entries: res.status==='valid'? s.entries+1 : s.entries }));
     }catch(e){ const res={ status:'invalid', holder:'Errore NFC', tier:(e.message||'errore'), code:'#----', time:tm, gate:this.state.staffGate, method:'NFC' }; this.setState(s=>({ scan:res, scanLog:[res, ...s.scanLog].slice(0,8) })); }
   }
-  staffSearch(){ const q=(this.state.staffQuery||'').trim(); if(!q) return; const isCode=/^#|BIGLIETTO|TKT/i.test(q); const uname=isCode?q:('@'+q.replace(/^@/,'').toLowerCase()); const r={ status:'valid', holder:uname, tier:'verifica manuale · username univoco', code:'#MAN', time:this._now(), gate:this.state.staffGate, method:'Manuale' }; this.setState(s=>({ scan:r, entries:s.entries+1, scanLog:[r, ...s.scanLog].slice(0,8), staffQuery:'' })); }
+  async staffSearch(){ const q=(this.state.staffQuery||'').trim(); if(!q) return;
+    const uname=q.replace(/^@+/,'').toLowerCase(); const tm=this._now(); const gate=this.state.staffGate;
+    const code=String(this.state.staffGateCode||'').toUpperCase();
+    // Verifica manuale REALE: chiede al server i biglietti di quell'@username per
+    // QUESTO varco. Non valida l'ingresso (quello resta legato al QR firmato):
+    // mostra allo staff se la persona ha un titolo e se è già entrata.
+    const tok=await this._scanToken();
+    if(tok && code){
+      try{
+        const res=await window.TINFT_API.gateLookup(code, uname, tok);
+        const list=res.tickets||[];
+        const active=list.find(t=>t.status==='ACTIVE');
+        const entered=list.find(t=>t.status==='BURNED'||t.status==='USED');
+        let r;
+        if(active) r={ status:'valid', holder:'@'+res.user.username, tier:res.user.nome+' · titolo valido per questo varco', code:'#'+String(active.id).slice(-4), time:tm, gate:gate, method:'Manuale' };
+        else if(entered) r={ status:'used', holder:'@'+res.user.username, tier:'già entrato · biglietto bruciato al varco', code:'#'+String(entered.id).slice(-4), time:tm, gate:gate, method:'Manuale' };
+        else r={ status:'invalid', holder:'@'+res.user.username, tier:'nessun biglietto per questo evento', code:'#----', time:tm, gate:gate, method:'Manuale' };
+        this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8), staffQuery:'', entries: r.status==='valid'? s.entries : s.entries }));
+        return;
+      }catch(e){
+        const nf=/nessun utente/i.test(String(e&&e.message||''));
+        const r={ status:'invalid', holder:nf?('@'+uname):'Verifica manuale', tier:nf?'username non registrato su TINFT':(e&&e.message||'ricerca non riuscita'), code:'#----', time:tm, gate:gate, method:'Manuale' };
+        this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8), staffQuery:'' }));
+        return;
+      }
+    }
+    const r={ status:'invalid', holder:'@'+uname, tier:'aggancia prima un varco per cercare', code:'#----', time:tm, gate:gate, method:'Manuale' };
+    this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8), staffQuery:'' })); }
   simUsed(){ const r={ status:'used', holder:'Marco Bianchi', tier:'Intero', code:'#1A2B', time:this._now(), gate:this.state.staffGate, method:'NFC' }; this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8) })); }
   simInvalid(){ const r={ status:'invalid', holder:'Titolo non riconosciuto', tier:'non emesso da TINFT', code:'#0000', time:this._now(), gate:this.state.staffGate, method:'—' }; this.setState(s=>({ scan:r, scanLog:[r, ...s.scanLog].slice(0,8) })); }
   clearScan(){ this.setState({ scan:null }); }
   toggleOnline(){ this.setState(s=>({ online:!s.online, scan:null })); }
   toggleVarcoQR(){ this.setState(s=>({ varcoQR:!s.varcoQR })); }
   openTransfer(){ const tk=this.state.myTickets.find(t=>t.id===this.state.ticketId); if(tk&&(tk.used||tk.burned||tk.exported||tk.listed)){ this._toastMsg((tk.burned||tk.used)?'Biglietto bruciato al varco: non trasferibile':(tk.exported?'NFT esportato: non trasferibile qui':'Biglietto in vendita: non trasferibile')); return; } this.setState({ appView:'transfer', giftTo:'', giftErr:'' }); }
-  confirmTransfer(){ const _tk=this.state.myTickets.find(t=>t.id===this.state.ticketId); if(_tk&&(_tk.used||_tk.burned||_tk.exported||_tk.listed)){ this._toastMsg('Biglietto non trasferibile'); this.setState({appView:'ticket'}); return; } const v=(this.state.giftTo||'').trim(); if(!v){ this.setState({ giftErr:'empty' }); return; }
+  async confirmTransfer(){ const _tk=this.state.myTickets.find(t=>t.id===this.state.ticketId); if(_tk&&(_tk.used||_tk.burned||_tk.exported||_tk.listed)){ this._toastMsg('Biglietto non trasferibile'); this.setState({appView:'ticket'}); return; } const v=(this.state.giftTo||'').trim(); if(!v){ this.setState({ giftErr:'empty' }); return; }
+    // Regalo REALE via backend, identificando il destinatario con il suo @username
+    // (univoco: niente ambiguità da omonimi). Il biglietto cambia proprietario sul server.
+    const uname=v.toLowerCase().replace(/^@+/,'');
+    if(this.state.token && _tk && !/^tk\d/.test(String(_tk.id))){
+      this.setState({ giftErr:'' });
+      try{
+        await window.TINFT_API.transferTicket(_tk.id, this.state.account.id, uname, this.state.token);
+        await this._refreshClient();
+        this.setState({ appView:'biglietti', giftTo:'', toast:'Biglietto regalato a @'+uname+' · ora è nel suo wallet' }); this._toast();
+      }catch(e){
+        const msg=String(e&&e.message||'');
+        this.setState({ giftErr: /nessun utente/i.test(msg)?'notreg':'', toast: /nessun utente/i.test(msg)?'':(msg||'Regalo non riuscito') });
+        if(!/nessun utente/i.test(msg)) this._toast();
+      }
+      return;
+    }
     const norm=v.toLowerCase(); const ok=this.regUsers().some(u=>u===norm||u.split('@')[0]===norm);
     if(!ok){ this.setState({ giftErr:'notreg' }); return; }
     const id=this.state.ticketId;
@@ -1980,7 +2023,7 @@ class Component extends DCLogic {
     const manual=String(f.vcode||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,'');
     const venue = f.luogo.trim();
     try{
-      const ev=await window.TINFT_API.createEvent({ organizerId:orgId, title:f.titolo.trim(), venue:venue, date:f.data.trim(), priceCents:priceCents, capacity:cap, type:'TICKET_NFT', gateCode:(manual||undefined), signatureDrops:((Number(f.nftSpecial)||0)>0) }, otok);
+      const ev=await window.TINFT_API.createEvent({ organizerId:orgId, title:f.titolo.trim(), venue:venue, date:f.data.trim(), priceCents:priceCents, capacity:cap, type:'TICKET_NFT', gateCode:(manual||undefined), signatureDrops:((Number(f.nftSpecial)||0)>0), posterDataUrl:(f.poster||undefined) }, otok);
       if(f.poster){ try{ this.setState(s=>({ posterByEv:{...(s.posterByEv||{}), [ev.id]: f.poster } })); }catch(pe){} }
       try{ await window.TINFT_API.raw('POST','/events/'+ev.id+'/publish',{ body:{ organizerId:orgId }, token:otok }); }catch(e){}
       try{ for(const t of valid){ await window.TINFT_API.addTier(ev.id, { name:t.tipo.trim(), priceCents:Math.round((Number(t.price)||0)*100), quantity:Number(t.qty)||0 }, otok); } }catch(e){}
@@ -2049,7 +2092,13 @@ class Component extends DCLogic {
     if(this.state.authMode==='login'){ this.setState({ authErr:'' }); try{ await this._loginClient(this.state.authF.email.trim(), this.state.authF.pwd); this._authFinish(); }catch(e){ this.setState({ authErr:(e.message||'Credenziali errate') }); } return; }
     if(st>=4){ const f=this.state.authF; const email=f.email.trim(); const role=this.state.authRole==='org'?'org':(this.state.authRole==='staff'?'staff':'cliente'); if(this.state.busy) return; this.setState({ authErr:'', authTried:false, busy:true, busyMsg:'Creo l\u2019account\u2026' });
       try{ localStorage.setItem('tinft_role_'+email.toLowerCase(), role); }catch(e){}
-      try{ await window.TINFT_API.createAccount({ role:(role==='org'?'ORGANIZER':'CLIENTE'), nome:(f.nome||f.ragione||email.split('@')[0]), cognome:(f.cognome||'TINFT'), email:email, password:f.pwd, cfHash:'reg-'+email }); }catch(e){}
+      try{ await window.TINFT_API.createAccount({ role:(role==='org'?'ORGANIZER':'CLIENTE'), nome:(f.nome||f.ragione||email.split('@')[0]), cognome:(f.cognome||'TINFT'), email:email, password:f.pwd, cfHash:'reg-'+email, username:(f.username||'').trim().toLowerCase().replace(/^@+/,'')||undefined });
+      }catch(e){
+        // Username già preso o formato non valido: va detto subito, non ingoiato
+        // (è l'etichetta pubblica con cui l'utente riceverà regali e sarà cercato).
+        const m=String(e&&e.message||'');
+        if(/username/i.test(m)){ this.setState({ busy:false, authStep:4, authErr:m }); return; }
+      }
       try{
         const r=await window.TINFT_API.login(email, f.pwd);
         const extra = role==='org'? { orgToken:r.token, orgAccount:r.account } : {};
@@ -2109,7 +2158,7 @@ class Component extends DCLogic {
     const eur=(n)=>this.eur(n);
     const _acc=S.account||{};
     const _full=(_acc.nome? (_acc.nome+(_acc.cognome?(' '+_acc.cognome):'')) : (_acc.name || (_acc.email? _acc.email.split('@')[0] : 'Utente TINFT')));
-    const userName=_full; const userFirst=(_full.split(/[ \u00b7]/)[0]||_full); const userInitials=(_full.replace(/[\u00b7]/g,' ').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'TF'); const userEmail=_acc.email||'';
+    const userName=_full; const userFirst=(_full.split(/[ \u00b7]/)[0]||_full); const userInitials=(_full.replace(/[\u00b7]/g,' ').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'TF'); const userEmail=_acc.email||''; const userHandle=_acc.username?('@'+_acc.username):'';
     const chip=(active)=>({ bg:active?'rgba(79,124,240,.12)':'#141415', color:active?'#84a9ff':'#9a9a9c', border:active?'#2f3f6a':'#262628' });
     const mkCard=(k, onOpen)=>{ const e=EV[k]; if(!e||!e.tiers){ return { art:'', type:'', date:'', title:'', sub:'', priceLabel:'', availLabel:'', onOpen:()=>onOpen(k) }; } return { art:e.art, type:e.type, date:e.date, title:e.title, sub:e.sub, priceLabel:'da '+eur(this.minP(e)), availLabel:this.availLabel(e), onOpen:()=>onOpen(k) }; };
 
@@ -2232,6 +2281,7 @@ class Component extends DCLogic {
       appLogin:()=>this.appLogin(), appLogout:()=>this.appLogout(),
       demoCli:()=>this.fillDemo('cli@tinft.io','demo123'), demoOrg:()=>this.fillDemo('org@tinft.io','demo123'), demoStaff:()=>this.fillDemo('staff@tinft.io','demo123'),
       userName:userName, userFirst:userFirst, userInitials:userInitials, userEmail:userEmail,
+      userHandle:userHandle, hasHandle:!!userHandle, userLabel:(userHandle||userName),
       loginPill: S.loggedIn?'● connesso come Marco':'○ non connesso', loginPillColor: S.loggedIn?'#35cf93':'#5a5a5c',
       modePill: S.profile==='staff'?'● modalità Staff':(S.profile==='org'?'● modalità Organizzatore':'● modalità Cliente'), modePillColor: S.profile==='staff'?'#f0a64f':(S.profile==='org'?'#84a9ff':'#35cf93'),
       appOrg:S.profile==='org', toOrg:()=>this.toOrg(),

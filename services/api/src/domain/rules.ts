@@ -90,6 +90,49 @@ export function clampOrderQuantity(quantity: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Username pubblico (@handle) — è l'ETICHETTA con cui un utente è identificato
+// nell'app: ricerca di un altro utente, regalo/trasferimento di un biglietto e
+// verifica manuale al varco. Univoco e case-insensitive: niente omonimi.
+// ---------------------------------------------------------------------------
+
+/** Formato consentito: 3-20 caratteri, minuscole, cifre, punto e underscore. */
+export const USERNAME_RE = /^[a-z0-9._]{3,20}$/;
+
+/** Normalizza per confronto/persistenza: trim, minuscole, senza @ iniziale. */
+export function normalizeUsername(username: string): string {
+  return username.trim().toLowerCase().replace(/^@+/, "");
+}
+
+/** true se l'username, una volta normalizzato, rispetta il formato pubblico. */
+export function isValidUsername(username: string): boolean {
+  return USERNAME_RE.test(normalizeUsername(username));
+}
+
+/**
+ * Username di ripiego derivato dall'email (per gli account creati prima
+ * dell'introduzione dell'handle, es. i demo): `mario.rossi@x.it` → `mario.rossi`.
+ * L'unicità resta responsabilità del chiamante (suffisso numerico se occupato).
+ */
+export function usernameFromEmail(email: string): string {
+  const base = normalizeUsername(email.split("@")[0] ?? "").replace(/[^a-z0-9._]/g, "");
+  return base.length >= 3 ? base.slice(0, 20) : `user${base}`.slice(0, 20);
+}
+
+// ---------------------------------------------------------------------------
+// Locandina evento: immagine inline (data URL) salvata col record dell'evento.
+// Niente storage esterno; il limite tiene il DB leggero e blocca upload abusivi.
+// ---------------------------------------------------------------------------
+
+/** Tetto della locandina in byte del data URL (~2 MB). */
+export const POSTER_MAX_BYTES = 2 * 1024 * 1024;
+
+/** true se è un data URL immagine di dimensione accettabile. */
+export function isValidPosterDataUrl(dataUrl: string): boolean {
+  if (!/^data:image\/(png|jpe?g|webp|gif|avif);base64,/i.test(dataUrl)) return false;
+  return Buffer.byteLength(dataUrl, "utf8") <= POSTER_MAX_BYTES;
+}
+
+// ---------------------------------------------------------------------------
 // Codice varco (gateCode) — non economico ma regola di dominio: ogni evento ha
 // un codice unico con cui lo staff si aggancia al SOLO suo varco (niente picker).
 // ---------------------------------------------------------------------------

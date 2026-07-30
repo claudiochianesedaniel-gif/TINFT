@@ -95,7 +95,9 @@ export function buildServer(
   // viene incluso nei log e rimandato al client (vedi hook onRequest).
   const app = Fastify({
     logger: process.env.VITEST ? false : {level: process.env.LOG_LEVEL ?? "info"},
-    bodyLimit: 262_144,
+    // 4 MB: le locandine degli eventi viaggiano come data URL inline (limite di
+    // dominio POSTER_MAX_BYTES = 2 MB) e servono margine per base64 + resto del body.
+    bodyLimit: 4_194_304,
     requestIdHeader: "x-request-id",
     genReqId: () => randomUUID()
   }); // body max 256 KB
@@ -280,6 +282,7 @@ export function buildServer(
       cfHash?: string;
       walletAddress?: string;
       password?: string;
+      username?: string;
     };
   }>(
     "/accounts",
@@ -293,7 +296,8 @@ export function buildServer(
             email: STR,
             cfHash: STR,
             walletAddress: STR,
-            password: STR
+            password: STR,
+            username: STR
           },
           ["nome", "cognome", "email"]
         )
@@ -308,6 +312,56 @@ export function buildServer(
     }
     return reply.status(201).send(account);
   });
+
+  // -------- username pubblico (@handle): è l'etichetta con cui gli utenti si
+  // cercano, si regalano biglietti e vengono verificati a mano al varco.
+  app.get<{Params: {username: string}}>("/users/@:username", async (req) =>
+    ticketing.findByUsername(req.params.username)
+  );
+
+  app.get<{Querystring: {u?: string}}>("/users/username-available", async (req, reply) => {
+    const u = req.query.u ?? "";
+    if (!u) return reply.status(400).send({error: "VALIDATION", message: "parametro 'u' mancante"});
+    return ticketing.isUsernameAvailable(u);
+  });
+
+  app.post<{Params: {id: string}; Body: {username: string}}>(
+    "/accounts/:id/username",
+    {
+      preHandler: authenticate,
+      schema: {body: body({username: STR}, ["username"])}
+    },
+    async (req) => {
+      assertSelf(req, req.params.id);
+      return ticketing.setUsername(req.params.id, req.body.username);
+    }
+  );
+
+  // Regalo/invio di un biglietto a un altro utente TINFT identificato per @username.
+  app.post<{Params: {id: string}; Body: {ownerId: string; toUsername: string}}>(
+    "/tickets/:id/transfer",
+    {
+      preHandler: authenticate,
+      schema: {body: body({ownerId: STR, toUsername: STR}, ["ownerId", "toUsername"])}
+    },
+    async (req) => {
+      assertSelf(req, req.body.ownerId);
+      return ticketing.transferTicketToUsername(req.params.id, req.body.ownerId, req.body.toUsername);
+    }
+  );
+
+  // Verifica manuale al varco per @username (fallback quando il QR non si legge).
+  app.get<{Querystring: {code?: string; username?: string}}>(
+    "/gate/lookup",
+    {preHandler: authenticate},
+    async (req, reply) => {
+      const {code, username} = req.query;
+      if (!code || !username) {
+        return reply.status(400).send({error: "VALIDATION", message: "servono 'code' (varco) e 'username'"});
+      }
+      return ticketing.gateLookupByUsername(code, username);
+    }
+  );
 
   // -------- registrazione completa con dati SPID → identità verificata (hash CF on-chain)
   app.post<{
@@ -592,6 +646,7 @@ export function buildServer(
       status?: "DRAFT" | "ON_SALE" | "CONCLUDED";
       gateCode?: string;
       signatureDrops?: boolean;
+      posterDataUrl?: string;
     };
   }>(
     "/events",
@@ -608,7 +663,8 @@ export function buildServer(
             capacity: INT_POS,
             status: {type: "string", enum: ["DRAFT", "ON_SALE", "CONCLUDED"]},
             gateCode: STR,
-            signatureDrops: {type: "boolean"}
+            signatureDrops: {type: "boolean"},
+            posterDataUrl: STR
           },
           ["organizerId", "title", "venue", "date", "priceCents", "capacity"]
         )
