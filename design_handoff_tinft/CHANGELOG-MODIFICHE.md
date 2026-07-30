@@ -56,8 +56,29 @@
 - Stat org-facing ("Royalty · 721C", "Royalty secondario"): **0,5%** (royalty organizzatore, solo post-evento).
 - Verificato: **nessun residuo** `+10%` / "royalty 10%" in nessuna pagina di `apps/web`.
 
+## 6-ter · @username, locandina, Signature on-chain, Postgres (ultimo blocco)
+
+### @username = l'etichetta dell'utente (clienti e organizzatori)
+- **Univoco** e case-insensitive: 3-20 caratteri tra minuscole, cifre, `.` e `_`. Niente omonimi.
+- **Registrazione**: il campo "USERNAME PUBBLICO (@)" ora viene salvato davvero; se è già preso o mal formato l'utente lo vede subito (prima l'errore era silenzioso). Obbligatorio per i clienti (se manca viene derivato dall'email), opzionale per gli organizzatori.
+- **Profilo**: `@handle` mostrato sotto l'email, per cliente e organizzatore.
+- **Regalo/invio biglietto**: si indica il **@username** del destinatario e il biglietto cambia proprietario **sul server** (prima era finto/locale). Consentito solo su biglietto ATTIVO.
+- **Verifica manuale al varco**: lo staff cerca per **@username** e vede se quella persona ha un titolo per *quel* varco e se **è già entrata**.
+- Handle demo: **@marco**, **@giulia**, **@clubastra**.
+- Endpoint: `GET /users/@:username`, `GET /users/username-available?u=`, `POST /accounts/:id/username`, `POST /tickets/:id/transfer`, `GET /gate/lookup?code&username`.
+
+### Locandina
+Salvata **nel backend** insieme all'evento (data URL, max 2 MB): sopravvive al refresh e si vede su ogni dispositivo. Formati non immagine o oltre 2 MB vengono rifiutati.
+
+### Signature on-chain
+I drop a sorpresa ora sono **NFT reali** coniati con `TinftTicket.mintSpecial` (fuori dal limite 3/evento, mai bruciati). Verificato in live: token 19 `isSpecial=true`.
+> **Bug risolto**: due transazioni ravvicinate dallo stesso wallet fallivano (nonce non allineato sull'RPC) — il Signature nasceva senza token on-chain e il burn subito dopo un mint era fragile. Ora le scritture sono serializzate, con nonce esplicito e retry.
+
+### Postgres su Render
+Il blueprint crea il database **free** `tinft-db`; le migrazioni girano allo start (`prisma migrate deploy`) e il server non parte se falliscono. **I dati ora sopravvivono ai deploy** (prima si azzeravano). ⚠️ Il piano free di Render viene **eliminato dopo 30 giorni**: per un uso oltre la demo va scelto un piano a pagamento.
+
 ## 7 · Test
-- Contratti **92/92** · API **194 passed + 4 skip** (Postgres-gated). Sintassi app verificata (`node --check`).
+- Contratti **92/92** · API **213 passed** (+4 test d'integrazione Postgres, verdi su DB reale). Sintassi app verificata (`node --check`).
 
 ---
 
