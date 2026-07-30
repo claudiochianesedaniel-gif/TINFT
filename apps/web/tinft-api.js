@@ -55,6 +55,14 @@
     accessToken: function (ticketId, token) { return jf('GET', '/tickets/' + ticketId + '/access-token', { token: token }); },
     // validazione al varco
     scan: function (accessToken, token) { return jf('POST', '/validate/scan', { body: { token: accessToken }, token: token }); },
+    // username pubblico (@handle): etichetta per ricerca, regali e verifica al varco
+    userByUsername: function (username) { return jf('GET', '/users/@' + encodeURIComponent(String(username).replace(/^@+/, ''))); },
+    usernameAvailable: function (username) { return jf('GET', '/users/username-available?u=' + encodeURIComponent(String(username).replace(/^@+/, ''))); },
+    setUsername: function (accountId, username, token) { return jf('POST', '/accounts/' + accountId + '/username', { body: { username: username }, token: token }); },
+    // regalo/invio di un biglietto a un altro utente TINFT, per @username
+    transferTicket: function (ticketId, ownerId, toUsername, token) { return jf('POST', '/tickets/' + ticketId + '/transfer', { body: { ownerId: ownerId, toUsername: toUsername }, token: token }); },
+    // verifica manuale al varco per @username (fallback quando il QR non si legge)
+    gateLookup: function (gateCode, username, token) { return jf('GET', '/gate/lookup?code=' + encodeURIComponent(gateCode) + '&username=' + encodeURIComponent(String(username).replace(/^@+/, '')), { token: token }); },
     // mercato secondario
     market: function () { return jf('GET', '/market'); },
     listTicket: function (ticketId, ownerId, priceCents, token) { return jf('POST', '/tickets/' + ticketId + '/list', { body: { ownerId: ownerId, priceCents: priceCents }, token: token }); },
