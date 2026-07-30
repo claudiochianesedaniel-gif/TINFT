@@ -54,6 +54,16 @@ const OTP_TTL_SECONDS = 600;
  * Dipende dall'interfaccia {@link Store} (in-memory o Postgres/Prisma): ogni
  * mutazione di un'entità è persistita esplicitamente via `store.update*`.
  */
+/**
+ * L'errore on-chain dice che il token non esiste (ERC721NonexistentToken, selector
+ * 0x7e273289): capita con i biglietti demo mai coniati e con quelli già bruciati.
+ * In quel caso ritentare è inutile e bloccherebbe l'ingresso di una persona reale.
+ */
+function isTokenMissingOnChain(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  return msg.includes("0x7e273289") || /ERC721NonexistentToken|nonexistent token/i.test(msg);
+}
+
 export class TicketingService {
   constructor(
     private readonly store: Store,
@@ -1307,7 +1317,14 @@ export class TicketingService {
         // (Signature esente). PRIMA della scrittura off-chain, così un fallimento
         // on-chain non lascia lo stato incoerente (l'operatore ritenta). Con FakeChain
         // è un no-op; con ViemChain è la transazione di burn reale.
-        await this.chain.markUsed?.(ticket.tokenId);
+        try {
+          await this.chain.markUsed?.(ticket.tokenId);
+        } catch (err) {
+          // Il token non esiste sul contratto (biglietti di seed/demo mai coniati, oppure
+          // già bruciato): ritentare non servirebbe a nulla e lascerebbe la persona fuori
+          // dalla porta. Si prosegue con la validazione off-chain.
+          if (!isTokenMissingOnChain(err)) throw err;
+        }
         // Signature 1/1: validato ma NON bruciato (resta collectible); normale: BRUCIATO.
         ticket.status = ticket.isSpecial ? "USED" : "BURNED";
       }
