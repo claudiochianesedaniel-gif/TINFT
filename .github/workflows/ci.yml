@@ -44,8 +44,25 @@ jobs:
         run: forge test -vvv
 
   backend:
-    name: Backend (API)
+    name: Backend (API + PostgreSQL)
     runs-on: ubuntu-latest
+    # Postgres reale: fa girare anche i test d'integrazione (PrismaStore, advisory lock)
+    # che in locale restano skippati senza DATABASE_URL.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tinft
+          POSTGRES_PASSWORD: tinft
+          POSTGRES_DB: tinft_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://tinft:tinft@localhost:5432/tinft_test?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,8 +81,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prisma migrate deploy (schema su DB pulito)
+        run: pnpm --filter @tinft/api exec prisma migrate deploy
+
       - name: Typecheck
         run: pnpm --filter @tinft/api typecheck
 
-      - name: Test
+      - name: Test (unit + integrazione PostgreSQL)
         run: pnpm --filter @tinft/api test
+
+  frontend:
+    name: Frontend (sintassi + regole economiche)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # L'app è una singola pagina con logica inline: senza questo controllo un errore
+      # di sintassi arriverebbe in produzione (non esistono test frontend).
+      - name: Sintassi degli script inline di apps/web
+        run: node scripts/check-web-syntax.mjs
+
+      # Guardia sulle regole economiche: i valori mostrati all'utente devono coincidere
+      # con quelli enforced da contratti e backend (ha già intercettato "4%" e "royalty 10%").
+      - name: Coerenza regole economiche (UI ↔ backend ↔ contratti)
+        run: node scripts/check-economics.mjs
+
+  secrets:
+    name: Nessun segreto nel repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scansione segreti
+        run: node scripts/check-secrets.mjs
