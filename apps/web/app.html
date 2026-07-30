@@ -523,7 +523,7 @@
 
                 <sc-if value="{{ aReg4 }}">
                   <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-                    <div><div style="background:#0d0d0e;border:1px solid {{ bdUser }};border-radius:8px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">USERNAME PUBBLICO (@)</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
+                    <div><div style="background:#0d0d0e;border:1px solid {{ bdUser }};border-radius:8px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">USERNAME PUBBLICO (@)</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ unameShow }}"><div style="font-size:11px;margin-top:5px;color:{{ unameColor }}">{{ unameMsg }}</div></sc-if><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
                     <div><div style="background:#0d0d0e;border:1px solid {{ bdPwd }};border-radius:8px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">PASSWORD</div><input value="{{ afPwd }}" onInput="{{ onPwdA }}" type="password" placeholder="min 6 caratteri" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;letter-spacing:0.1em"/></div><sc-if value="{{ fePwdShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ fePwd }}</div></sc-if></div>
                     <div onClick="{{ authToggleConsent }}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:2px"><div style="width:20px;height:20px;border-radius:5px;border:1px solid {{ consentBd }};background:{{ consentBg }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;margin-top:1px">{{ consentCheck }}</div><span style="font-size:11.5px;color:#9a9a9c;line-height:1.45">Accetto <span style="color:#84a9ff">Termini</span> e <span style="color:#84a9ff">Privacy</span> · acconsento al trattamento di CF, residenza e data di nascita per i titoli nominativi.</span></div>
                   </div>
@@ -808,6 +808,7 @@
                     </div>
                   </div>
                 </sc-for>
+                <sc-if value="{{ marketErrShow }}"><div style="background:rgba(255,93,108,.1);border:1px solid rgba(255,93,108,.35);border-radius:13px;padding:18px;text-align:center;color:#ff8a8a;font-size:12.5px">{{ marketErr }}<div onClick="{{ marketRetry }}" style="margin-top:10px;color:#7a9dff;cursor:pointer;font-weight:600">Riprova</div></div></sc-if>
                 <sc-if value="{{ marketEmpty }}"><div style="background:#141415;border:1px solid #262628;border-radius:13px;padding:26px;text-align:center;color:#8c8c8c;font-size:13px">Mercato vuoto per ora.</div></sc-if>
               </div>
             </sc-if>
@@ -845,7 +846,7 @@
               </div>
               <div style="padding:18px 20px 0">
                 <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8c8c8c">A quale amico su TINFT</div>
-                <div style="margin-top:8px;background:#0d0d0e;border:1px solid #262628;border-radius:8px;padding:13px 14px"><input value="{{ giftTo }}" onInput="{{ onGiftTo }}" placeholder="@username TINFT del destinatario" style="width:100%;background:transparent;border:none;outline:none;color:#ececec;font-family:inherit;font-size:14px"/></div>
+                <div style="margin-top:8px;background:#0d0d0e;border:1px solid #262628;border-radius:8px;padding:13px 14px"><input value="{{ giftTo }}" onInput="{{ onGiftTo }}" placeholder="@username TINFT del destinatario" style="width:100%;background:transparent;border:none;outline:none;color:#ececec;font-family:inherit;font-size:14px"/></div><sc-if value="{{ giftWhoShow }}"><div style="margin-top:9px;background:rgba(53,207,147,.09);border:1px solid rgba(53,207,147,.3);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#bfe9d4">Riceverà: <b>{{ giftWho }}</b></div></sc-if>
                 <div style="font-size:11px;color:#8c8c8c;margin-top:8px;line-height:1.5">Il regalo resta dentro TINFT: il destinatario <b style="color:#bcbcbc">deve essere registrato</b>. <span style="color:#84a9ff">(prova: giulia, luca, sara)</span></div>
                 <sc-if value="{{ giftEmpty }}"><div style="margin-top:12px;font-size:12px;color:#ff8a96">Inserisci un destinatario.</div></sc-if>
                 <sc-if value="{{ giftNotReg }}">
@@ -946,6 +947,7 @@
               </div>
               <div style="font-weight:700;font-size:17px;margin-top:26px;text-align:center;line-height:1.3">Mostra questo QR<br/>allo staff del varco</div>
               <div style="margin-top:18px;background:#fff;padding:14px;border-radius:13px"><div id="tinftTicketQR" style="width:170px;height:170px;display:flex;align-items:center;justify-content:center"></div></div>
+              <sc-if value="{{ qrErrShow }}"><div style="margin-top:10px;background:rgba(255,93,108,.1);border:1px solid rgba(255,93,108,.35);border-radius:9px;padding:10px 13px;font-size:12px;color:#ff8a8a;text-align:center">{{ qrErr }}</div></sc-if>
               <div style="margin-top:14px;display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#35cf93;background:rgba(53,207,147,.1);border:1px solid rgba(53,207,147,.3);padding:9px 15px;border-radius:8px"><span style="width:8px;height:8px;border-radius:50%;background:#35cf93;animation:pulse 1.4s infinite"></span> QR firmato · valido</div>
               <div style="font-size:11.5px;color:#8c8c8c;margin-top:16px;text-align:center;line-height:1.5;max-width:32ch">QR dinamico firmato (HMAC). Lo staff lo scansiona <b style="color:#cfcfcf">dal proprio smartphone TINFT</b>. La validazione NFC reale arriva con l'app nativa.</div>
             </div>
@@ -1550,7 +1552,7 @@
 
                 <sc-if value="{{ aReg4 }}">
                   <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
-                    <div><div style="background:#141415;border:1px solid {{ bdUser }};border-radius:11px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">USERNAME PUBBLICO (@)</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
+                    <div><div style="background:#141415;border:1px solid {{ bdUser }};border-radius:11px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">USERNAME PUBBLICO (@)</div><input value="{{ afUser }}" onInput="{{ onUser }}" placeholder="es. mario.rossi" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit"/></div><sc-if value="{{ unameShow }}"><div style="font-size:11px;margin-top:5px;color:{{ unameColor }}">{{ unameMsg }}</div></sc-if><sc-if value="{{ feUserShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ feUser }}</div></sc-if></div>
                     <div><div style="background:#141415;border:1px solid {{ bdPwd }};border-radius:11px;padding:9px 13px"><div style="font-size:9px;letter-spacing:0.14em;color:#8c8c8c;margin-bottom:5px">PASSWORD</div><input value="{{ afPwd }}" onInput="{{ onPwdA }}" type="password" placeholder="min 6 caratteri" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-size:13px;font-family:inherit;letter-spacing:0.1em"/></div><sc-if value="{{ fePwdShow }}"><div style="font-size:10px;color:#ff8a96;margin-top:4px">{{ fePwd }}</div></sc-if></div>
                     <div onClick="{{ authToggleConsent }}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:2px"><div style="width:20px;height:20px;border-radius:5px;border:1px solid {{ consentBd }};background:{{ consentBg }};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;margin-top:1px">{{ consentCheck }}</div><span style="font-size:11.5px;color:#9a9a9c;line-height:1.45">Accetto <span style="color:#84a9ff">Termini</span> e <span style="color:#84a9ff">Privacy</span> · acconsento al trattamento di CF, residenza e data di nascita per i titoli nominativi.</span></div>
                   </div>
@@ -1968,7 +1970,7 @@ class Component extends DCLogic {
   }
   async _refreshEvents(){ try{ const evs=await window.TINFT_API.events(); if(Array.isArray(evs)&&evs.length){ this.setState({ realEvents:evs }); this._loadTiers(evs); } }catch(e){} }
   async _loadTiers(evs){ try{ const map=Object.assign({}, this.state.eventTiers||{}); await Promise.all(evs.map(async(e)=>{ try{ const ti=await window.TINFT_API.tiers(e.id); if(Array.isArray(ti)&&ti.length){ map[e.id]=ti.map(function(t){ return { n:(t.name||t.tierName||'Intero'), p:((t.priceCents||0)/100), note:'disponibile' }; }); } }catch(x){} })); this.setState({ eventTiers:map }); }catch(e){} }
-  async _refreshMarket(){ try{ const m=await window.TINFT_API.market(); if(Array.isArray(m)) this.setState({ market:this._normMarket(m) }); }catch(e){} }
+  async _refreshMarket(){ try{ const m=await window.TINFT_API.market(); if(Array.isArray(m)) this.setState({ market:this._normMarket(m), marketErr:'' }); }catch(e){ /* senza questo l'utente vedrebbe un mercato vuoto senza capire perche' */ this.setState({ marketErr:(e&&e.message)?('Mercato non disponibile: '+e.message):'Mercato non disponibile · controlla la connessione' }); } }
   _normTickets(raw){
     if(!Array.isArray(raw)) return [];
     const EV=this.EV();
@@ -2050,13 +2052,13 @@ class Component extends DCLogic {
   async _localToken(tk){ const ev=this.EV()[tk.evId]||{}; const vcode=String(tk.vcode||ev.vcode||'').toUpperCase(); const holder=String(tk.holder||(this.state.account&&this.state.account.name)||'Titolare'); const body=['TINFT',tk.evId,vcode,tk.id,holder].join('|'); const sig=(await this._hmac(body)).slice(0,16); return body+'|'+sig; }
   async _ticketToken(){ const S=this.state; const tk=S.myTickets.find(t=>t.id===S.ticketId)||S.myTickets[0]; if(!tk) return '';
     // Biglietto reale dal backend → token FIRMATO DAL SERVER, a rotazione (chiave mai sul telefono)
-    if(S.token && tk.id && !/^tk\d/.test(String(tk.id))){ try{ const r=await window.TINFT_API.accessToken(tk.id, S.token); if(r && r.token){ this._lastAccess={ token:r.token, exp:r.exp, rotate:r.rotateSeconds||30 }; return r.token; } }catch(e){} }
+    if(S.token && tk.id && !/^tk\d/.test(String(tk.id))){ try{ const r=await window.TINFT_API.accessToken(tk.id, S.token); if(r && r.token){ this._lastAccess={ token:r.token, exp:r.exp, rotate:r.rotateSeconds||30 }; if(this.state.qrErr) this.setState({ qrErr:'' }); return r.token; } }catch(e){ /* il QR e' l'unico modo per entrare: l'errore NON va nascosto */ this.setState({ qrErr:'QR non disponibile: '+((e&&e.message)||'connessione assente')+' · riprova' }); return ''; } }
     // Biglietto demo/locale → token locale firmato
     try{ return await this._localToken(tk); }catch(e){ return ''; } }
   _drawTicketQR(tries){ tries=tries||0; const el=document.getElementById('tinftTicketQR'); if(!el || typeof QRCode==='undefined'){ if(tries<25) setTimeout(()=>this._drawTicketQR(tries+1),150); return; } this._ticketToken().then(tok=>{ if(!tok) return; try{ el.innerHTML=''; new QRCode(el, { text:tok, width:170, height:170, colorDark:'#0a0a0a', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M }); }catch(e){} }); }
   openScanner(){ this.setState({ scannerOpen:true, scanErr:'' }); setTimeout(()=>this._startCam(), 90); }
   async _startCam(){ const v=document.getElementById('tinftScanVideo'); if(!v){ return; } if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ this.setState({ scanErr:'Fotocamera non supportata da questo browser' }); return; } try{ this._stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ideal:'environment'} }, audio:false }); v.srcObject=this._stream; v.setAttribute('playsinline','true'); await v.play(); this._scanning=true; this._scanTick(); }catch(e){ this.setState({ scanErr:'Accesso fotocamera negato o non disponibile ('+(e.name||e.message||'errore')+')' }); } }
-  _scanTick(){ if(!this._scanning) return; const v=document.getElementById('tinftScanVideo'); const c=document.getElementById('tinftScanCanvas'); if(v&&c&&v.readyState>=2&&typeof jsQR!=='undefined'){ const w=v.videoWidth, h=v.videoHeight; if(w&&h){ c.width=w; c.height=h; const x=c.getContext('2d'); x.drawImage(v,0,0,w,h); try{ const img=x.getImageData(0,0,w,h); const res=jsQR(img.data, w, h); if(res&&res.data){ this._onScan(res.data); return; } }catch(e){} } } this._raf=requestAnimationFrame(()=>this._scanTick()); }
+  _scanTick(){ if(!this._scanning) return; const v=document.getElementById('tinftScanVideo'); const c=document.getElementById('tinftScanCanvas'); if(v&&c&&v.readyState>=2&&typeof jsQR!=='undefined'){ const w=v.videoWidth, h=v.videoHeight; if(w&&h){ c.width=w; c.height=h; const x=c.getContext('2d'); x.drawImage(v,0,0,w,h); try{ const img=x.getImageData(0,0,w,h); const res=jsQR(img.data, w, h); if(res&&res.data){ this._onScan(res.data); return; } }catch(e){ /* errore persistente di lettura: avvisa invece di restare muto */ if(!this._scanWarned){ this._scanWarned=true; this.setState({ scanErr:'Lettura QR non riuscita: '+((e&&e.message)||'errore fotocamera') }); } } } } this._raf=requestAnimationFrame(()=>this._scanTick()); }
   _stopCam(){ this._scanning=false; if(this._raf) cancelAnimationFrame(this._raf); if(this._stream){ try{ this._stream.getTracks().forEach(t=>t.stop()); }catch(e){} this._stream=null; } }
   closeScanner(){ this._stopCam(); this.setState({ scannerOpen:false }); }
   async _scanToken(){ if(this.state.token) return this.state.token; if(this.state.orgToken) return this.state.orgToken; if(this._scanTok) return this._scanTok; try{ const r=await window.TINFT_API.login('org@tinft.io','demo123'); this._scanTok=r.token; return r.token; }catch(e){ return null; } }
@@ -2076,7 +2078,47 @@ class Component extends DCLogic {
   openRegister(){ this.setState({ authOpen:true, authMode:'register', authStep:1, authErr:'' }); }
   authSetRole(r){ this.setState({ authRole:r, authStep:1, authErr:'' }); }
   authSetMode(m){ this.setState({ authMode:m, authStep:1, authErr:'' }); }
-  authField(k,v){ this.setState(s=>({ authF:{...s.authF,[k]:v}, authErr:'' })); }
+  authField(k,v){ this.setState(s=>({ authF:{...s.authF,[k]:v}, authErr:'' })); if(k==='username') this._checkUsername(v); }
+  /* Disponibilita' dell'@handle mentre si digita: senza, il conflitto si scopre solo
+     al momento della registrazione (e si perde il resto del modulo). Debounce 400ms. */
+  _checkUsername(v){
+    clearTimeout(this._unameT);
+    const u=String(v||'').replace(/^@+/,'').trim();
+    if(!u){ this.setState({ unameState:'' }); return; }
+    if(!/^[a-z0-9._]{3,20}$/.test(u)){ this.setState({ unameState:'invalid' }); return; }
+    this.setState({ unameState:'checking' });
+    this._unameT=setTimeout(async()=>{
+      try{ const r=await window.TINFT_API.usernameAvailable(u);
+        this.setState({ unameState: r&&r.available ? 'free' : 'taken' });
+      }catch(e){ this.setState({ unameState:'' }); }
+    }, 400);
+  }
+  /* Anteprima del destinatario mentre si digita l'@handle: si regala a una persona,
+     non a una stringa. Conferma chi ricevera' PRIMA di trasferire. */
+  _onGiftTo(v){
+    this.setState({ giftTo:v, giftErr:'' });
+    clearTimeout(this._giftT);
+    const u=String(v||'').replace(/^@+/,'').trim();
+    if(u.length<3){ this.setState({ giftWho:'' }); return; }
+    this._giftT=setTimeout(async()=>{
+      try{ const acc=await window.TINFT_API.userByUsername(u);
+        this.setState({ giftWho: acc ? ((acc.nome||'')+' '+(acc.cognome||'')).trim()+' · @'+(acc.username||u) : '' });
+      }catch(e){ this.setState({ giftWho:'' }); }
+    }, 400);
+  }
+  /* Cambio @handle dal profilo (endpoint gia' pronto lato backend). */
+  async changeUsername(){
+    const cur=(this.state.account&&this.state.account.username)||'';
+    const v=window.prompt('Nuovo username pubblico (3-20 caratteri: minuscole, numeri, . e _)', cur);
+    if(v===null) return;
+    const u=String(v).replace(/^@+/,'').trim().toLowerCase();
+    if(!/^[a-z0-9._]{3,20}$/.test(u)){ this._toastMsg('Username non valido: 3-20 caratteri, minuscole, numeri, . e _'); return; }
+    try{
+      const acc=await window.TINFT_API.setUsername(this.state.account.id, u, this.state.token);
+      this.setState(s=>({ account:{...s.account, username:(acc&&acc.username)||u} }));
+      this._toastMsg('Username aggiornato: @'+u);
+    }catch(e){ this._toastMsg((e&&e.message)||'Username non disponibile'); }
+  }
   authToggleBill(){ this.setState(s=>({ authF:{...s.authF, billSame:!s.authF.billSame} })); }
   _re(){ return { email:/.+@.+\..+/, cf:/^[A-Za-z0-9]{16}$/, piva:/^(IT)?[0-9]{11}$/, tel:/^[+0-9 ]{6,}$/, nasc:/^\d{2}\/\d{2}\/\d{4}$/, user:/^[a-z0-9._]{3,}$/ }; }
   _authValid(st){ return this._authErrMsg(st)===''; }
@@ -2133,8 +2175,73 @@ class Component extends DCLogic {
   orgAddTier(p){ p=p||{}; this.setState(s=>({ orgTiers:[...s.orgTiers, {tipo:p.tipo||'',price:p.price||'',qty:p.qty||''}] })); }
   orgRemoveTier(i){ this.setState(s=>({ orgTiers: s.orgTiers.length>1? s.orgTiers.filter((t,j)=>j!==i): s.orgTiers })); }
   orgEmit(){ const f=this.state.orgF; const T=this.state.orgTiers; if(!f.titolo.trim()||!f.luogo.trim()||!f.data.trim()){ this.setState({ toast:'Compila titolo, luogo e data' }); this._toast(); return; } if(!f.poster){ this.setState({ toast:'Carica la locandina dell’evento' }); this._toast(); return; } const valid=T.filter(t=>t.tipo.trim() && Number(t.qty)>0); if(!valid.length){ this.setState({ toast:'Aggiungi almeno un tipo di biglietto con quantità' }); this._toast(); return; } const cap=valid.reduce((a,t)=>a+(Number(t.qty)||0),0); const special=Number(f.nftSpecial)||0; const id='pub'+Date.now(); const manual=String(f.vcode||'').trim().toUpperCase().replace(/[^A-Z0-9\-]/g,''); const vcode= manual || ((f.titolo.trim().replace(/[^A-Za-z]/g,'').slice(0,5).toUpperCase()||'EVENT')+'-'+String(Math.floor(1000+Math.random()*8999))); const luogo=f.luogo.trim(); const city=(luogo.split('·')[1]||luogo.split(',')[1]||'').trim()||luogo; const minPrice=Math.min.apply(null, valid.map(t=>Number(t.price)||0)); const initials=luogo.replace(/[^A-Za-z\s].*$/,'').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'EV'; const pub={ id:id, vcode:vcode, short:f.titolo.trim(), title:f.titolo.trim(), sub:luogo, city:city, date:f.data.trim(), time:(f.ora||'').trim()||'da definire', genre:(f.genere||'').trim()||'Evento', gkey:(f.genere||'').trim()||'Altro', type:'TICKET NFT', art:f.poster, nftArt:f.nftSame?f.poster:(f.nftArt||f.poster), soldPct:0, weekend:true, isNew:true, org:luogo, orgInitials:initials, desc:'Nuovo evento pubblicato su TINFT. Biglietti come titoli NFT nominativi: ingresso da smartphone, niente lettori esterni.', early:!!f.early, earlyDate:(f.earlyDate||'').trim(), lineup:['Line-up in aggiornamento'], nftTotal:cap+special, nftSpecial:special, tiers: valid.map(t=>({ n:t.tipo.trim(), p:Number(t.price)||0, note:(t.early?'accesso anticipato':'disponibile'), qty:Number(t.qty)||0, early:!!t.early })) }; const dash={ title:f.titolo.trim(), vcode:vcode, sub:luogo, sold:0, cap, pct:'0%', incasso:'€ 0', isNew:true, hasPoster:true, art:f.poster, nftArt:pub.nftArt, tiers:valid, nftTotal:cap+special, nftSpecial:special }; this._persistPub(pub); this.setState(s=>({ pubEvents:[pub, ...s.pubEvents], orgEvents:[dash, ...s.orgEvents], orgF:{titolo:'',luogo:'',data:'',ora:'',genere:'',poster:'',nftArt:'',nftSame:true,nftSpecial:'3',early:false,earlyDate:'',vcode:''}, orgTiers:[{tipo:'Early Bird',price:'18',qty:'100'},{tipo:'Intero',price:'25',qty:'300'},{tipo:'VIP',price:'60',qty:'40'}], orgView:'dash', toast:'Evento pubblicato · '+(cap+special)+' NFT coniati ('+special+' speciali) · codice varco '+vcode })); this._toast(); }
-  orgExport(){ this.setState({ toast:'Report incassi esportato (CSV)' }); this._toast(); }
-  orgStripe(){ if(this.state.stripeSim==='todo'){ this._toastMsg('Connessione a Stripe… (demo)'); setTimeout(()=>{ this.setState({ stripeSim:'active', toast:'Onboarding Stripe completato (demo) · payout attivi' }); this._toast(); }, 1300); } else { this.setState({ stripeSim:'todo', toast:'Onboarding Stripe da completare (demo) · tocca per attivare' }); this._toast(); } }
+  /* Export incassi: genera e scarica un CSV VERO dai dati del backend
+     (prima mostrava soltanto un messaggio). */
+  async orgExport(){
+    let tok=this.state.orgToken||this.state.token, acc=this.state.orgAccount||this.state.account;
+    if(!tok||!acc){ this._toastMsg('Accedi come organizzatore per esportare'); return; }
+    this._toastMsg('Preparo il report…');
+    try{
+      const inc=await window.TINFT_API.raw('GET','/organizers/'+acc.id+'/incassi',{ token:tok });
+      const dash=await window.TINFT_API.raw('GET','/organizers/'+acc.id+'/dashboard',{ token:tok });
+      const evs=(await window.TINFT_API.events()).filter(e=>e.organizerId===acc.id);
+      const eur=(c)=>((c||0)/100).toFixed(2).replace('.',',');
+      const rows=[
+        ['TINFT — Report incassi'],
+        ['Organizzatore', (acc.nome||'')+' '+(acc.cognome||''), '@'+(acc.username||'')],
+        ['Generato il', new Date().toLocaleString('it-IT')],
+        [],
+        ['RIEPILOGO'],
+        ['Incasso lordo (EUR)', eur(inc.grossCents)],
+        ['Royalty organizzatore secondario 0,5% (EUR)', eur(inc.royaltyOrganizerCents)],
+        ['Netto (EUR)', eur(inc.netCents)],
+        ['Prossimo payout (EUR)', eur(inc.nextPayoutCents)],
+        ['Tempi payout', inc.payoutEta||''],
+        ['Biglietti venduti', dash.ticketsSold],
+        ['Eventi in vendita', dash.eventsOnSale],
+        ['Ingressi validati', dash.validated],
+        [],
+        ['EVENTI'],
+        ['Titolo','Luogo','Data','Prezzo (EUR)','Venduti','Capienza','Stato','Codice varco'],
+        ...evs.map(e=>[e.title,e.venue,e.date,eur(e.priceCents),e.sold,e.capacity,e.status,e.gateCode||''])
+      ];
+      const csv='﻿'+rows.map(r=>r.map(c=>{ const v=String(c==null?'':c); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(';')).join('\r\n');
+      const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+      const a=document.createElement('a');
+      a.href=url; a.download='tinft-incassi-'+new Date().toISOString().slice(0,10)+'.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+      this._toastMsg('Report CSV scaricato');
+    }catch(e){ this._toastMsg('Export non riuscito: '+((e&&e.message)||'errore')); }
+  }
+  /* Onboarding Stripe Connect: chiede al backend il link REALE e lo apre.
+     Se le chiavi Stripe non sono configurate sul server, resta la simulazione
+     (utile in demo) invece di lasciare il pulsante muto. */
+  async orgStripe(){
+    const tok=this.state.orgToken||this.state.token, acc=this.state.orgAccount||this.state.account;
+    if(!tok||!acc){ this._toastMsg('Accedi come organizzatore'); return; }
+    this._toastMsg('Connessione a Stripe…');
+    try{
+      const clubs=await window.TINFT_API.raw('GET','/clubs',{ token:tok });
+      const club=(clubs||[]).find(c=>c.organizerId===acc.id)||(clubs||[])[0];
+      if(!club) throw new Error('nessun club associato');
+      const link=await window.TINFT_API.raw('POST','/clubs/'+club.id+'/stripe/onboarding-link',{ body:{ organizerId:acc.id }, token:tok });
+      if(link&&link.url&&!/sandbox\.tinft\.local/.test(link.url)){
+        window.open(link.url,'_blank');            // Stripe vero
+        this._toastMsg('Apro l’onboarding Stripe…');
+        try{ const st=await window.TINFT_API.raw('POST','/clubs/'+club.id+'/stripe/refresh',{ body:{ organizerId:acc.id }, token:tok });
+          this.setState({ stripeSim: st&&st.stripeOnboarded?'active':'todo' });
+        }catch(e){}
+        return;
+      }
+      // Chiavi Stripe non configurate: il backend restituisce un link sandbox → demo.
+      this._toastMsg('Stripe in modalità demo (chiavi non configurate)');
+      setTimeout(()=>{ this.setState({ stripeSim:'active', toast:'Onboarding Stripe completato (demo) · payout attivi' }); this._toast(); }, 1000);
+    }catch(e){
+      this._toastMsg('Stripe non raggiungibile: '+((e&&e.message)||'errore')+' · resto in demo');
+      this.setState(s=>({ stripeSim: s.stripeSim==='todo'?'active':'todo' }));
+    }
+  }
   authBack(){ if(this.state.authStep>1) this.setState({ authStep:this.state.authStep-1, authErr:'', authTried:false }); }
   async authVerify(){ const code=(this.state.authCode||'').trim(); if(code.length<6){ this.setState({ authErr:'Inserisci il codice a 6 cifre' }); return; } const f=this.state.authF; const email=this.state.otpEmail||f.email.trim(); this.setState({ authErr:'' }); try{ await window.TINFT_API.registerVerify(email, code); await this._loginClient(email, f.pwd); this._authFinish(); }catch(e){ this.setState({ authErr:(e.message||'Codice errato, riprova') }); } }
   async authSpid(){ this.setState({ authErr:'' }); try{ await this._loginClient('cli@tinft.io','demo123'); this._authFinish(); }catch(e){ this.setState({ authErr:(e.message||'SPID demo non riuscito') }); } }
@@ -2272,7 +2379,7 @@ class Component extends DCLogic {
       tabHome:()=>this.tabHome(), tabEventi:()=>this.tabEventi(), tabBiglietti:()=>this.tabBiglietti(), tabMercato:()=>this.tabMercato(), tabProfilo:()=>this.tabProfilo(),
       appBuy:()=>this.appBuy(), showVarco:()=>this.showVarco(), closeVarco:()=>this.closeVarco(), reset:()=>this.reset(),
       toStaff:()=>this.toStaff(), toCliente:()=>this.toCliente(), validateNext:()=>this.validateNext(), simUsed:()=>this.simUsed(), simInvalid:()=>this.simInvalid(), clearScan:()=>this.clearScan(), resell:()=>this.resell(), openScanner:()=>this.openScanner(), closeScanner:()=>this.closeScanner(), scannerOpen:S.scannerOpen, scanErr:S.scanErr, scanErrShow:!!S.scanErr, scanErrHide:!S.scanErr,sell:()=>this.resell(),
-      toggleOnline:()=>this.toggleOnline(), toggleVarcoQR:()=>this.toggleVarcoQR(), openTransfer:()=>this.openTransfer(), confirmTransfer:()=>this.confirmTransfer(), onGiftTo:(e)=>this.setState({giftTo:e.target.value,giftErr:''}), inviteUser:()=>this.inviteUser(), acceptGift:()=>this.acceptGift(), simEnd:()=>this.simEnd(), exportNft:()=>this.exportNft(), openSecurity:()=>this.openSecurity(), openOnboard:()=>this.openOnboard(), closeOnboard:()=>this.closeOnboard(),
+      toggleOnline:()=>this.toggleOnline(), toggleVarcoQR:()=>this.toggleVarcoQR(), openTransfer:()=>this.openTransfer(), confirmTransfer:()=>this.confirmTransfer(), onGiftTo:(e)=>this._onGiftTo(e.target.value), inviteUser:()=>this.inviteUser(), acceptGift:()=>this.acceptGift(), simEnd:()=>this.simEnd(), exportNft:()=>this.exportNft(), openSecurity:()=>this.openSecurity(), openOnboard:()=>this.openOnboard(), closeOnboard:()=>this.closeOnboard(),
       payConfirm:()=>this.payConfirm(), closePay:()=>this.closePay(), payCard:()=>this.setPayMethod('card'), payApple:()=>this.setPayMethod('apple'), paySpid:()=>this.setPayMethod('spid'), togglePayFail:()=>this.togglePayFail(), openNotif:()=>this.openNotif(), closeNotif:()=>this.closeNotif(), goConsole:()=>this.goConsole(), staffSearch:()=>this.staffSearch(), onStaffQuery:(e)=>this.setState({staffQuery:e.target.value}),
 
       qrSite:this.qr(7), qrApp:this.qr(42+(S.qrTick||0)), qrTicket:this.qr((S.ticketId||'tk').length*13+7+(S.qrTick||0)*13), qrVarco:this.qr(99+(S.qrTick||0)*7),
@@ -2364,7 +2471,16 @@ class Component extends DCLogic {
       hasNext: !!nextE, nextArt:nextE?nextE.art:'', nextTier:nextTk?nextTk.tier:'', nextTitle:nextE?nextE.title:'', nextHolder:nextTk?nextTk.holder:'', nextSub:nextE?(nextE.sub):'',
       at:(function(){ var ADDR='0x87044b22dD89798e2ba15a38454F72AaF3Ec1F37'; var tid=curTk&&curTk.tokenId; return { art:curE?curE.art:'', title:curE?curE.title:'', tier:curTk?curTk.tier:'', holder:curTk?curTk.holder:'', tokenId:(tid!=null?tid:''), onChain:(tid!=null), basescanUrl:(tid!=null?('https://sepolia.basescan.org/token/'+ADDR+'?a='+tid):'') }; })(),
 
-      market, marketEmpty:market.length===0,
+      market, marketEmpty:market.length===0 && !S.marketErr,
+      marketErr:S.marketErr||'', marketErrShow:!!S.marketErr, marketRetry:()=>this._refreshMarket(),
+      qrErr:S.qrErr||'', qrErrShow:!!S.qrErr,
+      giftWho:S.giftWho||'', giftWhoShow:!!S.giftWho,
+      unameFree:S.unameState==='free', unameTaken:S.unameState==='taken',
+      unameChecking:S.unameState==='checking', unameInvalid:S.unameState==='invalid',
+      unameMsg:(S.unameState==='free'?'✓ disponibile':S.unameState==='taken'?'✗ già in uso':S.unameState==='checking'?'controllo…':S.unameState==='invalid'?'3-20 caratteri: minuscole, numeri, . e _':''),
+      unameColor:(S.unameState==='free'?'#35cf93':S.unameState==='taken'||S.unameState==='invalid'?'#ff8a8a':'#8c8c8c'),
+      unameShow:!!S.unameState,
+      changeUsername:()=>this.changeUsername(),
       marketClose:()=>this.marketClose(),
       mktPreviewOpen:!!mktSel,
       mkt: mktSel? { art:mktSelE.art, title:mktSelE.title, sub:mktSelE.sub||'', date:mktSelE.date||'', genre:mktSelE.genre||'', seller:mktSel.seller, tier:mktSel.tier, price:eur(mktSel.price), orig:eur(this.minP(mktSelE)), royalty:'1%', soldW:(mktSelE.soldPct||0)+'%', buyLabel:'Compra · '+eur(mktSel.price), buy:()=>this.marketBuy(mktSel.id) } : { art:'',title:'',sub:'',date:'',genre:'',seller:'',tier:'',price:'',orig:'',royalty:'',soldW:'0%',buyLabel:'',buy:()=>{} },

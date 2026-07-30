@@ -187,4 +187,18 @@ export class ViemChain implements ChainPort {
     await pub.waitForTransactionReceipt({hash: txHash});
     return {txHash};
   }
+
+  /**
+   * Saldo del wallet che firma mint e burn. Se va a zero le transazioni falliscono
+   * silenziosamente per l'utente finale: esposto in /metrics e /ready per accorgersene
+   * prima. Un errore di rete non deve far fallire l'health check → `undefined`.
+   */
+  async gasBalanceWei(): Promise<bigint | undefined> {
+    try {
+      const {pub} = this.clients();
+      return await pub.getBalance({address: this.account.address});
+    } catch {
+      return undefined;
+    }
+  }
 }
