@@ -33,7 +33,8 @@ describe("validazione al varco — token non presente on-chain", () => {
     const {svc, ticket, token} = await setup(async () => nonexistent());
     const res = await svc.scanValidate(token);
     expect(res.outcome).toBe("VALID");
-    expect((await svc.getTicket(ticket.id)).status).toBe("BURNED");
+    const mine = await svc.ticketsOf(ticket.ownerId);
+    expect(mine.find((t) => t.id === ticket.id)?.status).toBe("BURNED");
   });
 
   it("un errore diverso (es. rete) resta bloccante: l'operatore ritenta", async () => {
