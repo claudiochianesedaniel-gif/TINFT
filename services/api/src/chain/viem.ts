@@ -71,15 +71,60 @@ export interface ViemChainConfig {
  */
 export class ViemChain implements ChainPort {
   private readonly account: ReturnType<typeof privateKeyToAccount>;
+  /** Coda: le scritture con la stessa chiave (owner) partono UNA alla volta. */
+  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly cfg: ViemChainConfig) {
     this.account = privateKeyToAccount(cfg.privateKey);
   }
 
-  async mintTicket(params: MintParams): Promise<MintResult> {
+  private clients() {
     const chain = this.cfg.chain ?? foundry;
-    const wallet = createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)});
-    const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
+    return {
+      wallet: createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)}),
+      pub: createPublicClient({chain, transport: http(this.cfg.rpcUrl)})
+    };
+  }
+
+  /**
+   * Invia una transazione firmata dall'owner in modo robusto.
+   *
+   * Due scritture ravvicinate dallo stesso wallet (es. mint del biglietto e
+   * subito dopo mintSpecial del drop, oppure mint e markUsed) fallivano: dopo la
+   * conferma l'RPC può ancora restituire il nonce vecchio (nodi non allineati) e
+   * la seconda transazione viene rifiutata. Qui le scritture vengono serializzate
+   * su una coda, il nonce è letto esplicitamente in stato `pending` e in caso di
+   * errore si riprova una volta dopo una breve attesa rileggendo il nonce.
+   */
+  private send(write: (nonce: number) => Promise<`0x${string}`>): Promise<`0x${string}`> {
+    const run = this.queue.then(
+      () => this.sendWithRetry(write),
+      () => this.sendWithRetry(write)
+    );
+    this.queue = run.then(
+      () => {},
+      () => {}
+    );
+    return run;
+  }
+
+  private async sendWithRetry(write: (nonce: number) => Promise<`0x${string}`>): Promise<`0x${string}`> {
+    const {pub} = this.clients();
+    const nextNonce = () => pub.getTransactionCount({address: this.account.address, blockTag: "pending"});
+    try {
+      return await write(await nextNonce());
+    } catch (first) {
+      await new Promise((r) => setTimeout(r, 1500)); // lasciamo allineare i nodi RPC
+      try {
+        return await write(await nextNonce());
+      } catch {
+        throw first; // riporta l'errore originale, più informativo
+      }
+    }
+  }
+
+  async mintTicket(params: MintParams): Promise<MintResult> {
+    const {wallet, pub} = this.clients();
 
     const to = getAddress((params.to ?? this.account.address) as string);
     // eventId dal registro eventi (Event.onchainEventId): univoco e persistito —
@@ -87,12 +132,15 @@ export class ViemChain implements ChainPort {
     const eventId = BigInt(params.onchainEventId);
     const price = BigInt(params.priceCents);
 
-    const txHash = await wallet.writeContract({
-      address: this.cfg.ticketAddress,
-      abi: TINFT_TICKET_ABI,
-      functionName: "mint",
-      args: [to, eventId, price]
-    });
+    const txHash = await this.send((nonce) =>
+      wallet.writeContract({
+        address: this.cfg.ticketAddress,
+        abi: TINFT_TICKET_ABI,
+        functionName: "mint",
+        args: [to, eventId, price],
+        nonce
+      })
+    );
     const receipt = await pub.waitForTransactionReceipt({hash: txHash});
     const logs = parseEventLogs({abi: TINFT_TICKET_ABI, eventName: "TicketMinted", logs: receipt.logs});
     const first = logs[0];
@@ -105,17 +153,18 @@ export class ViemChain implements ChainPort {
    * 3/evento e mai bruciato al varco. tokenId dall'evento `SpecialMinted`.
    */
   async mintSpecial(params: MintParams): Promise<MintResult> {
-    const chain = this.cfg.chain ?? foundry;
-    const wallet = createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)});
-    const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
+    const {wallet, pub} = this.clients();
 
     const to = getAddress((params.to ?? this.account.address) as string);
-    const txHash = await wallet.writeContract({
-      address: this.cfg.ticketAddress,
-      abi: TINFT_TICKET_ABI,
-      functionName: "mintSpecial",
-      args: [to, BigInt(params.onchainEventId), BigInt(params.priceCents)]
-    });
+    const txHash = await this.send((nonce) =>
+      wallet.writeContract({
+        address: this.cfg.ticketAddress,
+        abi: TINFT_TICKET_ABI,
+        functionName: "mintSpecial",
+        args: [to, BigInt(params.onchainEventId), BigInt(params.priceCents)],
+        nonce
+      })
+    );
     const receipt = await pub.waitForTransactionReceipt({hash: txHash});
     const logs = parseEventLogs({abi: TINFT_TICKET_ABI, eventName: "SpecialMinted", logs: receipt.logs});
     const first = logs[0];
@@ -125,15 +174,16 @@ export class ViemChain implements ChainPort {
 
   /** Validazione al varco on-chain: `markUsed` brucia il biglietto normale (Signature esente). */
   async markUsed(tokenId: number): Promise<{txHash: string}> {
-    const chain = this.cfg.chain ?? foundry;
-    const wallet = createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)});
-    const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
-    const txHash = await wallet.writeContract({
-      address: this.cfg.ticketAddress,
-      abi: TINFT_TICKET_ABI,
-      functionName: "markUsed",
-      args: [BigInt(tokenId)]
-    });
+    const {wallet, pub} = this.clients();
+    const txHash = await this.send((nonce) =>
+      wallet.writeContract({
+        address: this.cfg.ticketAddress,
+        abi: TINFT_TICKET_ABI,
+        functionName: "markUsed",
+        args: [BigInt(tokenId)],
+        nonce
+      })
+    );
     await pub.waitForTransactionReceipt({hash: txHash});
     return {txHash};
   }
