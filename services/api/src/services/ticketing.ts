@@ -9,6 +9,7 @@ import {
   NotFound,
   type Order,
   type Ticket,
+  type TicketStatus,
   type Tier,
   type Transfer,
   type TransferMode,
@@ -23,8 +24,12 @@ import {
   generateGateCode,
   GOODWILL_PER_TICKET,
   isResalePriceAllowed,
+  isValidPosterDataUrl,
+  isValidUsername,
   MAX_PER_EVENT,
   normalizeGateCode,
+  normalizeUsername,
+  usernameFromEmail,
   orderTotalCents,
   resaleCapCents,
   resaleFeeSplitCents,
@@ -80,8 +85,17 @@ export class TicketingService {
     phone?: string;
     walletAddress?: string;
     passwordHash?: string;
+    username?: string;
   }): Promise<Account> {
     const role = input.role ?? "CLIENTE";
+    // Username pubblico: obbligatorio per i CLIENTI (è l'etichetta con cui li si
+    // cerca, si regala e si verifica al varco), opzionale per gli organizzatori.
+    let username: string | undefined;
+    if (input.username !== undefined && input.username !== "") {
+      username = await this.reserveUsername(input.username);
+    } else if (role === "CLIENTE") {
+      username = await this.reserveUsername(usernameFromEmail(input.email), {auto: true});
+    }
     const account: Account = {
       id: this.store.id("acc"),
       role,
@@ -100,6 +114,7 @@ export class TicketingService {
       zip: input.zip,
       province: input.province,
       phone: input.phone,
+      username,
       verified: !!input.cfHash,
       walletAddress: input.walletAddress,
       goodwill: 0,
@@ -107,6 +122,101 @@ export class TicketingService {
     };
     await this.store.createAccount(account);
     return account;
+  }
+
+  // -------------------------------------------------------------- username (@handle)
+  /**
+   * Valida e "prenota" un username: formato corretto e non già in uso. Con
+   * `auto: true` (derivazione dall'email per gli account storici) non fallisce
+   * su collisione ma aggiunge un suffisso numerico finché non è libero.
+   */
+  private async reserveUsername(raw: string, opts: {auto?: boolean} = {}): Promise<string> {
+    const wanted = normalizeUsername(raw);
+    if (!isValidUsername(wanted)) {
+      if (!opts.auto) {
+        throw new DomainError("INVALID_USERNAME", "username: 3-20 caratteri tra minuscole, cifre, punto e underscore");
+      }
+      return this.reserveUsername(`user${Date.now().toString().slice(-6)}`, {auto: true});
+    }
+    const taken = await this.store.getAccountByUsername(wanted);
+    if (!taken) return wanted;
+    if (!opts.auto) throw new DomainError("USERNAME_TAKEN", `username @${wanted} già in uso`, 409);
+    for (let i = 2; i < 1000; i++) {
+      const candidate = `${wanted.slice(0, 17)}${i}`;
+      if (!(await this.store.getAccountByUsername(candidate))) return candidate;
+    }
+    throw new DomainError("USERNAME_TAKEN", "impossibile derivare un username libero", 409);
+  }
+
+  /** true se l'username è libero (per il controllo live in registrazione). */
+  async isUsernameAvailable(username: string): Promise<{username: string; available: boolean; valid: boolean}> {
+    const normalized = normalizeUsername(username);
+    const valid = isValidUsername(normalized);
+    if (!valid) return {username: normalized, available: false, valid: false};
+    return {username: normalized, available: !(await this.store.getAccountByUsername(normalized)), valid: true};
+  }
+
+  /** Scheda pubblica di un utente cercato per @username (niente PII: solo etichetta). */
+  async findByUsername(username: string): Promise<{id: string; username: string; nome: string; role: string}> {
+    const account = await this.store.getAccountByUsername(username);
+    if (!account?.username) throw new DomainError("USER_NOT_FOUND", `nessun utente con username @${normalizeUsername(username)}`, 404);
+    return {id: account.id, username: account.username, nome: account.nome, role: account.role};
+  }
+
+  /**
+   * Verifica manuale al varco per @username (fallback quando il QR non è
+   * leggibile): restituisce i biglietti di quell'utente PER QUESTO evento con
+   * il loro stato, così lo staff vede subito se è già entrato. Non valida da
+   * sola: l'ingresso resta legato allo scan del QR firmato dal server.
+   */
+  async gateLookupByUsername(
+    gateCode: string,
+    username: string
+  ): Promise<{
+    user: {id: string; username: string; nome: string};
+    event: {id: string; title: string};
+    tickets: {id: string; status: TicketStatus; isSpecial: boolean; holderName?: string}[];
+  }> {
+    const event = await this.eventByGateCode(gateCode);
+    const account = await this.store.getAccountByUsername(username);
+    if (!account?.username) {
+      throw new DomainError("USER_NOT_FOUND", `nessun utente con username @${normalizeUsername(username)}`, 404);
+    }
+    const tickets = (await this.store.ticketsByOwner(account.id)).filter((t) => t.eventId === event.id);
+    return {
+      user: {id: account.id, username: account.username, nome: `${account.nome} ${account.cognome}`.trim()},
+      event: {id: event.id, title: event.title},
+      tickets: tickets.map((t) => ({id: t.id, status: t.status, isSpecial: !!t.isSpecial, holderName: t.holderName}))
+    };
+  }
+
+  /** Imposta/cambia l'username di un account (self-service dal profilo). */
+  async setUsername(accountId: string, username: string): Promise<Account> {
+    const account = await this.getAccount(accountId);
+    const next = normalizeUsername(username);
+    if (account.username === next) return account;
+    account.username = await this.reserveUsername(next);
+    return this.store.updateAccount(account);
+  }
+
+  /**
+   * Regalo/invio di un biglietto a un altro utente TINFT, identificato per
+   * @username. Consentito solo su biglietto ATTIVO: bruciato, in vendita o
+   * esportato non sono trasferibili. Rispetta il limite 3/evento del ricevente.
+   */
+  async transferTicketToUsername(ticketId: string, ownerId: string, toUsername: string): Promise<Ticket> {
+    const ticket = await this.getTicket(ticketId);
+    if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario del biglietto", 403);
+    if (ticket.status !== "ACTIVE") {
+      throw new DomainError("NOT_TRANSFERABLE", `biglietto non trasferibile (stato ${ticket.status})`, 409);
+    }
+    const recipient = await this.store.getAccountByUsername(toUsername);
+    if (!recipient) throw new DomainError("USER_NOT_FOUND", `nessun utente con username @${normalizeUsername(toUsername)}`, 404);
+    if (recipient.id === ownerId) throw new DomainError("INVALID_TRANSFER", "non puoi regalare un biglietto a te stesso");
+    if (ticket.eventId) await this.assertCanAcquire(ticket.eventId, recipient);
+    ticket.ownerId = recipient.id;
+    ticket.holderName = `${recipient.nome} ${recipient.cognome}`.trim();
+    return this.store.updateTicket(ticket);
   }
 
   /** Cerca un account per email (case-insensitive). Per il login. */
@@ -253,10 +363,14 @@ export class TicketingService {
     status?: EventStatus;
     gateCode?: string;
     signatureDrops?: boolean;
+    posterDataUrl?: string;
   }): Promise<Event> {
     await this.getAccount(input.organizerId);
     if (input.priceCents < 0 || input.capacity <= 0) {
       throw new DomainError("INVALID_EVENT", "prezzo o capienza non validi");
+    }
+    if (input.posterDataUrl && !isValidPosterDataUrl(input.posterDataUrl)) {
+      throw new DomainError("INVALID_POSTER", "locandina: serve un'immagine (png/jpg/webp) fino a 2 MB");
     }
     // un evento di club può andare IN VENDITA solo se il club incassa (onboarding Stripe)
     if ((input.status ?? "ON_SALE") === "ON_SALE") await this.assertClubPayoutReady(input.clubId);
@@ -273,7 +387,8 @@ export class TicketingService {
       sold: 0,
       status: input.status ?? "ON_SALE",
       gateCode: await this.uniqueGateCode(input.title, input.gateCode),
-      signatureDrops: input.signatureDrops || undefined
+      signatureDrops: input.signatureDrops || undefined,
+      posterDataUrl: input.posterDataUrl
     };
     await this.store.createEvent(event);
     return event;
@@ -626,11 +741,32 @@ export class TicketingService {
     const cap = event.capacity;
     const milestones = new Set<number>([1, Math.ceil(cap / 2), cap]);
     if (!milestones.has(event.sold)) return;
+    // Conio ON-CHAIN se l'adapter lo supporta (ViemChain → TinftTicket.mintSpecial):
+    // il Signature nasce come token reale, fuori dal limite 3/evento e non bruciabile.
+    // Se la chain non è disponibile il regalo resta comunque valido off-chain.
+    let tokenId: number | undefined;
+    let txHash: string | undefined;
+    if (this.chain.mintSpecial) {
+      try {
+        const buyer = await this.getAccount(buyerId);
+        const minted = await this.chain.mintSpecial({
+          to: buyer.walletAddress,
+          reference: event.id,
+          onchainEventId: await this.ensureOnchainEventId(event.id),
+          priceCents: 0
+        });
+        tokenId = minted.tokenId;
+        txHash = minted.txHash;
+      } catch {
+        /* la chain può essere assente/lenta: il drop non deve far fallire l'acquisto */
+      }
+    }
     const special: Ticket = {
       id: this.store.id("tkt"),
       eventId: event.id,
       ownerId: buyerId,
-      tokenId: await this.store.nextTokenId(),
+      tokenId: tokenId ?? (await this.store.nextTokenId()),
+      txHash,
       originalPriceCents: 0,
       paidCents: 0,
       status: "ACTIVE",

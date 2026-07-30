@@ -11,6 +11,12 @@ services:
     autoDeploy: true
     healthCheckPath: /ready
     envVars:
+      # --- persistenza: Postgres gestito (senza, il backend usa lo store in-memory
+      #     e i dati si azzerano a ogni deploy). Le migrazioni girano allo start.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tinft-db
+          property: connectionString
       # --- pubblici (deploy Base Sepolia con burn all'ingresso) ---
       # Contratto TinftTicket rideployato con burn (markUsed → _burn sui normali,
       # Signature esenti). Sostituisce lo storico 0x8704…1F37 (senza burn).
@@ -38,3 +44,12 @@ services:
         sync: false # sk_test_... (Stripe → Developers → API keys, modalità Test)
       - key: STRIPE_WEBHOOK_SECRET
         sync: false # whsec_... (Stripe → Webhooks → endpoint https://<host>/webhooks/psp)
+
+# Postgres gestito: piano free (1 GB). ATTENZIONE: il free di Render viene
+# ELIMINATO dopo 30 giorni — per un uso oltre la demo passare a un piano a
+# pagamento dalla dashboard. Il backend passa da in-memory a PrismaStore
+# appena DATABASE_URL è presente; `prisma migrate deploy` gira allo start.
+databases:
+  - name: tinft-db
+    plan: free
+    postgresMajorVersion: "16"

@@ -20,6 +20,17 @@ export const TINFT_TICKET_ABI = [
   },
   {
     type: "function",
+    name: "mintSpecial",
+    stateMutability: "nonpayable",
+    inputs: [
+      {name: "to", type: "address"},
+      {name: "eventId", type: "uint256"},
+      {name: "price", type: "uint256"}
+    ],
+    outputs: [{name: "tokenId", type: "uint256"}]
+  },
+  {
+    type: "function",
     name: "markUsed",
     stateMutability: "nonpayable",
     inputs: [{name: "tokenId", type: "uint256"}],
@@ -33,6 +44,15 @@ export const TINFT_TICKET_ABI = [
       {name: "to", type: "address", indexed: true},
       {name: "eventId", type: "uint256", indexed: true},
       {name: "price", type: "uint256", indexed: false}
+    ]
+  },
+  {
+    type: "event",
+    name: "SpecialMinted",
+    inputs: [
+      {name: "tokenId", type: "uint256", indexed: true},
+      {name: "to", type: "address", indexed: true},
+      {name: "eventId", type: "uint256", indexed: true}
     ]
   }
 ] as const;
@@ -77,6 +97,29 @@ export class ViemChain implements ChainPort {
     const logs = parseEventLogs({abi: TINFT_TICKET_ABI, eventName: "TicketMinted", logs: receipt.logs});
     const first = logs[0];
     if (!first) throw new DomainError("MINT_FAILED", "evento TicketMinted assente nel receipt", 502);
+    return {tokenId: Number(first.args.tokenId), txHash};
+  }
+
+  /**
+   * Conia un NFT **Signature 1/1** on-chain (`mintSpecial`): fuori dal limite
+   * 3/evento e mai bruciato al varco. tokenId dall'evento `SpecialMinted`.
+   */
+  async mintSpecial(params: MintParams): Promise<MintResult> {
+    const chain = this.cfg.chain ?? foundry;
+    const wallet = createWalletClient({account: this.account, chain, transport: http(this.cfg.rpcUrl)});
+    const pub = createPublicClient({chain, transport: http(this.cfg.rpcUrl)});
+
+    const to = getAddress((params.to ?? this.account.address) as string);
+    const txHash = await wallet.writeContract({
+      address: this.cfg.ticketAddress,
+      abi: TINFT_TICKET_ABI,
+      functionName: "mintSpecial",
+      args: [to, BigInt(params.onchainEventId), BigInt(params.priceCents)]
+    });
+    const receipt = await pub.waitForTransactionReceipt({hash: txHash});
+    const logs = parseEventLogs({abi: TINFT_TICKET_ABI, eventName: "SpecialMinted", logs: receipt.logs});
+    const first = logs[0];
+    if (!first) throw new DomainError("MINT_FAILED", "evento SpecialMinted assente nel receipt", 502);
     return {tokenId: Number(first.args.tokenId), txHash};
   }
 
