@@ -919,6 +919,16 @@ export function buildServer(
     {preHandler: authenticate, schema: {body: body({token: STR, validatorId: STR}, ["token"])}},
     async (req) => ticketing.scanValidate(req.body?.token, req.body?.validatorId)
   );
+  // Rimuove un titolo dal wallet (archiviazione lato prodotto): utile per ripulire la lista
+  // dai biglietti conclusi. Solo il proprietario, e non se il titolo è in vendita.
+  app.post<{Params: {id: string}; Body: {ownerId: string}}>(
+    "/tickets/:id/remove",
+    {preHandler: authenticate, schema: {params: idParam, body: body({ownerId: STR}, ["ownerId"])}},
+    async (req) => {
+      assertSelf(req, req.body.ownerId);
+      return ticketing.removeTicket(req.params.id, req.body.ownerId);
+    }
+  );
   app.post<{Params: {id: string}; Body: {ownerId: string; mode: "FREE" | "ENFORCED"}}>(
     "/tickets/:id/export",
     {

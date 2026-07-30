@@ -1363,6 +1363,22 @@ export class TicketingService {
    * portare fuori l'NFT ricordo (fee 25% se FREE). Un biglietto bruciato all'ingresso
    * NON esiste più → non esportabile (speculare a TinftTicket._requireExportable).
    */
+  /**
+   * Rimuove un titolo dal wallet del proprietario ("archivia"): serve per ripulire la lista
+   * dai biglietti ormai conclusi. Consentito solo al proprietario e solo se il titolo NON è
+   * in vendita (con un'offerta in corso il compratore resterebbe appeso). Il token on-chain
+   * non viene toccato: qui si nasconde solo la riga dal wallet.
+   */
+  async removeTicket(ticketId: string, ownerId: string): Promise<{removed: string}> {
+    const ticket = await this.getTicket(ticketId);
+    if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
+    if (ticket.status === "LISTED") {
+      throw new DomainError("TICKET_LISTED", "ritira prima il biglietto dalla vendita", 409);
+    }
+    await this.store.deleteTicket(ticket.id);
+    return {removed: ticket.id};
+  }
+
   async exportTicket(ticketId: string, ownerId: string, mode: "FREE" | "ENFORCED"): Promise<Ticket> {
     const ticket = await this.getTicket(ticketId);
     if (ticket.ownerId !== ownerId) throw new DomainError("NOT_OWNER", "non sei il proprietario", 403);
