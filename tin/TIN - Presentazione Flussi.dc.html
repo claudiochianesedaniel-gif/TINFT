@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;font-family:'Space Grotesk',sans-serif}
+  .sora{font-family:'Sora',sans-serif}
+  .mono{font-family:'JetBrains Mono',monospace}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <!-- TITLE -->
+  <section data-label="Cover" data-speaker-notes="TIN: il wallet a circuito chiuso di TINFT. Oggi vediamo i quattro flussi chiave." style="width:1920px;height:1080px;background:radial-gradient(circle at 70% 30%,#0f1a2e,#0a0a0a 60%);color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px;position:relative">
+    <div style="display:flex;align-items:center;gap:34px">
+      <svg width="150" height="150" viewBox="0 0 120 120"><defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f7cf0"/><stop offset="100%" stop-color="#35cf93"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#c)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#0a0a0a" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#0a0a0a"/></svg>
+      <div>
+        <div class="sora" style="font-weight:800;font-size:130px;letter-spacing:-0.03em;line-height:0.9">TIN</div>
+        <div style="font-size:30px;color:#8c9bb5;margin-top:10px;letter-spacing:0.02em">Il wallet a circuito chiuso degli eventi TINFT</div>
+      </div>
+    </div>
+    <div style="margin-top:70px;font-size:26px;color:#6a7488;max-width:1100px;line-height:1.5">I quattro flussi che muovono il valore: <span style="color:#35cf93">ricarica</span>, <span style="color:#4f7cf0">spesa</span>, <span style="color:#8a6cf0">regalo</span>, <span style="color:#e0a441">settlement</span>.</div>
+    <div class="mono" style="position:absolute;bottom:70px;left:160px;font-size:24px;color:#4a5468">1 TIN = €1,00 · Luglio 2026</div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section data-label="Il ciclo" data-speaker-notes="Il denaro entra una volta e esce una volta. In mezzo i TIN girano come scrittura contabile." style="width:1920px;height:1080px;background:#0a0a0a;color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px">
+    <div class="sora" style="font-weight:800;font-size:72px;letter-spacing:-0.02em">Un solo ingresso, una sola uscita</div>
+    <div style="display:flex;align-items:stretch;gap:0;margin-top:80px">
+      <div style="flex:1;text-align:center"><div style="width:120px;height:120px;border-radius:50%;background:#0d1b16;border:3px solid #35cf93;display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto">💶</div><div class="sora" style="font-size:34px;font-weight:700;margin-top:24px">Ricarica</div><div style="font-size:24px;color:#6a7488;margin-top:8px">fiat → TIN</div></div>
+      <div style="width:80px;display:flex;align-items:center;justify-content:center;color:#3a4048;font-size:44px">→</div>
+      <div style="flex:1;text-align:center"><div style="width:120px;height:120px;border-radius:50%;background:#101a30;border:3px solid #4f7cf0;display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto">🍺</div><div class="sora" style="font-size:34px;font-weight:700;margin-top:24px">Spesa &amp; Regalo</div><div style="font-size:24px;color:#6a7488;margin-top:8px">TIN resta TIN</div></div>
+      <div style="width:80px;display:flex;align-items:center;justify-content:center;color:#3a4048;font-size:44px">→</div>
+      <div style="flex:1;text-align:center"><div style="width:120px;height:120px;border-radius:50%;background:#241b08;border:3px solid #e0a441;display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto">🏦</div><div class="sora" style="font-size:34px;font-weight:700;margin-top:24px">Settlement</div><div style="font-size:24px;color:#6a7488;margin-top:8px">TIN → fiat</div></div>
+    </div>
+    <div style="margin-top:80px;font-size:26px;color:#8c9bb5;max-width:1300px;line-height:1.5">Tra i due estremi nessuna transazione crea o distrugge valore in fiat: è ciò che tiene TIN nel circuito chiuso.</div>
+  </section>
+
+  <!-- FLUSSO 1 RICARICA -->
+  <section data-label="Ricarica" data-speaker-notes="Il cliente sceglie valuta e importo, vede il preventivo, paga. Il cambio agisce solo qui." style="width:1920px;height:1080px;background:linear-gradient(120deg,#0d1b16,#0a0a0a);color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px">
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#35cf93">Flusso 1 · Cliente</div>
+    <div class="sora" style="font-weight:800;font-size:88px;letter-spacing:-0.02em;margin-top:12px">Ricarica</div>
+    <div style="display:flex;gap:28px;margin-top:70px">
+      <div style="flex:1;background:#111417;border:1px solid #232a26;border-radius:22px;padding:40px"><div class="mono" style="font-size:32px;color:#35cf93">01</div><div class="sora" style="font-size:32px;font-weight:700;margin-top:16px">Scegli valuta &amp; importo</div><div style="font-size:26px;color:#8c9bb5;margin-top:12px;line-height:1.45">Qualsiasi delle 10+ valute. Importo espresso in TIN.</div></div>
+      <div style="flex:1;background:#111417;border:1px solid #232a26;border-radius:22px;padding:40px"><div class="mono" style="font-size:32px;color:#35cf93">02</div><div class="sora" style="font-size:32px;font-weight:700;margin-top:16px">Vedi il preventivo</div><div style="font-size:26px;color:#8c9bb5;margin-top:12px;line-height:1.45">Cambio + spread 1%, addebito totale. Tasso bloccato 60s.</div></div>
+      <div style="flex:1;background:#111417;border:1px solid #232a26;border-radius:22px;padding:40px"><div class="mono" style="font-size:32px;color:#35cf93">03</div><div class="sora" style="font-size:32px;font-weight:700;margin-top:16px">Paga</div><div style="font-size:26px;color:#8c9bb5;margin-top:12px;line-height:1.45">Carta · Apple/Google Pay · SEPA. TIN accreditati al tasso bloccato.</div></div>
+    </div>
+    <div class="mono" style="margin-top:56px;font-size:30px;color:#aef0d2;background:#0d1b16;border:1px solid #17352a;border-radius:16px;padding:22px 30px;align-self:flex-start">50,00 TIN &nbsp;=&nbsp; $54,00 &nbsp;+&nbsp; spread $0,54 &nbsp;→&nbsp; addebito $54,54</div>
+  </section>
+
+  <!-- FLUSSO 2 SPESA -->
+  <section data-label="Spesa" data-speaker-notes="Variante A consigliata: il validatore mostra l'importo, il cliente scansiona e conferma con biometria." style="width:1920px;height:1080px;background:linear-gradient(120deg,#101a30,#0a0a0a);color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px">
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#4f7cf0">Flusso 2 · Cliente + Validatore</div>
+    <div class="sora" style="font-weight:800;font-size:88px;letter-spacing:-0.02em;margin-top:12px">Spesa al punto vendita</div>
+    <div style="display:flex;align-items:center;gap:24px;margin-top:64px">
+      <div style="flex:1;background:#111417;border:1px solid #26303f;border-radius:20px;padding:34px"><div style="font-size:24px;color:#e0a441;font-weight:700">VALIDATORE</div><div class="sora" style="font-size:28px;font-weight:700;margin-top:12px">Digita l'importo → QR</div></div>
+      <div style="color:#3a4048;font-size:40px">→</div>
+      <div style="flex:1;background:#111417;border:1px solid #26303f;border-radius:20px;padding:34px"><div style="font-size:24px;color:#4f7cf0;font-weight:700">CLIENTE</div><div class="sora" style="font-size:28px;font-weight:700;margin-top:12px">Scansiona, vede il prezzo</div></div>
+      <div style="color:#3a4048;font-size:40px">→</div>
+      <div style="flex:1;background:#111417;border:1px solid #26303f;border-radius:20px;padding:34px"><div style="font-size:24px;color:#4f7cf0;font-weight:700">CLIENTE</div><div class="sora" style="font-size:28px;font-weight:700;margin-top:12px">Conferma biometrica</div></div>
+      <div style="color:#3a4048;font-size:40px">→</div>
+      <div style="flex:1;background:#0d1b16;border:1px solid #17352a;border-radius:20px;padding:34px"><div style="font-size:24px;color:#35cf93;font-weight:700">SERVER</div><div class="sora" style="font-size:28px;font-weight:700;margin-top:12px">TIN → organizzatore</div></div>
+    </div>
+    <div style="margin-top:60px;font-size:26px;color:#8c9bb5;max-width:1400px;line-height:1.5">Il validatore poi <b style="color:#ececec">consegna il prodotto</b>. Il QR è a tempo e usa-e-getta; l'<span class="mono" style="color:#4f7cf0">intent_id</span> impedisce doppi addebiti. Alternative: cliente mostra QR (B) o NFC tap (C).</div>
+  </section>
+
+  <!-- FLUSSO 3 REGALO -->
+  <section data-label="Regalo" data-speaker-notes="Il regalo è gratuito perché non muove denaro fiat. La vendita a pagamento invece romperebbe il circuito chiuso: è Fase 3." style="width:1920px;height:1080px;background:linear-gradient(120deg,#1a1030,#0a0a0a);color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px">
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#8a6cf0">Flusso 3 · Cliente → Cliente</div>
+    <div class="sora" style="font-weight:800;font-size:88px;letter-spacing:-0.02em;margin-top:12px">Regalo P2P</div>
+    <div style="display:flex;gap:40px;margin-top:70px">
+      <div style="flex:1.3">
+        <div style="font-size:30px;color:#c9c9c9;line-height:1.5">Il cliente A regala TIN al cliente B: scegli importo e destinatario, conferma. Trasferimento atomico nel ledger, <b style="color:#8a6cf0">commissione 0%</b>.</div>
+        <div style="margin-top:44px;background:#150d28;border:1px solid #2e2150;border-radius:18px;padding:30px;font-size:24px;color:#b8a8e0">Nessun denaro fiat si muove → resta nel circuito chiuso.</div>
+      </div>
+      <div style="flex:1;background:#0f0a1c;border:2px solid #d9583f;border-radius:20px;padding:36px">
+        <div style="font-size:22px;font-weight:700;color:#e88b78;letter-spacing:0.1em">⚠ IL CONFINE</div>
+        <div class="sora" style="font-size:32px;font-weight:700;margin-top:16px">Regalo ≠ vendita</div>
+        <div style="font-size:24px;color:#c9a9a0;margin-top:16px;line-height:1.5">Se al passaggio di TIN si affianca un pagamento in denaro tra i due, diventa <b>cash-out</b> → money transmission. Bloccato in Fase 1, rimandato alla Fase 3 con partner EMI.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLUSSO 4 SETTLEMENT -->
+  <section data-label="Settlement" data-speaker-notes="Solo l'organizzatore converte in fiat, perché vende beni propri. Fee 3% al payout. KYB obbligatorio." style="width:1920px;height:1080px;background:linear-gradient(120deg,#241b08,#0a0a0a);color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px">
+    <div style="font-size:26px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#e0a441">Flusso 4 · Organizzatore</div>
+    <div class="sora" style="font-weight:800;font-size:88px;letter-spacing:-0.02em;margin-top:12px">Settlement</div>
+    <div style="display:flex;gap:28px;margin-top:64px">
+      <div style="flex:1;background:#111417;border:1px solid #2f2712;border-radius:22px;padding:38px"><div class="mono" style="font-size:30px;color:#e0a441">01</div><div class="sora" style="font-size:30px;font-weight:700;margin-top:14px">Onboarding KYB</div><div style="font-size:26px;color:#8c9bb5;margin-top:10px;line-height:1.4">Verifica azienda. Payout bloccato finché incompleto.</div></div>
+      <div style="flex:1;background:#111417;border:1px solid #2f2712;border-radius:22px;padding:38px"><div class="mono" style="font-size:30px;color:#e0a441">02</div><div class="sora" style="font-size:30px;font-weight:700;margin-top:14px">Accumula incassi</div><div style="font-size:26px;color:#8c9bb5;margin-top:10px;line-height:1.4">I TIN dei beni venduti confluiscono sul conto business.</div></div>
+      <div style="flex:1;background:#111417;border:1px solid #2f2712;border-radius:22px;padding:38px"><div class="mono" style="font-size:30px;color:#e0a441">03</div><div class="sora" style="font-size:30px;font-weight:700;margin-top:14px">Richiedi payout</div><div style="font-size:26px;color:#8c9bb5;margin-top:10px;line-height:1.4">Scegli la valuta di accredito. FX se ≠ EUR.</div></div>
+      <div style="flex:1;background:#0d1b16;border:1px solid #17352a;border-radius:22px;padding:38px"><div class="mono" style="font-size:30px;color:#35cf93">04</div><div class="sora" style="font-size:30px;font-weight:700;margin-top:14px">TIN → fiat</div><div style="font-size:26px;color:#8c9bb5;margin-top:10px;line-height:1.4">Bonifico via PSP, meno la commissione.</div></div>
+    </div>
+    <div class="mono" style="margin-top:56px;font-size:30px;color:#f0d9a8;background:#241b08;border:1px solid #4a3a15;border-radius:16px;padding:22px 30px;align-self:flex-start">14.820 TIN &nbsp;−&nbsp; 3% (€444,60) &nbsp;→&nbsp; €14.375,40 sul conto</div>
+  </section>
+
+  <!-- CLOSING -->
+  <section data-label="Chiusura" data-speaker-notes="Il modello regge finché il cliente non fa cash-out. Prossimo passo: pilota su un evento, solo online." style="width:1920px;height:1080px;background:radial-gradient(circle at 30% 70%,#0f1a2e,#0a0a0a 60%);color:#ececec;display:flex;flex-direction:column;justify-content:center;padding:0 160px">
+    <div class="sora" style="font-weight:800;font-size:80px;letter-spacing:-0.02em;line-height:1.05">Denaro dentro una volta.<br/>Fuori una volta.<br/><span style="background:linear-gradient(120deg,#4f7cf0,#35cf93);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Il resto è TIN.</span></div>
+    <div style="margin-top:60px;display:flex;gap:60px">
+      <div><div class="mono" style="font-size:44px;color:#35cf93">3%</div><div style="font-size:24px;color:#6a7488;margin-top:6px">settlement</div></div>
+      <div><div class="mono" style="font-size:44px;color:#4f7cf0">0%</div><div style="font-size:24px;color:#6a7488;margin-top:6px">regalo P2P</div></div>
+      <div><div class="mono" style="font-size:44px;color:#e0a441">0 hw</div><div style="font-size:24px;color:#6a7488;margin-top:6px">solo smartphone</div></div>
+    </div>
+  </section>
+
+</x-import>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0a0a"/><defs><linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f7cf0"/><stop offset="100%" stop-color="#35cf93"/></linearGradient></defs><circle cx="50" cy="50" r="26" fill="url(#t)"/><polygon points="50,33 32,63 68,63" fill="none" stroke="#0a0a0a" stroke-width="5" stroke-linejoin="round"/><circle cx="50" cy="53" r="3.4" fill="#0a0a0a"/></svg></template>
+
+</x-dc>
+</body>
+</html>

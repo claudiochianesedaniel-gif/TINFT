@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#8a8d93;font-family:'Space Grotesk',sans-serif;color:#16171a}
+  doc-page:not(:defined){visibility:hidden}
+  a{color:#2a55c7}a:hover{color:#1b3a91}
+  .sora{font-family:'Sora',sans-serif}
+  .mono{font-family:'JetBrains Mono',monospace}
+  p{text-wrap:pretty}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{text-align:left;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5d63;padding:6px 8px;border-bottom:1.5px solid #16171a}
+  td{padding:7px 8px;border-bottom:1px solid #e0e2e6;vertical-align:top;color:#3a3d43}
+  tr:last-child td{border-bottom:none}
+  h2{font-family:'Sora',sans-serif;font-weight:700;font-size:19px;margin-top:28px;padding-bottom:6px;border-bottom:1px solid #d7d9dd;letter-spacing:-0.01em}
+  h3{font-size:12px;font-weight:700;margin-top:16px}
+  .lead{font-size:12px;line-height:1.6;color:#3a3d43;margin-top:8px}
+  .kv{font-size:10.5px;color:#5a5d63;line-height:1.55}
+  .code{background:#12141a;color:#d8e0ee;border-radius:9px;padding:13px 15px;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.65;margin-top:10px;overflow-x:auto;white-space:pre}
+  .code .c{color:#6b7a90}.code .k{color:#7fd4a8}.code .s{color:#e0b071}
+  .tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.05em;padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono',monospace}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.65in" hint-size="816px,1056px">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:2px solid #16171a;padding-bottom:16px">
+    <div style="display:flex;gap:15px;align-items:center">
+      <svg width="46" height="46" viewBox="0 0 120 120"><defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#c)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#fff" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#fff"/></svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#2a55c7">TINFT · Wallet eventi</div>
+        <h1 class="sora" style="font-weight:800;font-size:29px;line-height:1.02;margin-top:5px">Relazione tecnica — TIN</h1>
+        <div style="font-size:12px;color:#5a5d63;margin-top:5px">Per il team di sviluppo · architettura, ledger, FX, offline, PSP/KYB</div>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;font-size:11px;color:#5a5d63;line-height:1.6"><div style="font-weight:700;color:#16171a">Luglio 2026</div><div>Bozza tecnica</div></div>
+  </div>
+
+  <!-- PRINCIPI -->
+  <h2>Principi non negoziabili</h2>
+  <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
+    <div class="kv" style="color:#3a3d43"><b>1 · Il ledger è la verità.</b> Nessun saldo memorizzato "a mano": ogni saldo è la somma di movimenti immutabili. Si scrive append-only, si legge per proiezione.</div>
+    <div class="kv" style="color:#3a3d43"><b>2 · Denaro fuori solo ai due estremi.</b> Fiat entra alla ricarica, esce al settlement. In mezzo i TIN non toccano circuiti di pagamento.</div>
+    <div class="kv" style="color:#3a3d43"><b>3 · Ogni transazione è atomica e idempotente.</b> Doppio tap, retry di rete o QR riusato non devono mai duplicare un movimento.</div>
+    <div class="kv" style="color:#3a3d43"><b>4 · Solo smartphone.</b> Nessun hardware esterno: il telefono cliente e quello del validatore sono gli unici endpoint.</div>
+  </div>
+
+  <!-- ARCHITETTURA -->
+  <h2>Architettura ad alto livello</h2>
+  <table style="margin-top:12px">
+    <tr><th>Componente</th><th>Responsabilità</th><th>Note</th></tr>
+    <tr><td><b>App mobile</b> (cliente / business / cassa)</td><td>UI, wallet locale, biometria, generazione/scansione QR, coda offline</td><td>Un solo binario, 3 modalità per ruolo</td></tr>
+    <tr><td><b>Ledger service</b></td><td>Movimenti append-only, saldi per proiezione, transfer atomici</td><td>Cuore del sistema</td></tr>
+    <tr><td><b>FX service</b></td><td>Tassi live, quote lock alla ricarica</td><td>Provider FX + cache breve</td></tr>
+    <tr><td><b>Payments (PSP)</b></td><td>Incasso ricariche, custodia fondi, payout organizzatore</td><td>Es. Stripe Connect o equivalente</td></tr>
+    <tr><td><b>Identity/KYB</b></td><td>Verifica azienda organizzatore, ruoli validatori</td><td>Blocca payout se incompleto</td></tr>
+    <tr><td><b>Anti-frode</b></td><td>Soglie, velocity, nonce, verifica sopra importo</td><td>Sincrono sul percorso di spesa</td></tr>
+  </table>
+
+  <!-- LEDGER -->
+  <h2>Ledger — modello dati</h2>
+  <p class="lead">Doppia partita minimale: ogni evento sposta valore da un conto a un altro. Tre tipi di conto: <span class="tag" style="background:#eef3ff;color:#2a55c7">user</span> <span class="tag" style="background:#f0f7f2;color:#1f8a5b">organizer</span> <span class="tag" style="background:#f5f6f8;color:#5a5d63">system</span> (issuance, fee, breakage).</p>
+  <div class="code"><span class="c">// entry immutabile — importi in centesimi di TIN (interi, mai float)</span>
+Entry {
+  id: uuid,
+  ts: timestamp,
+  <span class="k">type</span>: <span class="s">"topup" | "spend" | "gift" | "settlement" | "fee"</span>,
+  from_account: id,          <span class="c">// system:issuance per topup</span>
+  to_account: id,
+  amount_tin: int,           <span class="c">// es. 1450 = 14,50 TIN</span>
+  idempotency_key: string,   <span class="c">// unico: no doppie scritture</span>
+  ref: { event_id, pos_id, nonce, fx_quote_id? }
+}
+<span class="c">// saldo = Σ(to==acct) − Σ(from==acct), mai un campo mutabile</span></div>
+  <p class="kv" style="margin-top:10px"><b>Perché centesimi interi:</b> i float (0.1+0.2≠0.3) corrompono i saldi. Tutto in <span class="mono">int</span>, formattazione solo in UI.</p>
+
+  <!-- TRANSFER ATOMICO -->
+  <h3>Transfer atomico + idempotenza</h3>
+  <div class="code"><span class="k">transfer</span>(from, to, amount, idempotency_key):
+  <span class="k">begin tx</span>
+    <span class="k">if</span> exists(idempotency_key): <span class="k">return</span> stored_result   <span class="c">// retry-safe</span>
+    <span class="k">if</span> balance(from) &lt; amount: <span class="k">abort</span> "INSUFFICIENT"
+    insert Entry{from, to, amount, idempotency_key}
+  <span class="k">commit</span>                                          <span class="c">// atomico</span>
+  push(from.device); push(to.device)</div>
+
+  <!-- FX -->
+  <h2>Cambio valuta (FX)</h2>
+  <p class="lead">Il cambio agisce <b>solo alla ricarica</b>. Il tasso viene bloccato per una finestra breve (quote lock) così il prezzo mostrato è quello addebitato.</p>
+  <div class="code">POST /topup/quote { currency: <span class="s">"USD"</span>, tin: 5000 }
+→ { quote_id, rate: 1.08, spread: 0.01,
+    fiat_total: 5454,        <span class="c">// $54,54 in centesimi USD</span>
+    expires_at: ts+60s }
+
+POST /topup/confirm { quote_id, payment_token }
+<span class="c">// server ri-verifica quote non scaduta, incassa via PSP,</span>
+<span class="c">// poi transfer(system:issuance → user, tin) al tasso bloccato</span></div>
+  <p class="kv" style="margin-top:10px">Se il quote scade prima del confirm → nuovo preventivo, mai addebito a tasso vecchio. I TIN accreditati sono sempre l'importo in TIN richiesto (il rischio FX è già nel fiat incassato).</p>
+
+  <!-- SPESA -->
+  <h2>Spesa — intent di incasso (Variante A)</h2>
+  <div class="code"><span class="c">// 1. validatore crea l'intent</span>
+POST /charge/intent { pos_id, amount_tin: 1450 }
+→ { intent_id, nonce, expires_at: ts+90s }   <span class="c">// → QR</span>
+
+<span class="c">// 2. cliente risolve e conferma</span>
+POST /charge/confirm { intent_id, biometric_ok: true }
+<span class="c">// server: valida nonce+TTL, saglia anti-frode, saldo;</span>
+<span class="c">// transfer(user → organizer, amount) idempotente su intent_id</span>
+→ { status: <span class="s">"ok"</span>, new_balance }              <span class="c">// push a cliente e cassa</span></div>
+  <p class="kv" style="margin-top:10px">L'<span class="mono">intent_id</span> è la chiave di idempotenza: un QR vale una sola transazione. TTL breve + nonce monouso impediscono replay.</p>
+
+  <!-- OFFLINE -->
+  <h2>Spesa offline</h2>
+  <p class="lead">Nell'MVP. Modello a tetto pre-autorizzato + voucher firmati dal device; riconciliazione al ritorno della rete.</p>
+  <table style="margin-top:12px">
+    <tr><th>Meccanismo</th><th>Come</th></tr>
+    <tr><td>Tetto offline</td><td>All'ingresso l'app riserva una quota del saldo (es. 5000 TIN-cent) spendibile senza rete; oltre serve online</td></tr>
+    <tr><td>Voucher firmato</td><td>Ogni pagamento offline = payload firmato dalla chiave del device, con nonce progressivo per-device</td></tr>
+    <tr><td>Verifica cassa</td><td>Il validatore verifica la firma localmente (chiave pubblica sincronizzata a inizio turno), senza server</td></tr>
+    <tr><td>Riconciliazione</td><td>Al ripristino rete: i voucher salgono, il ledger li applica in ordine di nonce, detrae dal saldo reale</td></tr>
+  </table>
+  <div style="background:#fdecea;border:1px solid #e7b7ae;border-left:4px solid #d9583f;border-radius:8px;padding:11px 14px;margin-top:12px"><p class="kv" style="color:#3a2420"><b>Rischio residuo:</b> un device compromesso può spendere due volte entro il tetto prima della sync. Si contiene con tetti bassi + nonce monotono per-device, non si azzera. Partenza consigliata: tetti bassi, alzati con i dati.</p></div>
+
+  <!-- PSP/KYB -->
+  <h2>PSP, custodia fondi e KYB</h2>
+  <table style="margin-top:12px">
+    <tr><th>Aspetto</th><th>Approccio</th></tr>
+    <tr><td>Incasso ricariche</td><td>PaymentIntent PSP; carta, Apple/Google Pay, SEPA. I fondi restano in custodia, non toccano l'organizzatore</td></tr>
+    <tr><td>Custodia</td><td>Conto di salvaguardia presso il PSP; i TIN sono la rappresentazione contabile dei fondi custoditi</td></tr>
+    <tr><td>Payout organizzatore</td><td>Account connesso (es. Connect); payout bloccato finché KYB azienda non è completo</td></tr>
+    <tr><td>Fee</td><td>3% trattenuto al payout; registrato come Entry di tipo <span class="mono">fee</span> verso system:fee</td></tr>
+    <tr><td>Confine EMI</td><td>Finché è closed-loop, esenzione rete limitata. La Fase 3 (P2P a pagamento / cash-out cliente) richiede partner EMI — scegliere fin da subito un PSP con quel percorso</td></tr>
+  </table>
+
+  <!-- SICUREZZA -->
+  <h2>Sicurezza — checklist</h2>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1"><div class="kv" style="color:#3a3d43">☐ Conferma spesa con biometria device</div><div class="kv" style="color:#3a3d43;margin-top:5px">☐ QR/intent a TTL breve + nonce monouso</div><div class="kv" style="color:#3a3d43;margin-top:5px">☐ Idempotency key su ogni transfer</div><div class="kv" style="color:#3a3d43;margin-top:5px">☐ Importi interi in centesimi, mai float</div></div>
+    <div style="flex:1"><div class="kv" style="color:#3a3d43">☐ Rate limiting + velocity anti-frode</div><div class="kv" style="color:#3a3d43;margin-top:5px">☐ Verifica extra sopra soglia importo</div><div class="kv" style="color:#3a3d43;margin-top:5px">☐ Chiavi voucher offline rotate per turno</div><div class="kv" style="color:#3a3d43;margin-top:5px">☐ Audit log immutabile del ledger</div></div>
+  </div>
+
+  <!-- API -->
+  <h2>Superficie API (MVP)</h2>
+  <table style="margin-top:12px">
+    <tr><th>Endpoint</th><th>Ruolo</th><th>Scopo</th></tr>
+    <tr><td class="mono">POST /topup/quote · /confirm</td><td>Cliente</td><td>Preventivo FX e ricarica</td></tr>
+    <tr><td class="mono">POST /charge/intent</td><td>Validatore</td><td>Crea richiesta di incasso → QR</td></tr>
+    <tr><td class="mono">POST /charge/confirm</td><td>Cliente</td><td>Conferma e paga</td></tr>
+    <tr><td class="mono">POST /gift</td><td>Cliente</td><td>Regalo P2P (fee 0)</td></tr>
+    <tr><td class="mono">POST /settlement/payout</td><td>Organizzatore</td><td>TIN → fiat, meno 3%</td></tr>
+    <tr><td class="mono">GET /wallet · /dashboard</td><td>Tutti</td><td>Saldo, movimenti, incassi live</td></tr>
+  </table>
+
+  <div style="margin-top:28px;padding-top:12px;border-top:1px solid #d7d9dd;display:flex;justify-content:space-between;font-size:10px;color:#7a7d83">
+    <span>TINFT · TIN — Relazione tecnica sviluppatore</span>
+    <span>Bozza · da validare con legale e PSP</span>
+  </div>
+
+</x-import>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#12141a"/><g fill="none" stroke="#7fd4a8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M38 36 L24 50 L38 64"/><path d="M62 36 L76 50 L62 64"/></g></svg></template>
+
+</x-dc>
+</body>
+</html>
