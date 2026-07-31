@@ -91,7 +91,7 @@ Entry {
   <div class="code"><span class="k">transfer</span>(from, to, amount, idempotency_key):
   <span class="k">begin tx</span>
     <span class="k">if</span> exists(idempotency_key): <span class="k">return</span> stored_result   <span class="c">// retry-safe</span>
-    <span class="k">if</span> balance(from) &lt; amount: <span class="k">abort</span> "INSUFFICIENT"
+    <span class="k">if</span> balance(from) &lt; amount: <span class="k">abort</span> "INSUFFICIENT"  <span class="c">// il chiamante ricarica e ritenta</span>
     insert Entry{from, to, amount, idempotency_key}
   <span class="k">commit</span>                                          <span class="c">// atomico</span>
   push(from.device); push(to.device)</div>

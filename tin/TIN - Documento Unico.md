@@ -3,6 +3,10 @@
 > Documento unico di sintesi. Raccoglie tutte le decisioni prese e lo stato del progetto.
 > **Nota:** non costituisce consulenza legale né finanziaria. Il modello va validato da un legale fintech prima del go-live.
 > Ultimo aggiornamento: Luglio 2026 · v1
+>
+> **Per l'app di test** le decisioni operative — registrazione, tetti, storni, trasporti, wallet —
+> stanno in [`docs/DECISIONI-APP-TEST.md`](./docs/DECISIONI-APP-TEST.md), che prevale su questo
+> documento dove i due divergono. Le incoerenze note sono tracciate in [`AUDIT.md`](./AUDIT.md).
 
 ---
 
@@ -34,7 +38,7 @@ Un portafoglio prepagato **a circuito chiuso** per eventi. Il denaro entra **una
 | Utenza | Ruolo | Cosa fa |
 |---|---|---|
 | **Cliente** | Spende i coin | Ricarica in valuta a scelta, paga ai punti vendita (QR/NFC), regala TIN ad altri clienti. Nessun cash-out. Saldo riutilizzabile tra eventi. |
-| **Organizzatore** | Incassa i coin | Definisce punti vendita e prezzi in TIN, riceve i coin dei beni venduti, converte TIN → fiat (settlement) meno commissione. Unico che porta denaro fuori dal circuito. |
+| **Organizzatore** | Incassa i coin | Definisce punti vendita e assegna i validatori, riceve i coin dei beni venduti, converte TIN → fiat (settlement) meno commissione. Unico che porta denaro fuori dal circuito. **Non prezza in TIN:** i prezzi restano sul cartello, il validatore digita il totale. |
 | **Validatore** | Valida le transazioni (per l'organizzatore) | Al punto vendita: **(1)** conferma l'incasso, **(2)** verifica anti-frode sopra soglia, **(3)** consegna il prodotto dopo il pagamento. Non tocca il denaro. |
 
 ---
@@ -85,7 +89,9 @@ Il denaro entra al passo 1 ed esce al passo 4. In mezzo nessuna transazione crea
 ### 6.2 Spesa al punto vendita — 3 varianti (consigliata: A)
 - **A (consigliata):** il validatore digita l'importo → QR di richiesta; il cliente scansiona, vede prezzo, conferma con biometria; server sposta TIN → organizzatore.
 - **B:** il cliente mostra un QR dinamico; il validatore scansiona e digita l'importo.
-- **C:** NFC "tap" tra i due telefoni (supporto non uniforme, soprattutto iOS).
+- **C:** NFC "tap" tra i due telefoni. **iOS non può emulare un tag** (HCE): un iPhone legge, ma non può *presentarsi* a un altro telefono. In Variante A chi presenta è la cassa, quindi la via è **Android obbligatorio in cassa** — il tap si apre a tutti gli Android del pubblico, il QR resta la garanzia per tutti.
+
+QR e NFC trasportano lo **stesso `intent_id`**: il server non sa quale sia stato usato, quindi supportare entrambi non costa nulla al backend.
 
 Il validatore poi **consegna il prodotto**. Il QR è a tempo e usa-e-getta; l'`intent_id` è la chiave di idempotenza (un QR = una transazione).
 

@@ -128,7 +128,7 @@
         <div class="arrow" style="height:16px"></div>
         <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px">Scambio token firmato via NFC → server</div>
       </div>
-      <div class="cap" style="margin-top:11px"><b>Pro:</b> gesto naturale, nessuna fotocamera. <b>Contro:</b> supporto NFC non uniforme (soprattutto iOS/lettura).</div>
+      <div class="cap" style="margin-top:11px"><b>Pro:</b> gesto naturale, nessuna fotocamera. <b>Contro:</b> <b>iOS non può emulare un tag NFC</b> (HCE): un iPhone legge, ma non può <i>presentarsi</i> a un altro telefono. Poiché in Variante A è la <b>cassa</b> a presentare, la soluzione è imporre <b>Android in cassa</b>: il tap si apre a tutti gli Android del pubblico, il QR resta per tutti gli altri.</div>
     </div>
   </div>
 
@@ -142,7 +142,7 @@
       <div class="arrow" style="height:18px"></div>
       <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;text-align:center"><span class="mono" style="color:#8a6d1a;font-size:10px">DECISIONE · SERVER</span><br/>Saldo · limite anti-frode · QR valido?</div>
       <div style="display:flex;gap:10px;margin-top:6px">
-        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#b3402a;font-weight:700">NO ↓</div><div class="node" style="background:#fdecea;border:1px solid #e7b7ae;font-size:11px;margin-top:2px">Rifiuto: saldo/limite/QR scaduto</div></div>
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#b3402a;font-weight:700">NO ↓</div><div class="node" style="background:#fdecea;border:1px solid #e7b7ae;font-size:11px;margin-top:2px">Rifiuto: limite / QR scaduto.<br/><b>Se manca solo il saldo → auto-ricarica</b></div></div>
         <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#1f8a5b;font-weight:700">SÌ ↓</div><div class="node" style="background:#eef3ff;border:1px solid #c9d7f7;font-size:11px;margin-top:2px">Cliente conferma con biometria</div></div>
       </div>
       <div class="arrow" style="height:18px"></div>
@@ -156,6 +156,7 @@
         <div><b style="color:#8a6d1a">DECISIONE</b> — controlla saldo ≥ importo, soglia anti-frode (§oltre), unicità del nonce, TTL non scaduto.</div>
         <div><b style="color:#1f8a5b">04</b> — <b>trasferimento atomico</b> nel ledger: saldo cliente −N TIN, saldo organizzatore +N TIN; evento immutabile registrato. Notifica push a cliente e validatore.</div>
         <div><b style="color:#b3402a">NO</b> — nessuna scrittura; motivo del rifiuto mostrato al validatore.</div>
+        <div style="color:#2a55c7"><b>Saldo insufficiente ≠ rifiuto.</b> È l'unico caso che non blocca: la carta ricarica lo scoperto (arrotondato al taglio scelto dal cliente) e poi si paga il <b>100% in TIN</b>. Mai un pagamento misto — sarebbe incasso per conto dell'organizzatore, cioè un perimetro regolatorio diverso. <b>Una sola conferma</b> copre ricarica e pagamento; se la ricarica fallisce, non si scrive nulla. Sopra la soglia anti-frode la verifica del validatore viene <b>prima</b> della ricarica, così nessuno compra credito per un acquisto poi rifiutato.</div>
       </div>
     </div>
   </div>
