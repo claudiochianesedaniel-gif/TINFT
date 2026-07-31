@@ -368,6 +368,60 @@ cliente. **Non** il saldo complessivo, **non** cosa il cliente ha speso altrove.
 > Rafforza anche l'argomento del circuito ristretto: ogni organizzatore vede la propria fetta
 > e nessuno ha una vista d'insieme sui clienti.
 
+## 13 · Il wallet del cliente
+
+### 🔒 Il saldo TIN vive nel ledger, non sulla blockchain
+
+Il cliente **ha già** uno smart account on-chain: `Account.walletAddress` esiste e il
+ticketing lo usa per coniare i biglietti-NFT su Base. È naturale pensare che i TIN vadano lì.
+Non devono.
+
+> **Un token ancorato 1:1 all'euro e trasferibile su blockchain è un e-money token ai sensi
+> del MiCA, emettibile solo da istituti di moneta elettronica o banche autorizzate.** Non è
+> una complicazione tecnica in più: è esattamente la licenza che tutto l'impianto esiste per
+> evitare, ottenuta per scelta di architettura.
+
+E anche mettendo da parte il MiCA, on-chain si romperebbero quattro decisioni già prese:
+
+| Cosa si rompe | Perché |
+|---|---|
+| Il circuito chiuso | Un token va a qualsiasi indirizzo, quindi anche a un exchange: è cash-out per costruzione, e nessun limite sul regalo lo ferma |
+| Gli storni | L'organizzatore deve poter annullare un incasso sbagliato (§2). Su blockchain non si annulla: si spera che il destinatario restituisca |
+| L'offline | Tetto e voucher firmati presuppongono un server che riconcilia. Senza rete non si scrive su catena |
+| La coda | Aspettare la conferma di un blocco per una birra |
+
+**Un account, due cose diverse:** i biglietti vivono on-chain perché devono essere posseduti e
+rivenduti; i TIN vivono nel ledger perché devono essere spendibili, stornabili e offline.
+
+> **Nota sulla valutazione futura.** La decisione registrata è «off-chain ora, on-chain da
+> valutare». Va messo agli atti che quella porta non dà su una migrazione tecnica: dà su un
+> **cambio di natura giuridica del prodotto** e su una licenza EMI. È una domanda per il
+> legale (`BRIEF-LEGALE.md`), non per gli sviluppatori.
+
+### Come si presenta
+
+**TIN e biglietti separati, stesso login.** Due sezioni distinte — «Wallet» per i TIN,
+«Biglietti» per gli NFT — con una sola registrazione. Coerente con i due prodotti non
+comunicanti (§7), e più facile da difendere: il perimetro di TIN resta visibilmente netto.
+
+**Un solo dispositivo attivo per volta.** Entrando da un telefono nuovo, il precedente si
+disconnette. Il saldo è sul server, quindi non si perde nulla e il cambio telefono è un login.
+
+> La ragione vera è l'offline: ogni dispositivo riserva una quota di saldo spendibile senza
+> rete. **Due dispositivi attivi = due riserve sullo stesso denaro**, cioè doppia spesa per
+> progetto, non per attacco. Va deciso ora anche se l'offline arriva dopo, perché toglierlo in
+> seguito significa disconnettere utenti che ci si erano abituati.
+
+### Cosa fa il wallet
+
+| Funzione | Perché |
+|---|---|
+| Saldo e movimenti | Il minimo |
+| **Ricevuta per ogni transazione** | Importo, punto vendita, evento, data, e le note del validatore. Con l'importo libero è l'unica prova di cosa è stato pagato: serve al cliente per contestare e all'organizzatore per rispondere |
+| **Filtro per evento** | Con un saldo riutilizzabile tra eventi, senza filtro lo storico è illeggibile dopo la seconda serata |
+| **Saldo negativo spiegato** | Se uno storno porta sotto zero, il wallet dice perché e cosa serve per rientrare, invece di mostrare 0,00 o un errore. Senza, il cliente vede solo un'app rotta |
+| **Notifiche push sui movimenti** | La difesa antifrode più efficace che esista: se qualcuno spende i tuoi TIN lo sai subito, non a fine serata |
+
 ---
 
 ## Restano aperti — ma non bloccano l'app di test
