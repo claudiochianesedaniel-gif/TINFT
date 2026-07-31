@@ -450,6 +450,64 @@ disconnette. Il saldo è sul server, quindi non si perde nulla e il cambio telef
 | **Saldo negativo spiegato** | Se uno storno porta sotto zero, il wallet dice perché e cosa serve per rientrare, invece di mostrare 0,00 o un errore. Senza, il cliente vede solo un'app rotta |
 | **Notifiche push sui movimenti** | La difesa antifrode più efficace che esista: se qualcuno spende i tuoi TIN lo sai subito, non a fine serata |
 
+## 14 · Dove si possono spendere i TIN
+
+🔒 **Ovunque dentro il circuito TIN:** qualsiasi evento, di qualsiasi organizzatore
+convenzionato, a qualsiasi suo punto vendita. Il saldo non è legato a un evento e si riusa
+per sempre. È anche la ragione per cui il regalo ha senso: si regala credito che il
+destinatario potrà spendere davvero, non un buono per una serata sola.
+
+> **Attenzione a due estensioni che *suonano* uguali e non lo sono.** «Spendibili ovunque»
+> dentro il circuito è ciò che abbiamo progettato e resta circuito chiuso. Ma:
+>
+> - **Spenderli fuori dagli eventi** (locali e negozi convenzionati tutto l'anno) trasforma il
+>   circuito in una rete di pagamento generalista: l'esenzione «rete limitata» regge molto
+>   meno. Da chiedere al legale **prima**, non dopo.
+> - **Spenderli con chiunque, cioè fra persone in cambio di beni o servizi**, è cash-out del
+>   venditore: money transmission, licenza EMI, KYC su tutti i clienti, AML. È la Fase 3, ed è
+>   ciò che hai già deciso di tenere fuori.
+>
+> La decisione registrata è la prima. Se l'intenzione era più larga, va detto ora perché
+> cambia il perimetro regolatorio, non una schermata.
+
+## 15 · Migliorie adottate
+
+### Prevenire l'errore, non solo ripararlo
+
+Il modello sa correggere bene (segnalazione, storno, contestazione) ma quasi nulla impediva
+all'errore di accadere. Queste quattro chiudono il buco a monte.
+
+| Miglioria | Perché |
+|---|---|
+| **Conferma sull'importo anomalo in cassa** | Se il validatore digita un importo molto fuori scala rispetto allo scontrino medio di quel punto vendita, l'app chiede conferma. Toglie alla radice l'errore che ci ha fatto progettare segnalazione e storno |
+| **Riconciliazione continua del ledger** | L'invariante che nei test è condizione di completamento — somma dei saldi = somma dei movimenti — va verificata anche in esercizio, con allerta. Se non torna lo sai in minuti, non quando l'organizzatore chiede il payout su cifre sbagliate |
+| **Evento di prova per lo staff** | Un evento finto dove il validatore si allena senza toccare denaro. Il giorno vero nessuno impara sul cliente in fila — ed è anche come si mostra il prodotto a un organizzatore prima che firmi |
+| **Doppio tocco = «già pagato»** | L'idempotenza c'è nel ledger, ma va vista nell'interfaccia: chi tocca due volte legge «questo pagamento è già andato a buon fine», non un errore che lo spinge a ritentare o a discutere col validatore |
+
+### Lato cliente
+
+| Miglioria | Perché |
+|---|---|
+| **Codice ricevuta breve e pronunciabile** (`TIN-4821-KX`) | Serve a dirlo a voce al banco: nessuno detta un identificativo di trentasei caratteri sopra la musica. Senza, ogni contestazione parte già male |
+| **Regala il residuo a fine serata** | Chi resta con 3,50 TIN riceve la proposta di regalarli. Era già scritto nei documenti come mitigazione del rischio adozione e non era mai stato implementato. Riduce anche il breakage, che è un debito verso il cliente |
+| **Avviso su accesso da un nuovo dispositivo** | Entrando da un altro telefono il vecchio si disconnette: chi lo subisce deve saperlo via email. È la difesa contro le credenziali rubate — senza avviso, il proprietario scopre il furto quando prova a pagare |
+
+### Lato organizzatore e validatore
+
+| Miglioria | Perché |
+|---|---|
+| **Chiusura di turno con riepilogo** | Il validatore chiude e vede quanto ha incassato e in quante transazioni. È il gesto che in ogni bar esiste già col fondo cassa, ed è ciò che dà senso ad avere validatori con nome e cognome |
+| **Export contabile dei movimenti** | Il commercialista lo chiederà al primo evento: mezza giornata di lavoro contro settimane di richieste via email |
+| **Allerta su comportamenti anomali** | Troppi storni su una stessa cassa, incassi fuori orario, un validatore molto sopra la media. L'antifrode dei documenti guarda solo il cliente; questa guarda dentro |
+| **Il validatore vede solo i propri incassi** | Non quelli dei colleghi né il totale del punto vendita. Riduce l'attrito fra il personale e limita cosa vede chi ha in mano il telefono di servizio, che è il dispositivo più facile da perdere. La vista completa del punto vendita resta all'organizzatore |
+
+### Lingue
+
+**Italiano e inglese** dal primo giorno. La ricarica multivaluta esiste perché il pubblico è
+anche straniero: un festival che accetta dollari e sterline e poi parla solo italiano si
+contraddice. Aggiungere lingue dopo significa ripassare ogni testo già scritto. In
+`apps/web/i18n.js` l'impianto c'è già.
+
 ---
 
 ## Restano aperti — ma non bloccano l'app di test
