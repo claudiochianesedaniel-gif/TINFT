@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#5b5d63;font-family:'Space Grotesk',sans-serif;color:#ececec}
+  a{color:#84a9ff}a:hover{color:#a9c2ff}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .sora{font-family:'Sora',sans-serif}
+  .lbl{font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#8c8c8c}
+</style>
+</helmet>
+
+<div style="width:960px;margin:0 auto;background:#0a0a0a">
+
+  <!-- HERO / LOGO -->
+  <div style="padding:64px 60px 56px;border-bottom:1px solid #1d1d1f;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-100px;right:-60px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(79,124,240,.14),rgba(53,207,147,.05) 55%,transparent 72%)"></div>
+    <div class="lbl" style="color:#4f7cf0">TINFT · Wallet eventi</div>
+    <div style="display:flex;align-items:center;gap:28px;margin-top:30px">
+      <!-- flat coin mark -->
+      <svg width="120" height="120" viewBox="0 0 120 120" style="filter:drop-shadow(0 14px 34px rgba(53,207,147,.35))">
+        <defs>
+          <linearGradient id="tinCoin" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#4f7cf0"/>
+            <stop offset="100%" stop-color="#35cf93"/>
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="58" fill="url(#tinCoin)"/>
+        <!-- triangle + dot mark -->
+        <polygon points="60,24 22,90 98,90" fill="none" stroke="#0a0a0a" stroke-width="10.5" stroke-linejoin="round"/>
+        <circle cx="60" cy="69" r="7.5" fill="#0a0a0a"/>
+      </svg>
+      <div>
+        <div class="sora" style="font-weight:800;font-size:78px;line-height:0.9;letter-spacing:-0.02em">TI<span style="background:linear-gradient(120deg,#4f7cf0,#35cf93);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">N</span></div>
+        <div style="font-size:15px;color:#8c8c8c;margin-top:12px;letter-spacing:0.04em">La valuta degli eventi TINFT · <span class="mono" style="color:#b8b8b8">1 TIN = €1,00</span></div>
+      </div>
+    </div>
+    <div style="font-size:13.5px;line-height:1.6;color:#9a9a9a;margin-top:32px;max-width:640px">Un <b style="color:#ececec">coin flat</b> come le grandi stablecoin: cerchio pieno, <b style="color:#ececec">triangolo equilatero</b> con punto centrale, ritagliato in negativo, gradiente che va dall'<b style="color:#4f7cf0">azzurro</b> al <b style="color:#35cf93">verde</b> di TINFT. Wordmark in <b style="color:#ececec">Sora</b> — geometrico, più deciso di Space Grotesk, che resta il font dell'interfaccia.</div>
+  </div>
+
+  <!-- LOGO VARIANTS -->
+  <div style="padding:44px 60px;border-bottom:1px solid #1d1d1f">
+    <div class="lbl">Il logo — usi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:22px">
+      <!-- lockup -->
+      <div style="background:#141416;border:1px solid #262628;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:18px;min-height:158px;justify-content:center;align-items:center">
+        <div style="display:flex;align-items:center;gap:13px">
+          <svg width="42" height="42" viewBox="0 0 120 120"><circle cx="60" cy="60" r="58" fill="url(#tinCoin)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#141416" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#141416"/></svg>
+          <span class="sora" style="font-weight:800;font-size:31px;letter-spacing:-0.02em">TIN</span>
+        </div>
+        <span style="font-size:10px;color:#6a6a6a">Lockup orizzontale · primario</span>
+      </div>
+      <!-- coin only -->
+      <div style="background:#141416;border:1px solid #262628;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:18px;min-height:158px;justify-content:center;align-items:center">
+        <svg width="58" height="58" viewBox="0 0 120 120" style="filter:drop-shadow(0 8px 18px rgba(53,207,147,.4))"><circle cx="60" cy="60" r="58" fill="url(#tinCoin)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#141416" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#141416"/></svg>
+        <span style="font-size:10px;color:#6a6a6a">Solo coin · app icon / avatar</span>
+      </div>
+      <!-- knockout on gradient -->
+      <div style="background:linear-gradient(135deg,#4f7cf0,#35cf93);border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:18px;min-height:158px;justify-content:center;align-items:center">
+        <span class="sora" style="font-weight:800;font-size:36px;letter-spacing:-0.02em;color:#0a0a0a">TIN</span>
+        <span style="font-size:10px;color:rgba(10,10,10,.55)">Su gradiente · knockout</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:16px">
+      <div style="flex:1;background:#141416;border:1px solid #262628;border-radius:10px;padding:14px 16px;font-size:11px;color:#9a9a9a"><b style="color:#e6e6e6">Fai:</b> il simbolo (triangolo + punto) prende sempre il colore dello sfondo (negativo). Area di rispetto ≥ raggio del coin.</div>
+      <div style="flex:1;background:#141416;border:1px solid #262628;border-radius:10px;padding:14px 16px;font-size:11px;color:#9a9a9a"><b style="color:#e6e6e6">Non fare:</b> non invertire il gradiente, non riempire il triangolo di colore, non usare Sora per il testo corrente.</div>
+    </div>
+  </div>
+
+  <!-- COLOR -->
+  <div style="padding:44px 60px;border-bottom:1px solid #1d1d1f">
+    <div class="lbl">Colore</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:22px">
+      <div><div style="height:76px;border-radius:11px;background:#0a0a0a;border:1px solid #2a2a2c"></div><div style="font-size:11px;font-weight:600;margin-top:8px">Notte</div><div class="mono" style="font-size:10px;color:#7a7a7a">#0A0A0A</div></div>
+      <div><div style="height:76px;border-radius:11px;background:#141416;border:1px solid #2a2a2c"></div><div style="font-size:11px;font-weight:600;margin-top:8px">Superficie</div><div class="mono" style="font-size:10px;color:#7a7a7a">#141416</div></div>
+      <div><div style="height:76px;border-radius:11px;background:#4f7cf0"></div><div style="font-size:11px;font-weight:600;margin-top:8px">Azzurro TINFT</div><div class="mono" style="font-size:10px;color:#7a7a7a">#4F7CF0</div></div>
+      <div><div style="height:76px;border-radius:11px;background:#35cf93"></div><div style="font-size:11px;font-weight:600;margin-top:8px">Verde TINFT</div><div class="mono" style="font-size:10px;color:#7a7a7a">#35CF93</div></div>
+      <div><div style="height:76px;border-radius:11px;background:linear-gradient(135deg,#4f7cf0,#35cf93)"></div><div style="font-size:11px;font-weight:600;margin-top:8px">Gradiente coin</div><div class="mono" style="font-size:10px;color:#7a7a7a">blu→verde</div></div>
+      <div><div style="height:76px;border-radius:11px;background:#ececec"></div><div style="font-size:11px;font-weight:600;margin-top:8px">Testo</div><div class="mono" style="font-size:10px;color:#7a7a7a">#ECECEC</div></div>
+    </div>
+    <div style="font-size:11.5px;color:#8c8c8c;margin-top:16px;line-height:1.55;max-width:660px">Nessun colore nuovo: sono gli stessi di TINFT. Il <b style="color:#35cf93">verde</b> segna saldo e denaro/coin; l'<b style="color:#4f7cf0">azzurro</b> le azioni e la navigazione; il <b style="background:linear-gradient(120deg,#4f7cf0,#35cf93);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:700">gradiente</b> è riservato al coin e al brand. Un solo accento dominante per schermata.</div>
+  </div>
+
+  <!-- TYPE -->
+  <div style="padding:44px 60px;border-bottom:1px solid #1d1d1f">
+    <div class="lbl">Tipografia</div>
+    <div style="display:flex;gap:40px;margin-top:22px;flex-wrap:wrap">
+      <div style="flex:1;min-width:250px">
+        <div style="font-size:12px;color:#8c8c8c">Sora — brand e titoli forti</div>
+        <div class="sora" style="font-weight:800;font-size:40px;margin-top:8px;letter-spacing:-0.02em">Ricarica TIN</div>
+        <div class="sora" style="font-weight:600;font-size:19px;margin-top:6px;color:#c9c9c9">Solo per wordmark e headline</div>
+      </div>
+      <div style="flex:1;min-width:250px">
+        <div style="font-size:12px;color:#8c8c8c">Space Grotesk — interfaccia</div>
+        <div style="font-weight:600;font-size:26px;margin-top:8px">Saldo, pagamenti, eventi</div>
+        <div style="font-weight:400;font-size:14px;margin-top:6px;color:#9a9a9a">Testo corrente dell'app, leggibile e neutro.</div>
+      </div>
+      <div style="flex:1;min-width:250px">
+        <div style="font-size:12px;color:#8c8c8c">JetBrains Mono — importi</div>
+        <div class="mono" style="font-size:32px;font-weight:600;margin-top:8px;color:#35cf93">128,50</div>
+        <div class="mono" style="font-size:13px;margin-top:8px;color:#9a9a9a">TIN · nonce · id transazione</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION -->
+  <div style="padding:44px 60px 56px">
+    <div class="lbl">In uso</div>
+    <div style="display:flex;gap:18px;margin-top:22px;align-items:flex-start">
+      <!-- balance card -->
+      <div style="width:250px;background:linear-gradient(150deg,#0d1b16,#050a0c);border:1px solid #17352a;border-radius:18px;padding:22px;box-shadow:0 20px 50px -24px rgba(53,207,147,.45)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="lbl" style="color:#35cf93">Saldo</span>
+          <svg width="27" height="27" viewBox="0 0 120 120"><circle cx="60" cy="60" r="58" fill="url(#tinCoin)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#0d1b16" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#0d1b16"/></svg>
+        </div>
+        <div class="mono" style="font-size:38px;font-weight:600;margin-top:16px;color:#aef0d2">128,50</div>
+        <div style="font-size:12px;color:#5f9a80;margin-top:2px">TIN disponibili</div>
+        <div style="display:flex;gap:8px;margin-top:18px">
+          <div style="flex:1;background:linear-gradient(120deg,#4f7cf0,#35cf93);color:#06120c;text-align:center;padding:9px;border-radius:9px;font-size:12px;font-weight:700">Ricarica</div>
+          <div style="flex:1;background:rgba(255,255,255,.08);color:#ececec;text-align:center;padding:9px;border-radius:9px;font-size:12px;font-weight:600">Regala</div>
+        </div>
+      </div>
+      <!-- tx rows -->
+      <div style="flex:1">
+        <div style="background:#141416;border:1px solid #262628;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:14px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#4f7cf0;display:flex;align-items:center;justify-content:center;font-size:20px">↗</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:14px">Bar centrale</div><div style="font-size:12px;color:#8c8c8c">Pagamento · ore 22:14</div></div>
+          <div class="mono" style="font-size:17px;font-weight:600;color:#ececec">−8,00</div>
+        </div>
+        <div style="background:#141416;border:1px solid #262628;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:14px;margin-top:12px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#35cf93;display:flex;align-items:center;justify-content:center;font-size:20px;color:#06120c">✓</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:14px">Ricarica</div><div style="font-size:12px;color:#8c8c8c">Da $54,54 · cambio 1,08</div></div>
+          <div class="mono" style="font-size:17px;font-weight:600;color:#35cf93">+50,00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0a0a"/><defs><linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f7cf0"/><stop offset="100%" stop-color="#35cf93"/></linearGradient></defs><circle cx="50" cy="50" r="30" fill="url(#t)"/><polygon points="50,32 31,66 69,66" fill="none" stroke="#0a0a0a" stroke-width="5.5" stroke-linejoin="round"/><circle cx="50" cy="55" r="3.6" fill="#0a0a0a"/></svg></template>
+
+</x-dc>
+</body>
+</html>

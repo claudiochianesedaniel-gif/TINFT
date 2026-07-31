@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#8a8d93;font-family:'Space Grotesk',sans-serif;color:#16171a}
+  doc-page:not(:defined){visibility:hidden}
+  a{color:#2a55c7}a:hover{color:#1b3a91}
+  code,.mono{font-family:'JetBrains Mono',monospace}
+  p{text-wrap:pretty}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th{text-align:left;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5d63;padding:6px 8px;border-bottom:1.5px solid #16171a}
+  td{padding:7px 8px;border-bottom:1px solid #e0e2e6;vertical-align:top;color:#3a3d43}
+  td.n,th.n{text-align:right;font-family:'JetBrains Mono',monospace}
+  tr:last-child td{border-bottom:none}
+  .tot td{border-top:1.5px solid #16171a;font-weight:700;color:#16171a}
+  h2{font-family:'Newsreader',serif;font-weight:600;font-size:20px;margin-top:30px;padding-bottom:6px;border-bottom:1px solid #d7d9dd}
+  h3{font-size:12.5px;font-weight:700;margin-top:18px;color:#16171a}
+  .lead{font-size:12.5px;line-height:1.62;color:#3a3d43;margin-top:9px}
+  .kv{font-size:11px;color:#5a5d63;line-height:1.65}
+  .pill{display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="816px,1056px">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:2px solid #16171a;padding-bottom:16px">
+    <div style="display:flex;gap:15px;align-items:flex-start">
+      <svg width="46" height="46" viewBox="0 0 120 120"><defs><linearGradient id="tc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#tc)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#fff" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#fff"/></svg>
+      <div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#2a55c7">TINFT · Wallet eventi</div>
+      <h1 style="font-family:'Newsreader',serif;font-weight:600;font-size:31px;line-height:1.04;margin-top:8px">TIN — modello del coin</h1>
+      <div style="font-size:12.5px;color:#5a5d63;margin-top:8px">Valuta a circuito chiuso per eventi · ricarica multivaluta · regalo P2P · incasso organizzatore</div>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;font-size:11px;color:#5a5d63;line-height:1.6">
+      <div style="font-weight:700;color:#16171a">Luglio 2026 · v1</div>
+      <div>Relazione tecnica</div>
+    </div>
+  </div>
+
+  <div style="background:#eef3ff;border:1px solid #c9d7f7;border-left:4px solid #2a55c7;border-radius:8px;padding:11px 15px;margin-top:18px"><p style="font-size:11px;line-height:1.55;color:#2c3550"><b>Stato del documento.</b> È la relazione originale sul modello. Le decisioni sono poi confluite nel <b>Documento Unico</b>, che prevale in caso di divergenza. Allineato alla revisione incrociata (AUDIT.md): la vendita P2P a pagamento è <b>Fase 3</b>, non Fase 2, e l’offline è <b>dentro l’MVP</b>.</p></div>
+  <!-- LEGGI PRIMA -->
+  <div style="background:#fdecea;border:1px solid #e7b7ae;border-left:4px solid #d9583f;border-radius:8px;padding:14px 17px;margin-top:20px">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#b3402a">Leggi prima questo — è la scelta che decide se serve una licenza</div>
+    <p style="font-size:12px;line-height:1.6;margin-top:8px;color:#3a2420">TIN è progettato come <b>circuito chiuso</b>: il cliente compra coin, li spende dentro gli eventi, e <b>non può riconvertirli in denaro</b> — né con cash-out, né vendendoli ad altri clienti. Solo l'<b>organizzatore</b> converte in fiat, perché incassa il pagamento di beni suoi (drink, cibo, merch). Finché resta così, TIN rientra plausibilmente nell'<b>esenzione "rete limitata"</b> (PSD2/EMD2) e non richiede licenza di moneta elettronica. <b>La vendita di coin a pagamento tra clienti romperebbe questo</b> e ti renderebbe money transmitter: è documentata sotto come opzione di Fase 3, subordinata a un partner EMI. Non è un parere legale — fatti validare il modello da un legale prima del go-live.</p>
+  </div>
+
+  <!-- IN BREVE -->
+  <h2>Il modello in una pagina</h2>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1;background:#f0f7f2;border:1px solid #bfe0cc;border-radius:9px;padding:13px 15px">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#1f7a52">Cosa È</div>
+      <div class="kv" style="margin-top:6px;color:#2c3a30">Un portafoglio prepagato a circuito chiuso. Denaro che entra una volta, gira come coin dentro il circuito, esce solo verso l'organizzatore.</div>
+    </div>
+    <div style="flex:1;background:#fdecea;border:1px solid #e7b7ae;border-radius:9px;padding:13px 15px">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#b3402a">Cosa NON È</div>
+      <div class="kv" style="margin-top:6px;color:#3a2420">Non è un conto, non è cash-out per il cliente, non è un mercato dove i clienti si rivendono coin per soldi. Niente di tutto ciò nel circuito chiuso.</div>
+    </div>
+  </div>
+
+  <table style="margin-top:16px">
+    <tr><th>Parametro</th><th>Scelta</th><th>Perché</th></tr>
+    <tr><td>Nome / ticker</td><td><b>TIN</b> — "TINFT Coin"</td><td>Deriva da TINFT, suona come una moneta. Alt. brand: vedi §Brand</td></tr>
+    <tr><td>Ancoraggio</td><td>1 TIN = <b>€1,00</b> (base EUR)</td><td>Valore fisso e prevedibile; l'organizzatore prezza in TIN senza rischio cambio</td></tr>
+    <tr><td>Cambio valuta</td><td>Solo al momento della ricarica</td><td>Compri in USD/GBP/… → ricevi TIN al tasso di quell'istante. Dopo, il valore è fisso</td></tr>
+    <tr><td>Decimali</td><td>2 (centesimi di TIN)</td><td>Copre prezzi come 4,50 TIN senza arrotondamenti forzati</td></tr>
+    <tr><td>Chi incassa in fiat</td><td>Solo l'organizzatore</td><td>Vende beni propri; il settlement è pagamento di una fornitura, non cash-out</td></tr>
+    <tr><td>Trasferimento cliente↔cliente</td><td>Regalo gratuito: <b>sì</b> · vendita: <b>no</b> (Fase 3)</td><td>Il regalo non muove denaro; la vendita sì → romperebbe il circuito chiuso</td></tr>
+    <tr><td>Offline</td><td>Spesa offline con tetto e voucher firmati</td><td>Eventi affollati = niente rete. Vedi §Offline</td></tr>
+    <tr><td>Device</td><td>Solo smartphone, app TINFT</td><td>Vincolo di prodotto: nessun lettore o tornello esterno</td></tr>
+  </table>
+
+  <!-- TRE UTENZE -->
+  <h2>Le tre utenze</h2>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+    <div style="border:1px solid #c9d7f7;background:#eef3ff;border-radius:9px;padding:13px 16px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span class="pill" style="background:#2a55c7;color:#fff">Cliente</span><b style="font-size:13px">Spende i coin</b></div>
+      <div class="kv" style="margin-top:6px;color:#2c3550">Ricarica in una valuta a scelta, riceve TIN, paga ai punti vendita dell'evento con QR/NFC. Può <b>regalare</b> TIN a un altro cliente. Non fa cash-out. Il saldo residuo resta nel wallet per eventi futuri.</div>
+    </div>
+    <div style="border:1px solid #bfe0cc;background:#f0f7f2;border-radius:9px;padding:13px 16px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span class="pill" style="background:#1f8a5b;color:#fff">Organizzatore</span><b style="font-size:13px">Incassa i coin</b></div>
+      <div class="kv" style="margin-top:6px;color:#2c3a30">Definisce i punti vendita e assegna i validatori, riceve i coin dei clienti per i beni venduti, e converte il saldo TIN in fiat (settlement) sul proprio conto, nella valuta scelta, meno la commissione di piattaforma. È l'unico che porta denaro fuori dal circuito. <b>Non prezza i prodotti in TIN:</b> i prezzi restano sul cartello del bar e il validatore digita il totale, come oggi col contante.</div>
+    </div>
+    <div style="border:1px solid #e5d3ad;background:#fff6e6;border-radius:9px;padding:13px 16px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span class="pill" style="background:#c68a2e;color:#fff">Validatore</span><b style="font-size:13px">Valida le transazioni (per l'organizzatore)</b></div>
+      <div class="kv" style="margin-top:6px;color:#3a2f18">Opera al punto vendita. <b>(1)</b> Conferma l'incasso: il cliente paga, il validatore approva sull'app. <b>(2)</b> Verifica anti-frode sulle transazioni sopra soglia. <b>(3)</b> Sblocca/consegna il prodotto fisico dopo il pagamento riuscito. Non tocca il denaro: autorizza e consegna.</div>
+    </div>
+  </div>
+
+  <!-- CICLO DI VITA -->
+  <h2>Ciclo di vita di un coin</h2>
+  <div style="display:flex;gap:0;margin-top:14px;align-items:stretch">
+    <div style="flex:1;text-align:center;padding:0 6px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#eef3ff;border:1.5px solid #2a55c7;color:#2a55c7;font-weight:700;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;margin:0 auto">1</div>
+      <div style="font-size:11px;font-weight:700;margin-top:8px">Ricarica</div>
+      <div class="kv" style="margin-top:3px;font-size:10px">Fiat → TIN al cambio del momento. Denaro custodito.</div>
+    </div>
+    <div style="width:26px;display:flex;align-items:center;justify-content:center;color:#b7bcc4;font-size:18px">→</div>
+    <div style="flex:1;text-align:center;padding:0 6px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#eef3ff;border:1.5px solid #2a55c7;color:#2a55c7;font-weight:700;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;margin:0 auto">2</div>
+      <div style="font-size:11px;font-weight:700;margin-top:8px">Circola</div>
+      <div class="kv" style="margin-top:3px;font-size:10px">Spesa ai punti vendita · regalo tra clienti. Resta TIN.</div>
+    </div>
+    <div style="width:26px;display:flex;align-items:center;justify-content:center;color:#b7bcc4;font-size:18px">→</div>
+    <div style="flex:1;text-align:center;padding:0 6px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#f0f7f2;border:1.5px solid #1f8a5b;color:#1f8a5b;font-weight:700;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;margin:0 auto">3</div>
+      <div style="font-size:11px;font-weight:700;margin-top:8px">Incasso</div>
+      <div class="kv" style="margin-top:3px;font-size:10px">L'organizzatore riceve i TIN dei beni venduti.</div>
+    </div>
+    <div style="width:26px;display:flex;align-items:center;justify-content:center;color:#b7bcc4;font-size:18px">→</div>
+    <div style="flex:1;text-align:center;padding:0 6px">
+      <div style="width:34px;height:34px;border-radius:50%;background:#f0f7f2;border:1.5px solid #1f8a5b;color:#1f8a5b;font-weight:700;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;margin:0 auto">4</div>
+      <div style="font-size:11px;font-weight:700;margin-top:8px">Settlement</div>
+      <div class="kv" style="margin-top:3px;font-size:10px">TIN → fiat sul conto organizzatore, meno fee.</div>
+    </div>
+  </div>
+  <p class="lead">Il denaro entra una sola volta (passo 1) e esce una sola volta (passo 4). Tra i due, i TIN sono una scrittura contabile interna: nessuna transazione tra cliente e cliente crea o distrugge valore in fiat. Questo è ciò che tiene il modello dentro il circuito chiuso.</p>
+
+  <!-- ANCORAGGIO E CAMBIO -->
+  <h2>Ancoraggio e cambio valuta</h2>
+  <p class="lead">TIN è ancorato all'euro: <b>1 TIN = €1,00</b>, sempre. Non fluttua. Il cambio interviene <b>solo alla ricarica</b>: il cliente sceglie la sua valuta, e il sistema converte al tasso di mercato di quell'istante applicando uno spread. Da quel momento il saldo è in TIN e non subisce più oscillazioni.</p>
+  <div style="background:#f5f6f8;border:1px solid #d7d9dd;border-radius:8px;padding:13px 16px;margin-top:12px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63">Esempio di ricarica</div>
+    <div style="display:flex;gap:18px;margin-top:9px;flex-wrap:wrap;font-size:12px">
+      <div><span class="kv">Il cliente vuole</span><br/><b class="mono">50,00 TIN</b></div>
+      <div style="color:#b7bcc4;align-self:center">·</div>
+      <div><span class="kv">Paga in USD (tasso 1,08)</span><br/><b class="mono">$54,00</b></div>
+      <div style="color:#b7bcc4;align-self:center">·</div>
+      <div><span class="kv">Spread cambio 1%</span><br/><b class="mono">+$0,54</b></div>
+      <div style="color:#b7bcc4;align-self:center">→</div>
+      <div><span class="kv">Addebito totale</span><br/><b class="mono" style="color:#1f8a5b">$54,54</b></div>
+    </div>
+  </div>
+  <p class="lead" style="font-size:11.5px">Perché non un coin fluttuante: se il valore del coin variasse dopo l'acquisto, l'organizzatore non potrebbe prezzare un drink in modo stabile e il sistema diventerebbe di fatto un cambio valuta interno — con obblighi contabili e regolatori molto più pesanti. L'ancoraggio fisso elimina il problema.</p>
+
+  <!-- COMMISSIONI -->
+  <h2>Commissioni — perché non "1% su tutto"</h2>
+  <div style="background:#fff6e6;border:1px solid #e5d3ad;border-left:4px solid #c68a2e;border-radius:8px;padding:13px 16px;margin-top:12px">
+    <p style="font-size:12px;line-height:1.6;color:#3a2f18"><b>La tua ipotesi (1% ovunque) fa perdere soldi sulla ricarica.</b> Incassare con carta costa ~1,5–2,9% + una commissione fissa al circuito. Se prendi l'1% dal cliente ma paghi il 2%+ al processore, ogni ricarica è in perdita. Il margine reale sta a valle: sulla <b>commissione all'organizzatore</b> e sul <b>breakage</b> (coin mai spesi). Struttura consigliata sotto.</p>
+  </div>
+  <table style="margin-top:14px">
+    <tr><th>Evento</th><th>Chi paga</th><th class="n">Aliquota consigliata</th><th>Logica</th></tr>
+    <tr><td>Ricarica (fiat → TIN)</td><td>Cliente</td><td class="n">costo carta ribaltato</td><td>Passi il costo del circuito, non ci guadagni: la ricarica dev'essere indolore</td></tr>
+    <tr><td>Spread cambio valuta</td><td>Cliente (solo estero)</td><td class="n">0,75–1,0%</td><td>Copre il rischio FX e un margine sottile; nullo per chi ricarica in EUR</td></tr>
+    <tr><td>Regalo P2P (TIN → TIN)</td><td>—</td><td class="n">0%</td><td>Nessun denaro si muove; tenerlo gratis alimenta il circuito</td></tr>
+    <tr><td>Incasso / settlement organizzatore</td><td>Organizzatore</td><td class="n"><b>3%</b></td><td><b>Qui sta il ricavo.</b> È la fee sul valore effettivamente venduto</td></tr>
+    <tr><td>Breakage (coin non spesi)</td><td>—</td><td class="n">policy</td><td>Ricavo latente: saldi dormienti oltre N mesi, secondo termini + legge locale</td></tr>
+    <tr class="tot"><td>Vendita P2P a pagamento</td><td>—</td><td class="n">Fase 3</td><td>Fuori dal circuito chiuso — richiede EMI, vedi §Regolatorio</td></tr>
+  </table>
+  <p class="lead" style="font-size:11.5px">Se vuoi un numero unico e semplice da comunicare, <b>3% all'organizzatore</b> è difendibile e in linea col mercato dei sistemi cashless da evento [Ipotesi — verifica sul tuo mix di costi]. L'1% ha senso solo come cifra di marketing sulla parte cliente, non come unica fonte di margine.</p>
+
+  <!-- OFFLINE -->
+  <h2>Spesa offline</h2>
+  <p class="lead">Consiglio di <b>supportarla</b>: agli eventi affollati la rete cellulare crolla, e un punto bar che non incassa perché "non c'è campo" è un problema di business, non tecnico. Il modello sicuro:</p>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:8px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63">Tetto offline</div>
+      <div class="kv" style="margin-top:5px">All'ingresso l'app pre-autorizza una quota del saldo (es. 50 TIN) spendibile offline. Oltre il tetto serve rete.</div>
+    </div>
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:8px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63">Voucher firmati</div>
+      <div class="kv" style="margin-top:5px">Ogni pagamento offline è un voucher firmato dal device, con nonce progressivo. Il validatore verifica la firma senza server.</div>
+    </div>
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:8px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63">Riconciliazione</div>
+      <div class="kv" style="margin-top:5px">Al ritorno della rete i voucher si sincronizzano e si detraggono dal saldo reale. Il tetto limita il rischio di doppia spesa.</div>
+    </div>
+  </div>
+  <p class="lead" style="font-size:11.5px">Compromesso onesto: l'offline introduce un rischio residuo di doppia spesa entro il tetto (un device compromesso potrebbe spendere due volte gli stessi TIN prima della sync). Lo si contiene con tetti bassi e nonce, non lo si azzera. <b>Decisione presa: l'offline è nell'MVP</b>, con tetti bassi al pilota, da alzare con i dati.</p>
+
+  <!-- REGOLATORIO -->
+  <h2>Nodo regolatorio</h2>
+  <table style="margin-top:12px">
+    <tr><th>Scenario</th><th>Inquadramento</th><th>Cosa serve</th></tr>
+    <tr><td><b>Circuito chiuso</b> (questo modello)</td><td>Esenzione "rete limitata" PSD2/EMD2 — strumento speso solo entro un circuito ristretto</td><td>Termini chiari, KYB sull'organizzatore, custodia fondi presso PSP; niente cash-out cliente</td></tr>
+    <tr><td>Cash-out organizzatore</td><td>Pagamento di una fornitura di beni propri, non emissione di moneta</td><td>Contratto di incasso + verifica azienda (KYB) + payout via PSP (es. Stripe Connect)</td></tr>
+    <tr><td class="tot" style="border-top:1.5px solid #16171a">Vendita P2P a pagamento (Fase 3)</td><td style="border-top:1.5px solid #16171a">Il cliente venditore fa cash-out → money transmission / e-money</td><td style="border-top:1.5px solid #16171a"><b>Partner EMI o licenza</b>, KYC clienti, AML, protezione fondi</td></tr>
+  </table>
+  <p class="lead" style="font-size:11.5px">Anche l'esenzione "rete limitata" ha soglie (numero eventi, valore, notifica all'autorità in alcuni Paesi). Man mano che il circuito cresce, prima o poi entri comunque nel perimetro EMI: conviene scegliere fin da subito un PSP che offra un percorso verso l'e-money regolato, così la Fase 3 non richiede di rifare l'architettura. <b>Questo va confermato da un legale — non è consulenza legale.</b></p>
+
+  <!-- BRAND -->
+  <h2>Brand — la mia raccomandazione</h2>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1.2;background:#16171a;color:#ececec;border-radius:10px;padding:16px 18px">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c68a2e">Consigliato</div>
+      <div style="font-family:'Newsreader',serif;font-size:26px;font-weight:600;margin-top:6px">TIN <span style="font-size:13px;color:#8c8c8c">· "TINFT Coin"</span></div>
+      <div style="font-size:11.5px;line-height:1.6;color:#b8b8b8;margin-top:8px">Deriva direttamente da TINFT, quindi eredita fiducia e riconoscibilità. Corto, pronunciabile in ogni lingua, suona come una moneta ("a tin", metallico). Sotto-prodotto esplicito dell'ecosistema TINFT.</div>
+    </div>
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:10px;padding:16px 18px">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5a5d63">Alternativa brand-nuovo</div>
+      <div style="font-family:'Newsreader',serif;font-size:22px;font-weight:600;margin-top:6px;color:#16171a">Tabo</div>
+      <div class="kv" style="margin-top:8px">Da "tab" (il conto al bar) — evoca lo spendere leggero dentro l'evento, dal cibo al merch. Brand autonomo ma presentabile come "powered by TINFT". Più lavoro di marketing, meno traino dal marchio esistente.</div>
+    </div>
+  </div>
+  <p class="lead" style="font-size:11.5px">La mia scelta: <b>TIN</b>. Un brand nuovo ha senso solo se prevedi di vendere il wallet a eventi che non useranno il ticketing TINFT; finché i due prodotti vivono insieme, ereditare il marchio è un vantaggio, non un limite.</p>
+
+  <!-- DA DECIDERE -->
+  <h2>I cinque punti aperti — stato</h2>
+  <p class="kv" style="margin-top:8px">Chiusi 01–04. Il 05 resta aperto ed è diventato un documento a sé (Policy breakage).</p>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+    <div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:#c68a2e;font-size:11px;font-weight:600">01</span><span class="kv" style="color:#3a3d43">Commissione organizzatore: <b>3% confermato</b>. L'1% piatto non copre i costi di incasso.</span></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:#c68a2e;font-size:11px;font-weight:600">02</span><span class="kv" style="color:#3a3d43">Vendita P2P a pagamento: <b>fuori dall'MVP, rimandata alla Fase 3</b>. È l'unico punto che obbliga alla licenza.</span></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:#c68a2e;font-size:11px;font-weight:600">03</span><span class="kv" style="color:#3a3d43">Nome: <b>TIN scelto</b>, “Tabo” scartato.</span></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:#c68a2e;font-size:11px;font-weight:600">04</span><span class="kv" style="color:#3a3d43">Offline: <b>confermato nell'MVP</b> (tetto + voucher firmati + riconciliazione), con tetti bassi al pilota.</span></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:#c68a2e;font-size:11px;font-weight:600">05</span><span class="kv" style="color:#3a3d43">Breakage: <b>ancora aperto</b> — policy per Paese, da definire col legale. Vedi il documento Policy breakage.</span></div>
+  </div>
+
+  <div style="margin-top:30px;padding-top:12px;border-top:1px solid #d7d9dd;display:flex;justify-content:space-between;font-size:10px;color:#7a7d83">
+    <span>TINFT · TIN — Relazione modello coin</span>
+    <span>Non costituisce consulenza legale · Luglio 2026</span>
+  </div>
+
+</x-import>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#16171a"/><defs><linearGradient id="tt" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="50" cy="50" r="30" fill="url(#tt)"/><polygon points="50,30 27,68 73,68" fill="none" stroke="#fff" stroke-width="5.5" stroke-linejoin="round"/><circle cx="50" cy="57" r="3.8" fill="#fff"/></svg></template>
+
+</x-dc>
+</body>
+</html>

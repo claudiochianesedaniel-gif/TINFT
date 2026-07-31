@@ -21,6 +21,14 @@ La cartella [`design_handoff_tinft/`](./design_handoff_tinft/) contiene la spec 
   (riferimenti di design da ricreare nello stack target, **non** codice da copiare).
 - `PROMPT_CLAUDE_CODE.md` — brief di sviluppo e Definition of Done per milestone.
 
+## TIN — wallet eventi (secondo prodotto)
+
+La cartella [`tin/`](./tin/) contiene la specifica di **TIN**, il wallet prepagato a
+circuito chiuso per gli eventi: 1 TIN = €1,00 fisso, ricarica multivaluta, spesa via QR ai
+punti vendita, regalo P2P gratuito, settlement all'organizzatore al 3%. Progetto separato
+dal ticketing, stesso vincolo "solo smartphone". Punto di partenza:
+[`tin/README.md`](./tin/README.md).
+
 ## Vincoli non negoziabili
 
 - Fee di rivendita **1%** del prezzo originale, a carico del compratore, *enforced* on-chain:

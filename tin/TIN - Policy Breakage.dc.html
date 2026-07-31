@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#8a8d93;font-family:'Space Grotesk',sans-serif;color:#16171a}
+  doc-page:not(:defined){visibility:hidden}
+  a{color:#2a55c7}a:hover{color:#1b3a91}
+  .sora{font-family:'Sora',sans-serif}
+  .mono{font-family:'JetBrains Mono',monospace}
+  p{text-wrap:pretty}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th{text-align:left;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5d63;padding:6px 8px;border-bottom:1.5px solid #16171a}
+  td{padding:7px 8px;border-bottom:1px solid #e0e2e6;vertical-align:top;color:#3a3d43}
+  td.n,th.n{text-align:right;font-family:'JetBrains Mono',monospace}
+  tr:last-child td{border-bottom:none}
+  h2{font-family:'Sora',sans-serif;font-weight:700;font-size:20px;margin-top:30px;padding-bottom:6px;border-bottom:1px solid #d7d9dd;letter-spacing:-0.01em}
+  .lead{font-size:12.5px;line-height:1.62;color:#3a3d43;margin-top:9px}
+  .kv{font-size:11px;color:#5a5d63;line-height:1.6}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="816px,1056px">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:2px solid #16171a;padding-bottom:16px">
+    <div style="display:flex;gap:15px;align-items:center">
+      <svg width="46" height="46" viewBox="0 0 120 120"><defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#c)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#fff" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#fff"/></svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#2a55c7">TINFT · TIN — Punto 05</div>
+        <h1 class="sora" style="font-weight:800;font-size:29px;line-height:1.02;margin-top:5px">Policy breakage — saldi dormienti</h1>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;font-size:11px;color:#5a5d63;line-height:1.6"><div style="font-weight:700;color:#16171a">Luglio 2026</div><div>Proposta da validare col legale</div></div>
+  </div>
+
+  <div style="background:#fdecea;border:1px solid #e7b7ae;border-left:4px solid #d9583f;border-radius:8px;padding:14px 17px;margin-top:20px">
+    <p style="font-size:12px;line-height:1.6;color:#3a2420"><b>Verità scomoda in una riga: il breakage non è "incasso del residuo", è un campo minato legale.</b> In molte giurisdizioni i fondi prepagati non si possono trattenere a piacere — o restano dovuti a tempo indeterminato, o passano allo Stato (escheatment), o decadono solo entro limiti stretti. Trattarlo come ricavo garantito è l'errore classico. Questa è una proposta di default prudente, <b>non consulenza legale</b>.</p>
+  </div>
+
+  <h2>Cos'è il breakage</h2>
+  <p class="lead">Il valore dei TIN acquistati e mai spesi. Finché il saldo esiste, per TIN è un <b>debito</b> verso il cliente (fondi custoditi presso il PSP), non un utile. Diventa ricavo solo se e quando la legge consente di estinguere quel debito — e le regole cambiano per Paese.</p>
+
+  <h2>I tre regimi possibili</h2>
+  <table style="margin-top:12px">
+    <tr><th>Regime</th><th>Cosa impone</th><th>Dove (indicativo)</th></tr>
+    <tr><td><b>Nessuna scadenza</b></td><td>Il saldo resta dovuto per sempre; niente breakage. Rimborso su richiesta</td><td>Diverse tutele consumatori UE su prepagati</td></tr>
+    <tr><td><b>Escheatment</b></td><td>Dopo N anni di inattività il saldo va trasferito allo Stato, non trattenuto</td><td>Molti stati USA</td></tr>
+    <tr><td><b>Decadenza limitata</b></td><td>Scadenza ammessa solo oltre una durata minima e con avvisi preventivi</td><td>Alcuni regimi gift-card</td></tr>
+  </table>
+  <p class="kv" style="margin-top:10px">Per un prodotto multivaluta e multi-Paese come TIN, l'unica scelta sicura è <b>non assumere un regime unico</b>: la policy è per-giurisdizione, configurata a livello di sistema.</p>
+
+  <h2>Proposta di default (prudente)</h2>
+  <table style="margin-top:12px">
+    <tr><th>Regola</th><th>Default proposto</th></tr>
+    <tr><td>Trattamento contabile</td><td>Il saldo è passività finché non estinto per legge. Mai a ricavo prima.</td></tr>
+    <tr><td>Inattività minima</td><td>≥ 24 mesi senza movimenti prima di qualsiasi azione [Ipotesi — da tarare per Paese]</td></tr>
+    <tr><td>Avvisi</td><td>Almeno 2 notifiche (es. 30 e 7 giorni prima) con opzione di riutilizzo/rimborso</td></tr>
+    <tr><td>Rimborso</td><td>Sempre possibile su richiesta finché il saldo esiste, per l'importo residuo</td></tr>
+    <tr><td>Escheatment</td><td>Dove previsto, trasferimento allo Stato invece del breakage</td></tr>
+    <tr><td>Breakage a ricavo</td><td>Solo dove la legge lo consente esplicitamente e dopo avvisi + inattività</td></tr>
+    <tr><td>Configurabilità</td><td>Parametri (durata, avvisi, destinazione) per giurisdizione, non hardcoded</td></tr>
+  </table>
+
+  <h2>Impatto sul modello</h2>
+  <p class="lead">Nel Business Plan il breakage è indicato come <b>margine latente, non garantito</b>. Confermo quella scelta: va tenuto fuori dalle proiezioni di break-even. Se poi si materializza in alcune giurisdizioni, è upside — non una voce su cui costruire il conto economico.</p>
+
+  <h2>Da fare</h2>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#2a55c7;font-size:11px;font-weight:600">01</span><span class="kv" style="color:#3a3d43">Legale mappa i Paesi del pilota → regime applicabile (nessuna scadenza / escheatment / decadenza).</span></div>
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#2a55c7;font-size:11px;font-weight:600">02</span><span class="kv" style="color:#3a3d43">Termini di servizio: clausola breakage esplicita e conforme, con avvisi e diritto di rimborso.</span></div>
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#2a55c7;font-size:11px;font-weight:600">03</span><span class="kv" style="color:#3a3d43">Sistema: motore di dormienza configurabile per giurisdizione (durata, notifiche, destinazione fondi).</span></div>
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#2a55c7;font-size:11px;font-weight:600">04</span><span class="kv" style="color:#3a3d43">Contabilità: saldo come passività custodita; riconoscimento a ricavo solo a estinzione legale.</span></div>
+  </div>
+
+  <div style="margin-top:30px;padding-top:12px;border-top:1px solid #d7d9dd;display:flex;justify-content:space-between;font-size:10px;color:#7a7d83">
+    <span>TINFT · TIN — Policy breakage (punto 05)</span>
+    <span>Proposta · non costituisce consulenza legale</span>
+  </div>
+
+</x-import>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#f5f6f8"/><circle cx="50" cy="50" r="26" fill="none" stroke="#d9583f" stroke-width="6"/><path d="M50 34 V52" stroke="#d9583f" stroke-width="6" stroke-linecap="round"/><circle cx="50" cy="64" r="4" fill="#d9583f"/></svg></template>
+
+</x-dc>
+</body>
+</html>

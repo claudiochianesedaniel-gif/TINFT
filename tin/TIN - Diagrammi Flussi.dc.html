@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#8a8d93;font-family:'Space Grotesk',sans-serif;color:#16171a}
+  doc-page:not(:defined){visibility:hidden}
+  a{color:#2a55c7}a:hover{color:#1b3a91}
+  .mono{font-family:'JetBrains Mono',monospace}
+  h1,h2{letter-spacing:-0.01em}
+  h2{font-family:'Newsreader',serif;font-weight:600;font-size:22px;margin-top:34px;padding-bottom:6px;border-bottom:1px solid #d7d9dd}
+  h3{font-size:12px;font-weight:700;margin-top:16px;color:#16171a;letter-spacing:0}
+  .node{border-radius:11px;padding:12px 15px;font-size:12px;line-height:1.35;font-weight:500}
+  .srv{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.55;color:#5a5d63}
+  .arrow{width:2px;background:#b7bcc4;margin:0 auto;position:relative}
+  .arrow::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #b7bcc4}
+  .cap{font-size:10px;color:#5a5d63;line-height:1.5}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.6in" hint-size="816px,1056px">
+
+  <!-- HEADER -->
+  <div style="border-bottom:2px solid #16171a;padding-bottom:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px">
+      <div style="display:flex;gap:15px;align-items:flex-start">
+      <svg width="46" height="46" viewBox="0 0 120 120"><defs><linearGradient id="tc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#tc)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#fff" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#fff"/></svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#2a55c7">TINFT · TIN — Wallet eventi</div>
+        <h1 style="font-family:'Newsreader',serif;font-weight:700;font-size:31px;line-height:1.02;margin-top:10px">Diagrammi di flusso</h1>
+        <div style="font-size:12.5px;color:#5a5d63;margin-top:7px">Ricarica · Spesa · Regalo P2P · Settlement — nodi, rami e lato server</div>
+      </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;font-size:11px;color:#5a5d63;line-height:1.7"><div style="font-weight:700;color:#16171a">Luglio 2026</div><div>Formato: diagrammi</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;margin-top:14px;font-size:10px;color:#5a5d63;flex-wrap:wrap">
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#eef3ff;border:1px solid #c9d7f7;border-radius:3px"></span>Cliente</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#f0f7f2;border:1px solid #bfe0cc;border-radius:3px"></span>Organizzatore</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#fff6e6;border:1px solid #e5d3ad;border-radius:3px"></span>Validatore / Decisione</span>
+    <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:11px;background:#fdecea;border:1px solid #e7b7ae;border-radius:3px"></span>Blocco / rifiuto</span>
+  </div>
+
+  <!-- 1 RICARICA -->
+  <h2>1 · Ricarica (Cliente)</h2>
+  <div style="display:flex;gap:22px;margin-top:14px;align-items:flex-start">
+    <div style="width:300px;flex-shrink:0">
+      <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7"><span class="mono" style="color:#2a55c7;font-size:10px">01</span> &nbsp;Sceglie valuta (EUR/USD/GBP/…) e importo in TIN</div>
+      <div class="arrow" style="height:20px"></div>
+      <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7"><span class="mono" style="color:#2a55c7;font-size:10px">02</span> &nbsp;Vede il preventivo: cambio + spread, addebito totale</div>
+      <div class="arrow" style="height:20px"></div>
+      <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7"><span class="mono" style="color:#2a55c7;font-size:10px">03</span> &nbsp;Paga (carta · Apple/Google Pay · SEPA)</div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;text-align:center"><span class="mono" style="color:#8a6d1a;font-size:10px">DECISIONE · SERVER</span><br/>Pagamento riuscito?</div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#b3402a;font-weight:700">NO ↓</div><div class="node" style="background:#fdecea;border:1px solid #e7b7ae;font-size:11px;margin-top:2px">Nessun TIN accreditato</div></div>
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#1f8a5b;font-weight:700">SÌ ↓</div><div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px;margin-top:2px">Saldo TIN aggiornato</div></div>
+      </div>
+    </div>
+    <div style="flex:1;padding-top:4px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63;margin-bottom:10px">Lato server</div>
+      <div class="srv" style="display:flex;flex-direction:column;gap:11px">
+        <div><b style="color:#2a55c7">01</b> — legge il tasso FX corrente per la valuta scelta; blocca il tasso per ~60s (quote lock).</div>
+        <div><b style="color:#2a55c7">02</b> — calcola fiat = TIN × tasso × (1 + spread); mostra la scomposizione. Nessun addebito ancora.</div>
+        <div><b style="color:#2a55c7">03</b> — crea il PaymentIntent presso il PSP; i fondi vengono custoditi (non toccano l'organizzatore).</div>
+        <div><b style="color:#1f8a5b">SÌ</b> — accredita i TIN al tasso bloccato; registra il movimento (fiat in, TIN out) nel ledger.</div>
+        <div><b style="color:#b3402a">NO</b> — rollback: nessuna scrittura sul saldo; il cliente può ritentare.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 SPESA - VARIANTI -->
+  <h2>2 · Spesa al punto vendita — 3 varianti</h2>
+  <p class="cap" style="margin-top:8px">Stesso obiettivo (il cliente paga in TIN, l'organizzatore incassa, il validatore conferma), tre modi di scambiare i dati. Tutto solo tra smartphone, nessun device esterno. <b>Consigliata: Variante A.</b></p>
+
+  <div style="display:flex;gap:14px;margin-top:16px;align-items:stretch">
+
+    <!-- A -->
+    <div style="flex:1;background:#f7f8fa;border:1px solid #d7d9dd;border-radius:11px;padding:14px">
+      <div style="display:flex;align-items:center;gap:7px"><span class="mono" style="font-size:10px;font-weight:700;color:#1f8a5b;background:#e4f1ea;border:1px solid #bfe0cc;border-radius:5px;padding:2px 7px">A · consigliata</span></div>
+      <h3 style="margin-top:9px">Il validatore mostra l'importo, il cliente scansiona</h3>
+      <div style="margin-top:11px">
+        <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;font-size:11px">Validatore digita l'importo → l'app mostra un QR di richiesta</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7;font-size:11px">Cliente scansiona, vede prezzo + punto vendita</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7;font-size:11px">Cliente conferma (biometria)</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px">Server sposta TIN → organizzatore, notifica validatore</div>
+      </div>
+      <div class="cap" style="margin-top:11px"><b>Pro:</b> l'importo è deciso dalla cassa, meno errori. Il QR di richiesta è usa-e-getta.</div>
+    </div>
+
+    <!-- B -->
+    <div style="flex:1;background:#f7f8fa;border:1px solid #d7d9dd;border-radius:11px;padding:14px">
+      <div><span class="mono" style="font-size:10px;font-weight:700;color:#5a5d63;background:#eceef1;border:1px solid #d7d9dd;border-radius:5px;padding:2px 7px">B</span></div>
+      <h3 style="margin-top:9px">Il cliente mostra il QR, il validatore scansiona e addebita</h3>
+      <div style="margin-top:11px">
+        <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7;font-size:11px">Cliente apre "Paga" → QR dinamico a rotazione</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;font-size:11px">Validatore scansiona, digita l'importo</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;font-size:11px;text-align:center">Saldo sufficiente?</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px">Addebito + ricevuta a entrambi</div>
+      </div>
+      <div class="cap" style="margin-top:11px"><b>Pro:</b> veloce con code lunghe. <b>Contro:</b> il cliente non conferma l'importo prima.</div>
+    </div>
+
+    <!-- C -->
+    <div style="flex:1;background:#f7f8fa;border:1px solid #d7d9dd;border-radius:11px;padding:14px">
+      <div><span class="mono" style="font-size:10px;font-weight:700;color:#5a5d63;background:#eceef1;border:1px solid #d7d9dd;border-radius:5px;padding:2px 7px">C</span></div>
+      <h3 style="margin-top:9px">NFC "tap" tra i due telefoni</h3>
+      <div style="margin-top:11px">
+        <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;font-size:11px">Validatore imposta l'importo, attiva NFC</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7;font-size:11px">Cliente avvicina il telefono, conferma</div>
+        <div class="arrow" style="height:16px"></div>
+        <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px">Scambio token firmato via NFC → server</div>
+      </div>
+      <div class="cap" style="margin-top:11px"><b>Pro:</b> gesto naturale, nessuna fotocamera. <b>Contro:</b> <b>iOS non può emulare un tag NFC</b> (HCE): un iPhone legge, ma non può <i>presentarsi</i> a un altro telefono. Poiché in Variante A è la <b>cassa</b> a presentare, la soluzione è imporre <b>Android in cassa</b>: il tap si apre a tutti gli Android del pubblico, il QR resta per tutti gli altri.</div>
+    </div>
+  </div>
+
+  <!-- 3 SPESA FLUSSO COMPLETO -->
+  <h2>3 · Spesa — flusso completo (Variante A) con lato server</h2>
+  <div style="display:flex;gap:22px;margin-top:14px;align-items:flex-start">
+    <div style="width:300px;flex-shrink:0">
+      <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad"><span class="mono" style="color:#8a6d1a;font-size:10px">V-01</span> &nbsp;Validatore digita importo → QR di richiesta</div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7"><span class="mono" style="color:#2a55c7;font-size:10px">C-02</span> &nbsp;Cliente scansiona → vede prezzo, punto vendita</div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;text-align:center"><span class="mono" style="color:#8a6d1a;font-size:10px">DECISIONE · SERVER</span><br/>Saldo · limite anti-frode · QR valido?</div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#b3402a;font-weight:700">NO ↓</div><div class="node" style="background:#fdecea;border:1px solid #e7b7ae;font-size:11px;margin-top:2px">Rifiuto: limite / QR scaduto.<br/><b>Se manca solo il saldo → auto-ricarica</b></div></div>
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#1f8a5b;font-weight:700">SÌ ↓</div><div class="node" style="background:#eef3ff;border:1px solid #c9d7f7;font-size:11px;margin-top:2px">Cliente conferma con biometria</div></div>
+      </div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc"><span class="mono" style="color:#1f8a5b;font-size:10px">04</span> &nbsp;TIN → organizzatore · validatore consegna il prodotto</div>
+    </div>
+    <div style="flex:1;padding-top:4px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63;margin-bottom:10px">Lato server</div>
+      <div class="srv" style="display:flex;flex-direction:column;gap:11px">
+        <div><b style="color:#8a6d1a">V-01</b> — genera un intent di incasso: importo, id punto vendita, nonce, TTL breve; codifica nel QR.</div>
+        <div><b style="color:#2a55c7">C-02</b> — risolve l'intent, verifica che sia ancora valido; mostra al cliente prezzo e destinatario.</div>
+        <div><b style="color:#8a6d1a">DECISIONE</b> — controlla saldo ≥ importo, soglia anti-frode (§oltre), unicità del nonce, TTL non scaduto.</div>
+        <div><b style="color:#1f8a5b">04</b> — <b>trasferimento atomico</b> nel ledger: saldo cliente −N TIN, saldo organizzatore +N TIN; evento immutabile registrato. Notifica push a cliente e validatore.</div>
+        <div><b style="color:#b3402a">NO</b> — nessuna scrittura; motivo del rifiuto mostrato al validatore.</div>
+        <div style="color:#2a55c7"><b>Saldo insufficiente ≠ rifiuto.</b> È l'unico caso che non blocca: la carta ricarica lo scoperto (arrotondato al taglio scelto dal cliente) e poi si paga il <b>100% in TIN</b>. Mai un pagamento misto — sarebbe incasso per conto dell'organizzatore, cioè un perimetro regolatorio diverso. <b>Una sola conferma</b> copre ricarica e pagamento; se la ricarica fallisce, non si scrive nulla. Sopra la soglia anti-frode la verifica del validatore viene <b>prima</b> della ricarica, così nessuno compra credito per un acquisto poi rifiutato.</div>
+      </div>
+    </div>
+  </div>
+  <div style="background:#fff6e6;border:1px solid #e5d3ad;border-radius:8px;padding:11px 14px;margin-top:12px">
+    <div class="cap" style="color:#3a2f18"><b>Ruolo validatore, i 3 compiti:</b> conferma incasso (approva sull'app) · anti-frode (transazioni sopra soglia richiedono verifica extra) · consegna del prodotto fisico solo dopo l'esito "SÌ". Non tocca mai il denaro.</div>
+  </div>
+
+  <!-- 4 REGALO P2P -->
+  <h2>4 · Regalo P2P (Cliente → Cliente)</h2>
+  <div style="display:flex;gap:22px;margin-top:14px;align-items:flex-start">
+    <div style="width:300px;flex-shrink:0">
+      <div class="node" style="background:#eef3ff;border:1px solid #c9d7f7"><span class="mono" style="color:#2a55c7;font-size:10px">01</span> &nbsp;Cliente A sceglie "Regala TIN", importo e destinatario</div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;text-align:center"><span class="mono" style="color:#8a6d1a;font-size:10px">DECISIONE · SERVER</span><br/>Saldo A ≥ importo? Destinatario valido?</div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#b3402a;font-weight:700">NO ↓</div><div class="node" style="background:#fdecea;border:1px solid #e7b7ae;font-size:11px;margin-top:2px">Regalo bloccato</div></div>
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#1f8a5b;font-weight:700">SÌ ↓</div><div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px;margin-top:2px">TIN spostati ad A → B · fee 0%</div></div>
+      </div>
+    </div>
+    <div style="flex:1;padding-top:4px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63;margin-bottom:10px">Lato server</div>
+      <div class="srv" style="display:flex;flex-direction:column;gap:11px">
+        <div><b style="color:#2a55c7">01</b> — risolve il destinatario (contatto/QR/handle); nessun denaro fiat coinvolto.</div>
+        <div><b style="color:#1f8a5b">SÌ</b> — trasferimento atomico TIN A→B, <b>senza commissione</b>. È una scrittura interna al ledger: il valore in fiat non cambia, quindi resta nel circuito chiuso.</div>
+        <div style="color:#b3402a"><b>⚠ Confine:</b> se al regalo si affiancasse un pagamento in denaro tra A e B, non sarebbe più un regalo ma una <b>vendita</b> → cash-out del venditore → fuori dal circuito chiuso. Bloccato in Fase 1.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 SETTLEMENT -->
+  <h2>5 · Settlement (Organizzatore → fiat)</h2>
+  <div style="display:flex;gap:22px;margin-top:14px;align-items:flex-start">
+    <div style="width:300px;flex-shrink:0">
+      <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc"><span class="mono" style="color:#1f8a5b;font-size:10px">01</span> &nbsp;Onboarding: collega il conto (KYB azienda)</div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc"><span class="mono" style="color:#1f8a5b;font-size:10px">02</span> &nbsp;Accumula TIN incassati durante l'evento</div>
+      <div class="arrow" style="height:18px"></div>
+      <div class="node" style="background:#fff6e6;border:1px solid #e5d3ad;text-align:center"><span class="mono" style="color:#8a6d1a;font-size:10px">DECISIONE · SERVER</span><br/>KYB completo? Soglia payout raggiunta?</div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#b3402a;font-weight:700">NO ↓</div><div class="node" style="background:#fdecea;border:1px solid #e7b7ae;font-size:11px;margin-top:2px">Payout trattenuto</div></div>
+        <div style="flex:1;text-align:center"><div style="font-size:9.5px;color:#1f8a5b;font-weight:700">SÌ ↓</div><div class="node" style="background:#f0f7f2;border:1px solid #bfe0cc;font-size:11px;margin-top:2px">TIN → fiat, meno fee 3%</div></div>
+      </div>
+    </div>
+    <div style="flex:1;padding-top:4px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5a5d63;margin-bottom:10px">Lato server</div>
+      <div class="srv" style="display:flex;flex-direction:column;gap:11px">
+        <div><b style="color:#1f8a5b">01</b> — crea account PSP (es. Connect); blocca il payout finché il KYB non è completo.</div>
+        <div><b style="color:#1f8a5b">02</b> — somma i trasferimenti in ingresso sul conto TIN dell'organizzatore (dal flusso §3).</div>
+        <div><b style="color:#8a6d1a">DECISIONE</b> — richiede identità azienda verificata + saldo ≥ soglia minima payout.</div>
+        <div><b style="color:#1f8a5b">SÌ</b> — converte TIN → fiat nella valuta scelta (FX se ≠ EUR), trattiene la commissione di piattaforma, avvia il bonifico via PSP. Registra il movimento in uscita nel ledger.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:30px;padding-top:12px;border-top:1px solid #d7d9dd;display:flex;justify-content:space-between;font-size:10px;color:#7a7d83">
+    <span>TINFT · TIN — Diagrammi di flusso</span>
+    <span>Da leggere con la Relazione modello · Luglio 2026</span>
+  </div>
+
+</x-import>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#16171a"/><defs><linearGradient id="tt" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="50" cy="50" r="30" fill="url(#tt)"/><polygon points="50,30 27,68 73,68" fill="none" stroke="#fff" stroke-width="5.5" stroke-linejoin="round"/><circle cx="50" cy="57" r="3.8" fill="#fff"/></svg></template>
+
+</x-dc>
+</body>
+</html>
