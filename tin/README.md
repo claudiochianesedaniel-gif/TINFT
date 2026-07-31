@@ -25,12 +25,18 @@ qui dentro: sono documenti e prototipi di design da ricreare nello stack target.
 | File | Cosa contiene |
 |---|---|
 | [`TIN - Documento Unico.md`](./TIN%20-%20Documento%20Unico.md) | **Sintesi di tutte le decisioni prese.** Punto di partenza per chiunque. |
+| [`AUDIT.md`](./AUDIT.md) | **Revisione incrociata dei documenti**: incoerenze, lacune e cosa chiudere prima di costruire. |
 | `TIN - Relazione Modello.dc.html` | Il modello del coin: ancoraggio, commissioni, offline, nodo regolatorio, brand. |
 | `TIN - Diagrammi Flussi.dc.html` | I quattro flussi (ricarica, spesa, regalo, settlement) con rami e lato server. |
 | `TIN - Relazione Sviluppatore.dc.html` | Architettura, ledger append-only, FX, offline, PSP/KYB, superficie API. |
-| `TIN - Design UI-UX.dc.html` | Le schermate chiave delle tre utenze (tema notte). |
+| `TIN - Brand e Logo.dc.html` | Marchio, varianti d'uso, palette, tipografia. |
+| `TIN - Design UI-UX.dc.html` | Le 11 schermate chiave delle tre utenze (tema notte). |
+| `TIN - Prototipo App.dc.html` | Prototipo navigabile delle tre utenze. **Non normativo** — vedi `AUDIT.md` §C. |
+| `TIN - Business Plan.dc.html` | Problema, modello ricavi, unit economics, go-to-market, roadmap, rischi. |
 | `TIN - Presentazione Flussi.dc.html` | Deck dei flussi, 7 slide. |
 | `TIN - Policy Breakage.dc.html` | Saldi dormienti: i tre regimi possibili e il default prudente proposto. |
+
+Sono i 9 deliverable elencati al §16 del Documento Unico, al completo.
 
 I `.dc.html` sono documenti design-component: si aprono in browser e usano i runtime
 `support.js`, `doc-page.js` (documenti stampabili) e `deck-stage.js` (deck) presenti in
@@ -52,10 +58,19 @@ questa stessa cartella — vanno tenuti accanto ai documenti, i riferimenti sono
 
 ## Stato
 
-Documentazione e design completi (deliverable 1–4, 8, 9 del §16 del Documento Unico).
-Mancano Business Plan e prototipo app navigabile.
+Documentazione e design **completi**: tutti e 9 i deliverable del §16 sono presenti.
 
-Prima di scrivere codice restano due **bloccanti a tempi lunghi**, da avviare in parallelo:
+La revisione incrociata ([`AUDIT.md`](./AUDIT.md)) ha però trovato **tre punti da chiudere
+prima di scrivere codice**:
+
+1. **Rimborso contro "niente cash-out"** — le due regole si contraddicono, e la seconda è il
+   pilastro su cui poggia l'esenzione dalla licenza. Serve il legale.
+2. **Costo carta sulla ricarica** — dichiarato "ribaltato sul cliente", ma assente dalla UI:
+   così ogni ricarica in EUR è in perdita.
+3. **Storni nel ledger** — non esiste un tipo `refund`/`reversal`, quindi chargeback,
+   rimborsi e pagamenti contestati non sono rappresentabili. Tocca il modello dati.
+
+Restano poi i due **bloccanti a tempi lunghi**, da avviare in parallelo:
 
 1. **Legale fintech** — conferma dell'esenzione closed-loop nei Paesi del pilota e stesura
    dei Termini (inclusa la clausola breakage).

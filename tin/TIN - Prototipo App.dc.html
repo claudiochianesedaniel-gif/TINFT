@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#2c2d31;font-family:'Space Grotesk',sans-serif;color:#ececec}
+  .sora{font-family:'Sora',sans-serif}
+  .mono{font-family:'JetBrains Mono',monospace}
+  a{color:#84a9ff}a:hover{color:#a9c2ff}
+  .lbl{font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase}
+  .btn{border-radius:12px;padding:14px;text-align:center;font-weight:700;font-size:14px;cursor:pointer;user-select:none;transition:transform .08s,filter .15s}
+  .btn:active{transform:scale(.97)}
+  .grad{background:linear-gradient(120deg,#4f7cf0,#35cf93);color:#06120c}
+  .card{background:#141416;border:1px solid #232325;border-radius:15px}
+  .coin{border-radius:50%;background:linear-gradient(135deg,#4f7cf0,#35cf93);flex-shrink:0}
+  .row{display:flex;align-items:center;gap:11px}
+  .kf{font-size:11px;color:#8c8c8c}
+  .tapzone{cursor:pointer;user-select:none;transition:filter .12s}
+  .tapzone:active{filter:brightness(1.25)}
+  .kec{display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;cursor:pointer;user-select:none;background:#141416;border:1px solid #232325;border-radius:13px}
+  .kec:active{background:#1f1f22}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:34px 20px 60px">
+
+  <!-- prototype chrome -->
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+    <svg width="34" height="34" viewBox="0 0 120 120"><defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f7cf0"/><stop offset="100%" stop-color="#35cf93"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#c)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#0a0a0a" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#0a0a0a"/></svg>
+    <div class="sora" style="font-weight:800;font-size:22px;letter-spacing:-0.02em">TIN — Prototipo</div>
+  </div>
+  <div class="kf" style="margin-bottom:20px">Scegli un'utenza e tocca gli elementi per navigare</div>
+
+  <!-- role switcher -->
+  <div style="display:flex;gap:8px;background:#141416;border:1px solid #232325;border-radius:14px;padding:6px;margin-bottom:26px">
+    <div class="tapzone" onClick="{{ pickCliente }}" style="padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;background:{{ cli_bg }};color:{{ cli_fg }}">Cliente</div>
+    <div class="tapzone" onClick="{{ pickOrg }}" style="padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;background:{{ org_bg }};color:{{ org_fg }}">Organizzatore</div>
+    <div class="tapzone" onClick="{{ pickVal }}" style="padding:9px 18px;border-radius:9px;font-size:13px;font-weight:700;background:{{ val_bg }};color:{{ val_fg }}">Validatore</div>
+  </div>
+
+  <!-- PHONE -->
+  <div style="width:320px;height:680px;background:#0a0a0a;border-radius:38px;padding:12px;border:1px solid #2a2a2c;box-shadow:0 40px 90px -40px rgba(0,0,0,.9);position:relative">
+    <div style="position:absolute;top:15px;left:50%;transform:translateX(-50%);width:100px;height:24px;background:#0a0a0a;border-radius:13px;z-index:5"></div>
+    <div style="width:100%;height:100%;background:#0a0a0a;border-radius:26px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px 4px;font-size:11px;font-weight:600;color:#cfcfcf"><span>{{ clock }}</span><span>{{ appName }}</span></div>
+
+      <div style="flex:1;overflow-y:auto;padding:8px 18px 14px">
+
+        <!-- ============ CLIENTE ============ -->
+        <sc-if value="{{ s_cli_home }}" hint-placeholder-val="{{ true }}">
+          <div class="row" style="justify-content:space-between;margin-top:4px"><span class="kf">Ciao, Marco</span><div class="coin" style="width:30px;height:30px"></div></div>
+          <div class="card" style="margin-top:12px;padding:16px;background:linear-gradient(150deg,#0d1b16,#050a0c);border-color:#17352a">
+            <span class="lbl" style="color:#35cf93;font-size:9px">Saldo disponibile</span>
+            <div class="mono" style="font-size:42px;font-weight:600;color:#aef0d2;margin-top:8px">{{ balanceStr }}</div>
+            <div style="font-size:11px;color:#5f9a80">TIN · ≈ €{{ balanceStr }}</div>
+            <div style="display:flex;gap:8px;margin-top:16px">
+              <div class="btn grad tapzone" onClick="{{ goRicarica }}" style="flex:1">Ricarica</div>
+              <div class="btn tapzone" onClick="{{ goRegala }}" style="flex:1;background:#1c1c1f;color:#ececec">Regala</div>
+            </div>
+          </div>
+          <div class="lbl" style="color:#6a6a6a;font-size:9px;margin:16px 2px 8px">Movimenti</div>
+          <div class="card" style="padding:0">
+            <sc-for list="{{ movimenti }}" as="m" hint-placeholder-count="3">
+              <div class="row" style="padding:12px 14px;border-bottom:1px solid #202022"><div style="width:34px;height:34px;border-radius:9px;border:2px solid {{ m.color }}"></div><div style="flex:1"><div style="font-size:13px;font-weight:600">{{ m.name }}</div><div class="kf">{{ m.time }}</div></div><span class="mono" style="font-size:14px;color:{{ m.amtColor }}">{{ m.amt }}</span></div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ s_cli_ricarica }}" hint-placeholder-val="{{ false }}">
+          <div class="row" style="gap:9px;margin-top:2px"><span class="tapzone" onClick="{{ goHome }}" style="font-size:20px;color:#8c8c8c">‹</span><span class="sora" style="font-weight:700;font-size:19px">Ricarica</span></div>
+          <div class="lbl" style="color:#6a6a6a;font-size:9px;margin:16px 2px 8px">Valuta</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <sc-for list="{{ currencies }}" as="cur" hint-placeholder-count="4">
+              <div class="btn tapzone" onClick="{{ cur.pick }}" style="background:{{ cur.bg }};border:1px solid {{ cur.br }};color:{{ cur.fg }};padding:9px 14px;font-size:12px">{{ cur.label }}</div>
+            </sc-for>
+          </div>
+          <div class="lbl" style="color:#6a6a6a;font-size:9px;margin:18px 2px 8px">Importo in TIN</div>
+          <div style="display:flex;gap:8px">
+            <sc-for list="{{ amounts }}" as="a" hint-placeholder-count="3">
+              <div class="btn tapzone" onClick="{{ a.pick }}" style="flex:1;background:{{ a.bg }};border:1px solid {{ a.br }};color:{{ a.fg }};font-size:15px">{{ a.label }}</div>
+            </sc-for>
+          </div>
+          <div class="card" style="margin-top:14px;padding:14px">
+            <div class="row" style="justify-content:space-between"><span class="kf">Cambio {{ curCode }} ({{ curRate }})</span><span class="mono" style="font-size:12px">{{ fiatBase }}</span></div>
+            <div class="row" style="justify-content:space-between;margin-top:7px"><span class="kf">Spread 1%</span><span class="mono" style="font-size:12px">{{ fiatSpread }}</span></div>
+            <div class="row" style="justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid #232325"><span style="font-size:12px;font-weight:700">Addebito</span><span class="mono" style="font-size:16px;font-weight:600;color:#35cf93">{{ fiatTotal }}</span></div>
+          </div>
+          <div class="btn grad tapzone" onClick="{{ doRicarica }}" style="margin-top:16px">Paga {{ fiatTotal }}</div>
+        </sc-if>
+
+        <sc-if value="{{ s_cli_regala }}" hint-placeholder-val="{{ false }}">
+          <div class="row" style="gap:9px;margin-top:2px"><span class="tapzone" onClick="{{ goHome }}" style="font-size:20px;color:#8c8c8c">‹</span><span class="sora" style="font-weight:700;font-size:19px">Regala TIN</span></div>
+          <div class="kf" style="margin:6px 2px">Nessuna commissione tra clienti.</div>
+          <div class="lbl" style="color:#6a6a6a;font-size:9px;margin:14px 2px 8px">A chi</div>
+          <div class="card" style="padding:0">
+            <sc-for list="{{ friends }}" as="f" hint-placeholder-count="3">
+              <div class="row tapzone" onClick="{{ f.pick }}" style="padding:12px 14px;border-bottom:1px solid #202022"><div style="width:34px;height:34px;border-radius:50%;background:{{ f.color }}"></div><div style="flex:1;font-size:13px;font-weight:600">{{ f.name }}</div><span style="font-size:13px;color:{{ f.tick }}">{{ f.sel }}</span></div>
+            </sc-for>
+          </div>
+          <div class="card" style="margin-top:16px;text-align:center;padding:20px"><div class="mono" style="font-size:40px;font-weight:600">20<span style="color:#6a6a6a">,00</span></div><div class="kf">TIN</div></div>
+          <div class="btn grad tapzone" onClick="{{ doRegala }}" style="margin-top:16px">Invia regalo</div>
+        </sc-if>
+
+        <sc-if value="{{ s_cli_paga }}" hint-placeholder-val="{{ false }}">
+          <div class="row" style="gap:9px;margin-top:2px"><span class="sora" style="font-weight:700;font-size:19px">Paga</span></div>
+          <div style="text-align:center;margin-top:4px;font-size:12px;color:#9a9a9a">Inquadra il QR della cassa</div>
+          <div style="margin-top:14px;border-radius:18px;background:#0d0d0f;border:1px solid #232325;height:280px;display:flex;align-items:center;justify-content:center">
+            <div style="width:150px;height:150px;position:relative">
+              <div style="position:absolute;top:0;left:0;width:30px;height:30px;border-top:3px solid #4f7cf0;border-left:3px solid #4f7cf0;border-radius:6px 0 0 0"></div>
+              <div style="position:absolute;top:0;right:0;width:30px;height:30px;border-top:3px solid #4f7cf0;border-right:3px solid #4f7cf0;border-radius:0 6px 0 0"></div>
+              <div style="position:absolute;bottom:0;left:0;width:30px;height:30px;border-bottom:3px solid #35cf93;border-left:3px solid #35cf93;border-radius:0 0 0 6px"></div>
+              <div style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-bottom:3px solid #35cf93;border-right:3px solid #35cf93;border-radius:0 0 6px 0"></div>
+              <div style="position:absolute;left:8px;right:8px;top:50%;height:2px;background:linear-gradient(90deg,transparent,#35cf93,transparent)"></div>
+            </div>
+          </div>
+          <div class="btn grad tapzone" onClick="{{ goPayConfirm }}" style="margin-top:16px">Simula scansione</div>
+        </sc-if>
+
+        <sc-if value="{{ s_cli_payconfirm }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;height:100%">
+            <div class="lbl" style="color:#6a6a6a;font-size:9px">Pagamento a</div>
+            <div class="sora" style="font-weight:700;font-size:22px;margin-top:6px">Bar Centrale</div>
+            <div class="kf">Festival Nord · postazione 3</div>
+            <div class="mono" style="font-size:58px;font-weight:600;margin-top:24px">8,00</div>
+            <div class="kf" style="margin-top:2px">TIN · ≈ €8,00</div>
+            <div class="card" style="margin-top:24px;width:100%;padding:11px"><div class="row" style="justify-content:space-between"><span class="kf">Saldo dopo</span><span class="mono" style="font-size:13px;color:#aef0d2">{{ balanceAfterPay }} TIN</span></div></div>
+            <div style="margin-top:20px;width:100%"><div class="btn grad tapzone" onClick="{{ doPay }}" style="padding:15px">Conferma con Face ID</div><div class="btn tapzone" onClick="{{ goHome }}" style="color:#8c8c8c;margin-top:8px">Annulla</div></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ s_cli_done }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;height:100%">
+            <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#4f7cf0,#35cf93);display:flex;align-items:center;justify-content:center;font-size:48px;color:#06120c">✓</div>
+            <div class="sora" style="font-weight:800;font-size:24px;margin-top:20px">{{ doneTitle }}</div>
+            <div class="mono" style="font-size:34px;font-weight:600;color:#35cf93;margin-top:8px">{{ doneAmt }}</div>
+            <div class="kf">{{ doneSub }}</div>
+            <div style="margin-top:26px;width:100%"><div class="btn grad tapzone" onClick="{{ goHome }}">Torna al wallet</div></div>
+          </div>
+        </sc-if>
+
+        <!-- ============ ORGANIZZATORE ============ -->
+        <sc-if value="{{ s_org_home }}" hint-placeholder-val="{{ false }}">
+          <div class="row" style="justify-content:space-between;margin-top:4px"><span class="sora" style="font-weight:700;font-size:19px">Festival Nord</span><span class="kf" style="color:#35cf93">● live</span></div>
+          <div class="card" style="margin-top:12px;padding:16px;background:linear-gradient(150deg,#0d1b16,#050a0c);border-color:#17352a">
+            <span class="lbl" style="color:#35cf93;font-size:9px">Incassato oggi</span>
+            <div class="mono" style="font-size:38px;font-weight:600;color:#aef0d2;margin-top:8px">14.820</div>
+            <div style="font-size:11px;color:#5f9a80">TIN · ≈ €14.820</div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div class="card" style="flex:1;padding:12px"><div class="kf">Transazioni</div><div class="mono" style="font-size:22px;font-weight:600;margin-top:4px">1.902</div></div>
+            <div class="card" style="flex:1;padding:12px"><div class="kf">Scontrino medio</div><div class="mono" style="font-size:22px;font-weight:600;margin-top:4px">7,8</div></div>
+          </div>
+          <div class="lbl" style="color:#6a6a6a;font-size:9px;margin:16px 2px 8px">Punti vendita</div>
+          <div class="card" style="padding:0">
+            <div class="row" style="padding:11px 14px;border-bottom:1px solid #202022"><div style="flex:1"><div style="font-size:13px;font-weight:600">Bar Centrale</div><div class="kf">3 validatori</div></div><span class="mono" style="font-size:13px;color:#35cf93">6.420</span></div>
+            <div class="row" style="padding:11px 14px;border-bottom:1px solid #202022"><div style="flex:1"><div style="font-size:13px;font-weight:600">Food Truck</div><div class="kf">2 validatori</div></div><span class="mono" style="font-size:13px;color:#35cf93">5.180</span></div>
+            <div class="row" style="padding:11px 14px"><div style="flex:1"><div style="font-size:13px;font-weight:600">Merch</div><div class="kf">1 validatore</div></div><span class="mono" style="font-size:13px;color:#35cf93">3.220</span></div>
+          </div>
+          <div class="btn grad tapzone" onClick="{{ goSettlement }}" style="margin-top:16px">Incassa in fiat</div>
+        </sc-if>
+
+        <sc-if value="{{ s_org_settlement }}" hint-placeholder-val="{{ false }}">
+          <div class="row" style="gap:9px;margin-top:2px"><span class="tapzone" onClick="{{ goHome }}" style="font-size:20px;color:#8c8c8c">‹</span><span class="sora" style="font-weight:700;font-size:19px">Incassa in fiat</span></div>
+          <div class="card" style="margin-top:12px;text-align:center;background:linear-gradient(150deg,#0d1b16,#050a0c);border-color:#17352a;padding:20px"><span class="lbl" style="color:#35cf93;font-size:9px">Saldo convertibile</span><div class="mono" style="font-size:38px;font-weight:600;color:#aef0d2;margin-top:8px">14.820</div><div class="kf" style="color:#5f9a80">TIN</div></div>
+          <div class="lbl" style="color:#6a6a6a;font-size:9px;margin:16px 2px 8px">Ricevi in</div>
+          <div style="display:flex;gap:8px"><div class="btn" style="background:#0d2b1f;border:1px solid #35cf93;color:#bff0d8;padding:9px 14px;font-size:12px">€ EUR</div><div class="btn" style="background:#1c1c1f;color:#b8b8b8;padding:9px 14px;font-size:12px">$ USD</div><div class="btn" style="background:#1c1c1f;color:#b8b8b8;padding:9px 14px;font-size:12px">£ GBP</div></div>
+          <div class="card" style="margin-top:14px;padding:14px">
+            <div class="row" style="justify-content:space-between"><span class="kf">Lordo</span><span class="mono" style="font-size:12px">€14.820,00</span></div>
+            <div class="row" style="justify-content:space-between;margin-top:7px"><span class="kf">Commissione 3%</span><span class="mono" style="font-size:12px;color:#e88">−€444,60</span></div>
+            <div class="row" style="justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid #232325"><span style="font-size:12px;font-weight:700">Sul tuo conto</span><span class="mono" style="font-size:16px;font-weight:600;color:#35cf93">€14.375,40</span></div>
+          </div>
+          <div class="kf" style="margin-top:10px;text-align:center">Conto ****4821 · KYB ✓</div>
+          <div class="btn grad tapzone" onClick="{{ goHome }}" style="margin-top:14px">Richiedi payout</div>
+        </sc-if>
+
+        <!-- ============ VALIDATORE ============ -->
+        <sc-if value="{{ s_val_keypad }}" hint-placeholder-val="{{ false }}">
+          <div class="row" style="justify-content:space-between;margin-top:2px"><span class="sora" style="font-weight:700;font-size:17px">Bar Centrale</span><span class="kf">Luca V.</span></div>
+          <div class="card" style="margin-top:12px;text-align:center;padding:20px"><div class="kf">Importo da incassare</div><div class="mono" style="font-size:44px;font-weight:600;margin-top:6px;color:{{ valAmtColor }}">{{ valAmountStr }}</div><div class="kf">TIN</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;height:250px">
+            <div class="kec tapzone" onClick="{{ k1 }}">1</div><div class="kec tapzone" onClick="{{ k2 }}">2</div><div class="kec tapzone" onClick="{{ k3 }}">3</div>
+            <div class="kec tapzone" onClick="{{ k4 }}">4</div><div class="kec tapzone" onClick="{{ k5 }}">5</div><div class="kec tapzone" onClick="{{ k6 }}">6</div>
+            <div class="kec tapzone" onClick="{{ k7 }}">7</div><div class="kec tapzone" onClick="{{ k8 }}">8</div><div class="kec tapzone" onClick="{{ k9 }}">9</div>
+            <div class="kec tapzone" onClick="{{ kClear }}" style="font-size:14px;color:#8c8c8c">C</div><div class="kec tapzone" onClick="{{ k0 }}">0</div><div class="kec tapzone" onClick="{{ kDel }}" style="font-size:16px;color:#8c8c8c">⌫</div>
+          </div>
+          <div class="btn grad tapzone" onClick="{{ goValQR }}" style="margin-top:14px">Genera QR incasso</div>
+        </sc-if>
+
+        <sc-if value="{{ s_val_qr }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
+            <div class="sora" style="font-weight:700;font-size:17px;margin-top:6px">Mostra al cliente</div>
+            <div class="mono" style="font-size:32px;font-weight:600;margin-top:12px">{{ valAmountStr }} <span style="font-size:14px;color:#8c8c8c">TIN</span></div>
+            <div style="margin-top:16px;width:168px;height:168px;border-radius:16px;background:#fff;padding:14px">
+              <div style="width:100%;height:100%;background:conic-gradient(#000 25%,#fff 0 50%,#000 0 75%,#fff 0);background-size:22px 22px;border-radius:4px;position:relative">
+                <div style="position:absolute;top:6px;left:6px;width:34px;height:34px;border:6px solid #000;border-radius:4px;background:#fff"></div>
+                <div style="position:absolute;top:6px;right:6px;width:34px;height:34px;border:6px solid #000;border-radius:4px;background:#fff"></div>
+                <div style="position:absolute;bottom:6px;left:6px;width:34px;height:34px;border:6px solid #000;border-radius:4px;background:#fff"></div>
+              </div>
+            </div>
+            <div class="kf" style="margin-top:14px">Scade tra 0:47 · usa-e-getta</div>
+            <div class="card" style="margin-top:16px;width:100%;padding:12px"><div class="row" style="gap:10px"><div style="width:8px;height:8px;border-radius:50%;background:#e0a441"></div><span style="font-size:12px;color:#e6c88a">In attesa della conferma cliente…</span></div></div>
+            <div style="width:100%;margin-top:14px"><div class="btn grad tapzone" onClick="{{ goValDone }}">Simula conferma cliente</div><div class="btn tapzone" onClick="{{ goValKeypad }}" style="background:#1c1c1f;color:#8c8c8c;margin-top:8px">Annulla</div></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ s_val_done }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;height:100%">
+            <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#4f7cf0,#35cf93);display:flex;align-items:center;justify-content:center;font-size:48px;color:#06120c">✓</div>
+            <div class="sora" style="font-weight:800;font-size:24px;margin-top:20px">Incassato</div>
+            <div class="mono" style="font-size:34px;font-weight:600;color:#35cf93;margin-top:8px">+{{ valAmountStr }}</div>
+            <div class="kf">TIN · Bar Centrale</div>
+            <div class="card" style="margin-top:22px;width:100%;padding:14px;border-color:#24397a;background:#111a30"><div style="font-size:13px;font-weight:600;color:#dce6ff">→ Consegna il prodotto</div><div class="kf" style="margin-top:3px">Segna come consegnato dopo la consegna</div></div>
+            <div style="margin-top:20px;width:100%"><div class="btn grad tapzone" onClick="{{ goValKeypad }}">Prossimo cliente</div></div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- bottom tab (per role) -->
+      <div style="display:flex;justify-content:space-around;align-items:center;padding:11px 6px 18px;border-top:1px solid #1c1c1e;background:#0d0d0f">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <div class="tapzone" onClick="{{ t.go }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:{{ t.color }}"><div style="width:20px;height:20px;border-radius:6px;border:2px solid currentColor;opacity:.9"></div>{{ t.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0a0a0a"/><defs><linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4f7cf0"/><stop offset="100%" stop-color="#35cf93"/></linearGradient></defs><rect x="34" y="18" width="32" height="64" rx="7" fill="none" stroke="url(#t)" stroke-width="4"/><circle cx="50" cy="66" r="4" fill="url(#t)"/></svg></template>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { role:'cliente', screen:'home', balance:128.50, cur:'USD', amt:50, valAmount:'' };
+
+  // ---- helpers ----
+  fmt(n){ return n.toFixed(2).replace('.',','); }
+  go(screen){ this.setState({screen}); }
+  setRole(role){ const home = role==='cliente'?'home':role==='org'?'org_home':'val_keypad'; this.setState({role, screen: role==='cliente'?'home':home}); }
+
+  rates(){ return {USD:1.08, EUR:1.00, GBP:0.85, JPY:170, CHF:0.95}; }
+  curLabels(){ return [['USD','🇺🇸 USD'],['EUR','€ EUR'],['GBP','£ GBP'],['+10','+10']]; }
+
+  renderVals(){
+    const st=this.state, role=st.role;
+    const sc=(r,s)=> role===r && st.screen===s;
+    const on='linear-gradient(120deg,#4f7cf0,#35cf93)', onFg='#06120c', off='transparent', offFg='#9a9a9a';
+
+    // role switcher
+    const rs=(r)=> role===r ? {bg:on, fg:onFg} : {bg:off, fg:offFg};
+
+    // ricarica calc
+    const rate=this.rates()[st.cur]||1.08;
+    const base=st.amt*rate, spread=base*0.01, total=base+spread;
+    const sym={USD:'$',EUR:'€',GBP:'£',JPY:'¥',CHF:'CHF '}[st.cur]||'$';
+
+    const curBtns=this.curLabels().map(([code,label])=>{
+      const active = code===st.cur || (code==='+10'&&false);
+      return {label, bg: active?'#152244':'#1c1c1f', br: active?'#4f7cf0':'#1c1c1f', fg: active?'#dce6ff':'#b8b8b8',
+        pick: ()=> code!=='+10' && this.setState({cur:code}) };
+    });
+    const amtBtns=[25,50,100].map(v=>({label:String(v), bg: v===st.amt?'#152244':'#1c1c1f', br: v===st.amt?'#4f7cf0':'#1c1c1f', fg: v===st.amt?'#dce6ff':'#b8b8b8', pick:()=>this.setState({amt:v})}));
+
+    const movimenti=[
+      {name:'Bar centrale', time:'22:14', amt:'−8,00', color:'#4f7cf0', amtColor:'#ececec'},
+      {name:'Ricarica', time:'da $54,54', amt:'+50,00', color:'#35cf93', amtColor:'#35cf93'},
+      {name:'Food truck', time:'21:02', amt:'−12,50', color:'#4f7cf0', amtColor:'#ececec'},
+    ];
+    const friends=[
+      {name:'Giulia', color:'#4f7cf0'},{name:'Davide', color:'#35cf93'},{name:'Sara', color:'#8a6cf0'}
+    ].map((f,i)=>({...f, sel: i===0?'●':'', tick: i===0?'#35cf93':'#6a6a6a', pick:()=>{}}));
+
+    // val keypad
+    const kp=(d)=>()=>{ let v=this.state.valAmount; if(v.replace(/[^0-9]/g,'').length>=5)return; this.setState({valAmount: v+d}); };
+    const valDisp = st.valAmount==='' ? '0,00' : this.fmt(parseInt(st.valAmount,10)/100);
+
+    // tabs per role
+    let tabs=[];
+    if(role==='cliente'){
+      const cur=st.screen;
+      tabs=[
+        {label:'Wallet', key:'home', go:()=>this.go('home')},
+        {label:'Paga', key:'paga', go:()=>this.go('paga')},
+        {label:'Eventi', key:'ev', go:()=>{}},
+        {label:'Profilo', key:'pr', go:()=>{}},
+      ].map(t=>({...t, color: (cur===t.key||(t.key==='paga'&&['paga','payconfirm'].includes(cur)))?'#4f7cf0':'#6a6a6a'}));
+    } else if(role==='org'){
+      const cur=st.screen;
+      tabs=[
+        {label:'Live', key:'org_home', go:()=>this.go('org_home')},
+        {label:'Vendita', key:'v', go:()=>{}},
+        {label:'Team', key:'tm', go:()=>{}},
+        {label:'Incassi', key:'org_settlement', go:()=>this.go('org_settlement')},
+      ].map(t=>({...t, color: cur===t.key?'#35cf93':'#6a6a6a'}));
+    } else {
+      tabs=[
+        {label:'Cassa', key:'val_keypad', go:()=>this.go('val_keypad')},
+        {label:'Storico', key:'h', go:()=>{}},
+        {label:'Turno', key:'t', go:()=>{}},
+      ].map(t=>({...t, color: st.screen===t.key?'#e0a441':'#6a6a6a'}));
+    }
+
+    return {
+      clock: role==='org'&&st.screen==='org_settlement' ? '02:40' : '22:1'+(role==='val'?'9':'6'),
+      appName: role==='cliente'?'TIN':role==='org'?'TIN Business':'TIN · Cassa',
+
+      // role switcher styles
+      cli_bg:rs('cliente').bg, cli_fg:rs('cliente').fg,
+      org_bg:rs('org').bg, org_fg:rs('org').fg,
+      val_bg:rs('val').bg, val_fg:rs('val').fg,
+      pickCliente:()=>this.setRole('cliente'), pickOrg:()=>this.setRole('org'), pickVal:()=>this.setRole('val'),
+
+      // screen flags
+      s_cli_home: sc('cliente','home'),
+      s_cli_ricarica: sc('cliente','ricarica'),
+      s_cli_regala: sc('cliente','regala'),
+      s_cli_paga: sc('cliente','paga'),
+      s_cli_payconfirm: sc('cliente','payconfirm'),
+      s_cli_done: sc('cliente','done'),
+      s_org_home: sc('org','org_home'),
+      s_org_settlement: sc('org','org_settlement'),
+      s_val_keypad: sc('val','val_keypad'),
+      s_val_qr: sc('val','val_qr'),
+      s_val_done: sc('val','val_done'),
+
+      // cliente data
+      balanceStr: this.fmt(st.balance),
+      balanceAfterPay: this.fmt(st.balance-8),
+      movimenti, friends,
+      currencies: curBtns, amounts: amtBtns,
+      curCode: st.cur, curRate: this.fmt(rate), 
+      fiatBase: sym+this.fmt(base), fiatSpread: sym+this.fmt(spread), fiatTotal: sym+this.fmt(total),
+
+      // done screen (shared cliente)
+      doneTitle: st._doneTitle||'Fatto', doneAmt: st._doneAmt||'', doneSub: st._doneSub||'',
+
+      // nav handlers
+      goHome:()=>this.go(role==='cliente'?'home':role==='org'?'org_home':'val_keypad'),
+      goRicarica:()=>this.go('ricarica'),
+      goRegala:()=>this.go('regala'),
+      goPayConfirm:()=>this.go('payconfirm'),
+      goSettlement:()=>this.go('org_settlement'),
+
+      doRicarica:()=>this.setState({balance: this.state.balance+this.state.amt, screen:'done', _doneTitle:'Ricarica riuscita', _doneAmt:'+'+this.fmt(this.state.amt), _doneSub:'TIN · da '+sym+this.fmt(total)}),
+      doRegala:()=>this.setState({balance: Math.max(0,this.state.balance-20), screen:'done', _doneTitle:'Regalo inviato', _doneAmt:'−20,00', _doneSub:'TIN · a Giulia · fee 0%'}),
+      doPay:()=>this.setState({balance: Math.max(0,this.state.balance-8), screen:'done', _doneTitle:'Pagato', _doneAmt:'−8,00', _doneSub:'TIN · Bar Centrale'}),
+
+      // validatore
+      valAmountStr: valDisp,
+      valAmtColor: st.valAmount===''?'#4a4a4a':'#ececec',
+      k1:kp('1'),k2:kp('2'),k3:kp('3'),k4:kp('4'),k5:kp('5'),k6:kp('6'),k7:kp('7'),k8:kp('8'),k9:kp('9'),k0:kp('0'),
+      kClear:()=>this.setState({valAmount:''}),
+      kDel:()=>this.setState({valAmount: this.state.valAmount.slice(0,-1)}),
+      goValQR:()=> (st.valAmount!=='') && this.go('val_qr'),
+      goValDone:()=>this.go('val_done'),
+      goValKeypad:()=>this.setState({screen:'val_keypad', valAmount:''}),
+
+      tabs,
+    };
+  }
+}
+</script>
+</body>
+</html>

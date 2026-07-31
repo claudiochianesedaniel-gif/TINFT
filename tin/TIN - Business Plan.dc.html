@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#8a8d93;font-family:'Space Grotesk',sans-serif;color:#16171a}
+  doc-page:not(:defined){visibility:hidden}
+  a{color:#2a55c7}a:hover{color:#1b3a91}
+  .sora{font-family:'Sora',sans-serif}
+  .mono{font-family:'JetBrains Mono',monospace}
+  p{text-wrap:pretty}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th{text-align:left;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5d63;padding:6px 8px;border-bottom:1.5px solid #16171a}
+  td{padding:7px 8px;border-bottom:1px solid #e0e2e6;vertical-align:top;color:#3a3d43}
+  td.n,th.n{text-align:right;font-family:'JetBrains Mono',monospace}
+  tr:last-child td{border-bottom:none}
+  .tot td{border-top:1.5px solid #16171a;font-weight:700;color:#16171a}
+  h2{font-family:'Sora',sans-serif;font-weight:700;font-size:20px;margin-top:30px;padding-bottom:6px;border-bottom:1px solid #d7d9dd;letter-spacing:-0.01em}
+  h3{font-size:12.5px;font-weight:700;margin-top:16px}
+  .lead{font-size:12.5px;line-height:1.62;color:#3a3d43;margin-top:9px}
+  .kv{font-size:11px;color:#5a5d63;line-height:1.6}
+  .grad{background:linear-gradient(120deg,#2a55c7,#1f8a5b)}
+</style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="816px,1056px">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:2px solid #16171a;padding-bottom:16px">
+    <div style="display:flex;gap:15px;align-items:center">
+      <svg width="46" height="46" viewBox="0 0 120 120"><defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a55c7"/><stop offset="100%" stop-color="#1f8a5b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#c)"/><polygon points="60,24 22,90 98,90" fill="none" stroke="#fff" stroke-width="10.5" stroke-linejoin="round"/><circle cx="60" cy="69" r="7.5" fill="#fff"/></svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#2a55c7">TINFT · Wallet eventi</div>
+        <h1 class="sora" style="font-weight:800;font-size:30px;line-height:1.02;margin-top:5px">Business Plan — TIN</h1>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;font-size:11px;color:#5a5d63;line-height:1.6"><div style="font-weight:700;color:#16171a">Luglio 2026 · v1</div><div>Documento riservato</div></div>
+  </div>
+
+  <!-- EXEC SUMMARY -->
+  <h2>In sintesi</h2>
+  <p class="lead">TIN è il wallet a circuito chiuso dell'ecosistema TINFT: il pubblico degli eventi ricarica in qualsiasi valuta e spende coin (1&nbsp;TIN&nbsp;=&nbsp;€1) presso bar, food e merchandising; l'organizzatore incassa e converte in fiat. Il ricavo della piattaforma è la <b>commissione del 3% sul settlement</b>, più lo spread cambio sulle ricariche in valuta estera e il breakage sui saldi dormienti. Il cashless da evento riduce le code, aumenta lo scontrino medio e dà all'organizzatore dati di vendita in tempo reale — con un solo vincolo tecnico: tutto passa dallo smartphone, nessun hardware in loco.</p>
+
+  <div style="display:flex;gap:12px;margin-top:16px">
+    <div style="flex:1;background:#eef3ff;border:1px solid #c9d7f7;border-radius:10px;padding:13px 15px"><div class="mono" style="font-size:24px;font-weight:600;color:#2a55c7">3%</div><div class="kv" style="margin-top:2px">commissione settlement — ricavo primario</div></div>
+    <div style="flex:1;background:#f0f7f2;border:1px solid #bfe0cc;border-radius:10px;padding:13px 15px"><div class="mono" style="font-size:24px;font-weight:600;color:#1f8a5b">0 hw</div><div class="kv" style="margin-top:2px">nessun device in loco: solo app</div></div>
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:10px;padding:13px 15px"><div class="mono" style="font-size:24px;font-weight:600;color:#16171a">10+</div><div class="kv" style="margin-top:2px">valute fiat alla ricarica</div></div>
+  </div>
+
+  <!-- PROBLEMA -->
+  <h2>Problema e opportunità</h2>
+  <table style="margin-top:12px">
+    <tr><th>Attore</th><th>Dolore oggi (contante / POS)</th><th>Con TIN</th></tr>
+    <tr><td><b>Pubblico</b></td><td>Code alle casse, contante da gestire, bancomat introvabili</td><td>Ricarica una volta, paga in un tap, regala il residuo agli amici</td></tr>
+    <tr><td><b>Organizzatore</b></td><td>Contante da contare e mettere in sicurezza, POS a noleggio, zero dati live</td><td>Incassi tracciati, scontrino medio più alto, dashboard in tempo reale</td></tr>
+    <tr><td><b>Staff cassa</b></td><td>Resto, errori, gestione fisica dei soldi</td><td>Importo digitato, conferma sull'app, nessun contante</td></tr>
+  </table>
+  <p class="lead" style="font-size:11.5px">Il cashless da festival non è nuovo, ma quasi sempre richiede braccialetti RFID e lettori dedicati — hardware costoso da noleggiare e distribuire. TIN elimina l'hardware: il telefono che il pubblico ha già in tasca è il wallet, e quello dello staff è il POS. È il vincolo di prodotto ereditato da TINFT, ed è anche il vantaggio competitivo.</p>
+
+  <!-- MODELLO RICAVI -->
+  <h2>Come guadagna la piattaforma</h2>
+  <table style="margin-top:12px">
+    <tr><th>Fonte</th><th>Base</th><th class="n">Aliquota</th><th>Note</th></tr>
+    <tr><td>Commissione settlement</td><td>Valore incassato dall'organizzatore</td><td class="n"><b>3%</b></td><td>Ricavo principale, prelevato al payout</td></tr>
+    <tr><td>Spread cambio</td><td>Ricariche in valuta ≠ EUR</td><td class="n">0,75–1%</td><td>Copre rischio FX; nullo per ricariche in EUR</td></tr>
+    <tr><td>Breakage</td><td>Saldi dormienti oltre N mesi</td><td class="n">policy</td><td>Da definire con il legale per Paese</td></tr>
+    <tr><td>Costo ricarica</td><td>Incasso carta</td><td class="n">ribaltato</td><td>Passato al cliente: non è un ricavo</td></tr>
+    <tr class="tot"><td>Vendita P2P a pagamento</td><td>—</td><td class="n">Fase 2</td><td>Richiede partner EMI, fuori dall'MVP</td></tr>
+  </table>
+
+  <!-- UNIT ECONOMICS -->
+  <h2>Unit economics — evento tipo</h2>
+  <p class="lead">Ipotesi illustrative [Ipotesi]: festival di 3 giorni, 20.000 partecipanti, spesa media 45&nbsp;TIN a testa.</p>
+  <table style="margin-top:12px">
+    <tr><th>Voce</th><th class="n">Valore</th><th>Calcolo</th></tr>
+    <tr><td>Volume ricaricato (GMV)</td><td class="n">€900.000</td><td>20.000 × €45</td></tr>
+    <tr><td>Ricavo settlement 3%</td><td class="n" style="color:#1f8a5b">€27.000</td><td>3% del venduto</td></tr>
+    <tr><td>Spread cambio (≈30% esteri, 1%)</td><td class="n" style="color:#1f8a5b">€2.700</td><td>1% su €270k</td></tr>
+    <tr><td>Costo incasso carta (a carico cliente)</td><td class="n">€0</td><td>ribaltato</td></tr>
+    <tr><td>Costi PSP payout + infra</td><td class="n" style="color:#b3402a">−€4.500</td><td>≈0,5% GMV [Ipotesi]</td></tr>
+    <tr class="tot"><td>Margine lordo piattaforma / evento</td><td class="n" style="color:#1f8a5b">≈ €25.200</td><td>≈2,8% del GMV</td></tr>
+  </table>
+  <p class="lead" style="font-size:11.5px">I numeri sono da tarare sul mix reale di costi PSP e sulla quota di ricariche estere. Il breakage, non incluso qui, è margine addizionale. Il punto chiave: il margine scala col GMV, e il GMV scala col numero e la dimensione degli eventi — non con hardware da acquistare.</p>
+
+  <!-- GTM -->
+  <h2>Go-to-market</h2>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:9px;padding:12px 14px"><div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#2a55c7">1 · Aggancio</div><div class="kv" style="margin-top:5px">Parti dagli organizzatori che già usano il ticketing TINFT: cross-sell del wallet, zero attriti di acquisizione.</div></div>
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:9px;padding:12px 14px"><div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#2a55c7">2 · Pilota</div><div class="kv" style="margin-top:5px">1–2 eventi medi, solo online, tetti offline bassi. Misura scontrino medio e tempi di coda vs contante.</div></div>
+    <div style="flex:1;background:#f5f6f8;border:1px solid #d7d9dd;border-radius:9px;padding:12px 14px"><div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#2a55c7">3 · Scala</div><div class="kv" style="margin-top:5px">Offline completo, più valute, self-onboarding organizzatori. Valuta il percorso EMI per la Fase 2 P2P.</div></div>
+  </div>
+
+  <!-- ROADMAP -->
+  <h2>Roadmap</h2>
+  <table style="margin-top:12px">
+    <tr><th>Fase</th><th>Contenuto</th><th>Nodo</th></tr>
+    <tr><td><b>MVP</b></td><td>Ricarica multivaluta, spesa QR (Variante A), regalo P2P gratuito, dashboard + settlement 3%, offline con tetto</td><td>KYB organizzatore, PSP con custodia fondi</td></tr>
+    <tr><td><b>Fase 2</b></td><td>NFC, più valute, self-service organizzatori, breakage</td><td>Policy breakage per Paese</td></tr>
+    <tr><td><b>Fase 3</b></td><td>Vendita P2P a pagamento, cash-out cliente (eventuale)</td><td><b>Partner EMI / licenza, KYC, AML</b></td></tr>
+  </table>
+
+  <!-- RISCHI -->
+  <h2>Rischi principali</h2>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#b3402a;font-size:11px;font-weight:600">R1</span><span class="kv" style="color:#3a3d43"><b>Regolatorio:</b> superata la soglia "rete limitata" serve EMI. Mitigazione: PSP con percorso e-money già dal MVP.</span></div>
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#b3402a;font-size:11px;font-weight:600">R2</span><span class="kv" style="color:#3a3d43"><b>Connettività:</b> rete assente agli eventi. Mitigazione: spesa offline con tetto e voucher firmati.</span></div>
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#b3402a;font-size:11px;font-weight:600">R3</span><span class="kv" style="color:#3a3d43"><b>Adozione:</b> il pubblico non ricarica. Mitigazione: ricarica indolore (Apple/Google Pay), regalo del residuo, saldo riutilizzabile tra eventi.</span></div>
+    <div style="display:flex;gap:10px"><span class="mono" style="color:#b3402a;font-size:11px;font-weight:600">R4</span><span class="kv" style="color:#3a3d43"><b>Fiducia sui fondi:</b> il pubblico affida denaro. Mitigazione: custodia presso PSP, termini chiari, saldo sempre visibile.</span></div>
+  </div>
+
+  <div style="margin-top:30px;padding-top:12px;border-top:1px solid #d7d9dd;display:flex;justify-content:space-between;font-size:10px;color:#7a7d83">
+    <span>TINFT · TIN — Business Plan</span>
+    <span>Numeri illustrativi · non costituisce consulenza finanziaria o legale</span>
+  </div>
+
+</x-import>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#eef3ff"/><g stroke="#2a55c7" stroke-width="6" fill="none" stroke-linecap="round"><path d="M22 74 L42 52 L58 64 L80 30"/></g><circle cx="80" cy="30" r="7" fill="#1f8a5b"/></svg></template>
+
+</x-dc>
+</body>
+</html>
