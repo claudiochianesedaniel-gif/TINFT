@@ -123,9 +123,15 @@ ragione per cui il validatore è una persona con account (§4).
 |---|---|
 | Commissione | 🔒 **0%** |
 | Destinatario | Risolto con l'@handle — il campo `username` esiste già nel database, già usato «per ricerca, regali, varco» |
+| 🔒 L'@handle **non è modificabile** dopo la registrazione | Vedi il riquadro sotto |
+| Limiti residui **sempre visibili** nella schermata regalo | «Puoi ancora regalare 90 TIN oggi, a 3 persone diverse». I limiti sono una difesa antiabuso, non un segreto: chi vuole aggirarli li scopre in tre tentativi, chi è in buona fede resta solo bloccato senza capire — davanti agli amici, mentre offre da bere |
 | Tetto per singolo regalo | **50 TIN** |
 | Tetto giornaliero complessivo | **150 TIN** |
 | Destinatari distinti al giorno | **5** |
+
+> **Perché l'handle non si cambia.** I regali si indirizzano con l'@handle. Se un handle liberato potesse essere ripreso da un altro, chiunque potrebbe prendersi quello di una persona conosciuta e incassare i regali destinati a lei: in un'app di denaro un handle riciclato è un furto d'identità già pronto.
+>
+> **Verificato:** TINFT si comporta già così. `reserveUsername` è chiamato solo alla creazione dell'account, non esiste un percorso di modifica, e la validazione di formato (3–20 caratteri, minuscole, cifre, punto, underscore) con controllo di disponibilità live è già scritta. TIN eredita, non costruisce.
 
 > **Perché tre limiti e non uno.** Il tetto per regalo da solo si aggira spezzettando
 > l'importo; quello giornaliero lo copre. Ma il segnale che distingue davvero un regalo da
@@ -456,7 +462,7 @@ disconnette. Il saldo è sul server, quindi non si perde nulla e il cambio telef
 | **Ricevuta per ogni transazione** | Importo, punto vendita, evento, data, e le note del validatore. Con l'importo libero è l'unica prova di cosa è stato pagato: serve al cliente per contestare e all'organizzatore per rispondere |
 | **Filtro per evento** | Con un saldo riutilizzabile tra eventi, senza filtro lo storico è illeggibile dopo la seconda serata |
 | **Saldo negativo spiegato** | Se uno storno porta sotto zero, il wallet dice perché e cosa serve per rientrare, invece di mostrare 0,00 o un errore. Senza, il cliente vede solo un'app rotta |
-| **Notifiche push sui movimenti** | La difesa antifrode più efficace che esista: se qualcuno spende i tuoi TIN lo sai subito, non a fine serata |
+| **Notifiche push** | Vedi l'elenco sotto |
 
 ## 14 · Dove si possono spendere i TIN
 
@@ -561,6 +567,29 @@ circa $138`. Predefinita la valuta dell'ultima ricarica, modificabile dalle impo
 anche straniero: un festival che accetta dollari e sterline e poi parla solo italiano si
 contraddice. Aggiungere lingue dopo significa ripassare ogni testo già scritto. In
 `apps/web/i18n.js` l'impianto c'è già.
+
+### Quali notifiche
+
+| Notifica | Perché |
+|---|---|
+| **Movimenti** — pagamenti, ricariche, regali ricevuti | La difesa antifrode più efficace che esista: se qualcuno spende i tuoi TIN lo sai subito, non a fine serata |
+| **Accesso da un nuovo dispositivo** | Chi subisce la disconnessione deve saperlo. Senza avviso, il proprietario scopre il furto quando prova a pagare |
+| **Storni e contestazioni** | «L'organizzatore ha stornato 80,00 TIN», «la tua contestazione è stata accolta». Sono i momenti in cui il cliente aspetta una risposta sui propri soldi: il silenzio qui è ciò che rovina di più la fiducia |
+| **Saldo negativo e come rientrare** | Altrimenti lo si scopre al primo pagamento rifiutato, in fila |
+
+**Fuori:** nessuna notifica promozionale (eventi vicini, offerte) e nessun promemoria push
+del residuo. Un'app di denaro che manda pubblicità viene silenziata — e con essa spariscono
+anche le quattro notifiche sopra, che servono davvero. La proposta di **regalare il residuo**
+resta, ma vive **dentro l'app** a fine serata, non come push.
+
+### Ricarica minima
+
+**10 TIN** per la ricarica manuale — lo stesso taglio dell'auto-ricarica, così è un solo
+numero in tutto il prodotto.
+
+> Sotto i 10 il costo fisso della carta pesa più del 4%: sono esattamente le ricariche che
+> fanno perdere denaro alla piattaforma (punto A2 dell'audit). Con i soldi simulati non
+> cambia nulla, ma la regola va nel codice adesso perché forma la UI.
 
 ---
 
