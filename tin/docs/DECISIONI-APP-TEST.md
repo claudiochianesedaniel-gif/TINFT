@@ -299,6 +299,62 @@ L'offline (§8) si innesta dopo la fetta 7.
 Nessun deploy. Nessun merge su `main` o `staging`. Niente PSP, niente chiavi vere, niente
 dati reali. L'app di test vive sul branch `tin` e si prova in locale.
 
+## 11bis · Come viaggia il pagamento — QR e NFC
+
+🔒 **Il trasporto non è il protocollo.** QR e NFC portano lo **stesso `intent_id`**. Il server
+non sa e non deve sapere quale dei due è stato usato: cambia solo come una quarantina di
+caratteri passa da un telefono all'altro. Supportare entrambi costa **zero** al backend —
+tutto il costo sta nel client e nelle prove su dispositivi veri.
+
+### Il vincolo che decide tutto
+
+> **iOS non può emulare un tag NFC** (HCE) per il peer-to-peer: un iPhone può *leggere*, ma
+> non può *presentarsi* a un altro telefono. Android fa entrambe le cose.
+
+Non è aggirabile scrivendo codice migliore. Apple ha aperto le API NFC per il contactless
+in-app, ma richiedono un entitlement dedicato e un accordo commerciale con Apple, riservato a
+chi fa pagamenti di mestiere. È già documentato in `apps/mobile/src/nfc.ts`, scritto per il
+ticketing, che risolve lo stesso problema.
+
+### Perché nella Variante A questo si può girare a favore
+
+Nella Variante A **chi presenta è la cassa**, non il cliente. Il validatore digita l'importo e
+mostra qualcosa; il cliente legge. E il telefono della cassa è l'unico dispositivo che si può
+**imporre**: è staff dell'organizzatore, non pubblico.
+
+| Decisione | Conseguenza |
+|---|---|
+| 🔒 **Android obbligatorio in cassa** | Un solo comportamento in tutto il circuito: nessuna postazione di serie B, e il validatore non deve mai spiegare perché al bar 1 il tap funziona e al bar 2 no |
+| **Requisito dichiarato nell'onboarding organizzatore** | «Serve un dispositivo Android per postazione». Va detto prima della firma, non scoperto al primo evento |
+| **L'app in modalità cassa rifiuta iOS** | Meglio un blocco chiaro all'accesso che una funzione che manca a metà serata |
+
+> **Il costo va guardato in faccia:** è attrito nell'acquisizione, e nella fase iniziale
+> l'acquisizione è la cosa più preziosa che c'è. Un organizzatore con iPhone in mano deve
+> comprare qualcosa. Parliamo però di telefoni da poche centinaia di euro per postazione,
+> contro le migliaia di un sistema RFID — che è esattamente ciò che il modello elimina.
+
+### Sul telefono del cliente
+
+**NFC in automatico dove c'è, QR sempre raggiungibile.** Se entrambi i dispositivi supportano
+il tap, l'app apre direttamente la modalità tap con un «usa il QR» ben visibile sotto.
+
+- Un tocco in meno nel caso frequente, nessuna via chiusa nel caso raro.
+- 🔒 **L'NFC si offre solo dopo il capability check.** `nfc.ts` lo fa già: interroga il
+  dispositivo e restituisce `supported: false` con la ragione. Un pulsante che a un iPhone non
+  fa niente è peggio di non averlo — il cliente pensa che l'app sia rotta e il validatore si
+  prende la colpa.
+- Il cliente non deve sapere cosa sia l'HCE per bere una birra.
+
+### Perché non nell'app di test
+
+Non è una priorità rimandata, è un'**impossibilità tecnica**: `react-native-nfc-manager` è un
+modulo nativo, non gira in Expo Go né sul web, richiede una dev build — e per provarlo servono
+due telefoni fisici in mano insieme. L'app di test è web (§11).
+
+Si costruisce quando esiste l'app mobile, dopo la fetta 7. Ma l'API si progetta **da subito**
+perché il trasporto sia indifferente: l'intent nasce già trasportabile in entrambi i modi,
+così aggiungere il tap sarà una schermata e non una riscrittura.
+
 ## 12 · Cosa vede l'organizzatore dei suoi clienti
 
 🔒 **Solo ciò che è successo al suo evento**: le transazioni al suo evento, col nome del
