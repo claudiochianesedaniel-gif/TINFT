@@ -21,7 +21,7 @@
 | Decisione | Ragione |
 |---|---|
 | Cambio valuta **solo alla ricarica**, con spread. Tasso bloccato 60s | Come da spec. Dopo la ricarica il saldo è in TIN e non oscilla più |
-| Spread **1%** [da confermare — la spec dice 0,75–1,0%] | Tutti gli esempi dei documenti usano l'1% |
+| Spread **1%** | Tutti gli esempi dei documenti usano l'1%: resta tutto coerente con ciò che è già scritto e disegnato. Configurabile |
 | 🔒 **Costo carta**: non deciso, e con soldi simulati non morde | Resta il punto A2 dell'audit. Va chiuso prima del denaro vero: assorbirlo azzera il margine dell'evento |
 
 ### Auto-ricarica quando il saldo non basta
@@ -38,7 +38,7 @@ Tre modalità, **scelte dall'utente**:
 
 | Modalità | Comportamento | Default |
 |---|---|---|
-| **Arrotonda a taglio** | Scoperto 4,50 → ricarica 10, il resto resta nel wallet | ✅ [da confermare: taglio 10 TIN] |
+| **Arrotonda a taglio** | Scoperto 4,50 → ricarica **10 TIN**, il resto resta nel wallet | ✅ predefinita |
 | **Esatto** | Ricarica esattamente lo scoperto, saldo torna a zero | |
 | **Sceglie il cliente** | Mostra lo scoperto e propone dei tagli | |
 
@@ -57,10 +57,34 @@ nessuna scrittura, nessun addebito.
 | **Importo libero digitato**, nessun listino prodotti | Semplice e veloce. Conseguenza accettata: non si sa *cosa* è stato venduto |
 | 🔒 QR **usa-e-getta** a TTL breve; `intent_id` come chiave di idempotenza | Un QR = una transazione. Doppio tap e retry non duplicano mai |
 
-**Conseguenza da sistemare [da confermare]:** senza catalogo, la schermata «→ Consegna il
-prodotto» non può elencare cosa consegnare (nei mockup dice «1× Cocktail · 1× Birra»). Tre
-vie: togliere la riga; lasciare un campo note libero; aggiungere più avanti solo le etichette
-senza prezzi. La dashboard non avrà «prodotti più venduti», solo incassi e scontrino medio.
+**Consegna del prodotto.** Senza catalogo la schermata non può elencare cosa consegnare (nei
+mockup dice «1× Cocktail · 1× Birra»). Al suo posto un **campo note libero e opzionale**: il
+validatore scrive «2 birre» mentre digita l'importo e se lo ritrova sulla conferma. Serve
+quando chi incassa non è chi serve al banco.
+
+> Il testo è scritto a mano, quindi **non produce statistiche**: la dashboard mostrerà
+> incassi, transazioni e scontrino medio, mai «prodotti più venduti». È il prezzo accettato
+> per la velocità dell'importo libero.
+
+### Annullo di un incasso sbagliato
+
+Con l'importo libero, «80,00» al posto di «8,00» è un errore frequente. Il ledger è
+append-only, quindi si corregge con uno **storno** (§6), mai cancellando il movimento.
+
+| Chi | Può |
+|---|---|
+| **Validatore** | **Segnalare** l'incasso come errato, subito, col cliente ancora davanti. Non storna |
+| **Organizzatore** | **Eseguire** lo storno, sempre e senza limiti di tempo |
+
+> **Perché il validatore non può stornare.** Chi ha il potere di annullare incassi in cassa
+> può annullare anche quelli veri e tenersi il contante: è l'ammanco classico, reso invisibile
+> dal fatto che i conti tornano. Nessuna finestra temporale, per quanto breve, elimina il
+> problema — lo rimpicciolisce soltanto.
+>
+> **Perché però può segnalare.** Senza segnalazione, il cliente a cui sono stati presi 72 TIN
+> di troppo resta bloccato finché qualcuno in ufficio non se ne accorge da solo. La
+> segnalazione porta l'errore in cima alla dashboard dell'organizzatore nel momento in cui
+> accade, senza dare a nessuno in cassa un potere nuovo.
 
 ### Anti-frode
 
@@ -153,7 +177,7 @@ postazione.
 |---|---|
 | Commissione | 🔒 **3%** trattenuto al payout |
 | Gate | **KYB completo**, altrimenti payout bloccato. L'organizzatore si registra da solo (§4bis) e parte in `PENDING`: il blocco si prova davvero |
-| Soglia minima | **500 TIN** [da confermare] |
+| Soglia minima | **500 TIN** accumulati |
 | Riserva sul payout | **Non nell'app di test.** Si aggiunge coi soldi veri, per coprire la finestra di chargeback |
 
 ## 6 · Il ledger
@@ -275,11 +299,28 @@ L'offline (§8) si innesta dopo la fetta 7.
 Nessun deploy. Nessun merge su `main` o `staging`. Niente PSP, niente chiavi vere, niente
 dati reali. L'app di test vive sul branch `tin` e si prova in locale.
 
+## 12 · Cosa vede l'organizzatore dei suoi clienti
+
+🔒 **Solo ciò che è successo al suo evento**: le transazioni al suo evento, col nome del
+cliente. **Non** il saldo complessivo, **non** cosa il cliente ha speso altrove.
+
+> È il minimo necessario a gestire l'anti-frode sopra soglia e le contestazioni, e niente di
+> più. Il saldo di una persona è il suo patrimonio, e mostrarlo a un esercente non serve: il
+> rifiuto per saldo insufficiente arriva comunque dal server, senza che nessuno in cassa debba
+> sapere quanto c'è nel wallet.
+>
+> Rafforza anche l'argomento del circuito ristretto: ogni organizzatore vede la propria fetta
+> e nessuno ha una vista d'insieme sui clienti.
+
 ---
 
-## Restano da confermare
+## Restano aperti — ma non bloccano l'app di test
 
-1. Spread: 1% o 0,75%?
-2. Taglio di arrotondamento dell'auto-ricarica: 10 TIN?
-3. Soglia minima di payout: 500 TIN?
-4. La schermata «consegna il prodotto» senza listino: togliere la riga, campo note, o etichette?
+| Questione | Perché non blocca | Dove si chiude |
+|---|---|---|
+| Rimborso al cliente contro «niente cash-out» | Con soldi simulati non esiste rimborso | `BRIEF-LEGALE.md` Q1 |
+| Chi paga il costo di incasso carta | Nessuna carta viene addebitata | `LEDGER-STORNI.md` parte 2 |
+| Riserva sul payout per i chargeback | Nessun chargeback possibile | Coi soldi veri |
+| Breakage sui saldi dormienti | L'app di test non vive abbastanza | Policy per giurisdizione |
+| Cancellazione account con saldo residuo | Stesso nodo del rimborso | `BRIEF-LEGALE.md` Q1 |
+| Lingue dell'interfaccia | Si parte in italiano; `apps/web/i18n.js` esiste già | Prima del pilota |
