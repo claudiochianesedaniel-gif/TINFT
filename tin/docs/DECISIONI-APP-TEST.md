@@ -23,6 +23,18 @@
 | Cambio valuta **solo alla ricarica**, con spread. Tasso bloccato 60s | Come da spec. Dopo la ricarica il saldo è in TIN e non oscilla più |
 | Spread **1%** | Tutti gli esempi dei documenti usano l'1%: resta tutto coerente con ciò che è già scritto e disegnato. Configurabile |
 | 🔒 **Costo carta**: non deciso, e con soldi simulati non morde | Resta il punto A2 dell'audit. Va chiuso prima del denaro vero: assorbirlo azzera il margine dell'evento |
+| **Nessun tetto** al saldo né alla ricarica giornaliera | Decisione presa. Vedi il riquadro sotto |
+
+> **Tetti: decisione presa con riserva scritta.** Il tetto **esiste nel codice**, in
+> `rules-tin.ts`, impostato su *nessun limite*. Accenderlo domani è cambiare un numero, non
+> scrivere una funzionalità.
+>
+> Va agli atti perché senza tetto: l'esenzione «rete limitata» perde una delle poche difese
+> concrete mostrabili a un'autorità — le soglie di valore per strumento sono uno dei criteri —
+> e la piattaforma custodisce importi arbitrari per conto di persone non verificate.
+> Introdurlo in seguito significherebbe bloccare clienti che hanno già saldi sopra soglia.
+> Aggiunto alla Q2 del [`BRIEF-LEGALE.md`](./BRIEF-LEGALE.md): se nei Paesi del pilota una
+> soglia è obbligatoria, lo dirà il legale.
 
 ### Auto-ricarica quando il saldo non basta
 
@@ -55,7 +67,9 @@ nessuna scrittura, nessun addebito.
 |---|---|
 | **Variante A**: il validatore digita l'importo → QR di richiesta → il cliente scansiona, vede prezzo e punto vendita, conferma con biometria | Come da spec: l'importo lo decide la cassa, meno errori |
 | **Importo libero digitato**, nessun listino prodotti | Semplice e veloce. Conseguenza accettata: non si sa *cosa* è stato venduto |
-| 🔒 QR **usa-e-getta** a TTL breve; `intent_id` come chiave di idempotenza | Un QR = una transazione. Doppio tap e retry non duplicano mai |
+| 🔒 QR **usa-e-getta**, `intent_id` come chiave di idempotenza | Un QR = una transazione. Doppio tap e retry non duplicano mai |
+| **TTL 90 secondi**, ma la conferma **iniziata in tempo viene onorata** | La scadenza si blocca al momento della scansione: il cliente che sta già guardando il Face ID non si vede rifiutare il pagamento per due secondi di troppo. Il nonce resta monouso |
+| Il punto vendita incassa **solo a evento aperto** | L'organizzatore apre e chiude. Un validatore che si tiene l'app aperta non incassa il giovedì successivo, e la chiusura dà un punto netto per il settlement |
 
 **Consegna del prodotto.** Senza catalogo la schermata non può elencare cosa consegnare (nei
 mockup dice «1× Cocktail · 1× Birra»). Al suo posto un **campo note libero e opzionale**: il
@@ -75,6 +89,11 @@ append-only, quindi si corregge con uno **storno** (§6), mai cancellando il mov
 |---|---|
 | **Validatore** | **Segnalare** l'incasso come errato, subito, col cliente ancora davanti. Non storna |
 | **Organizzatore** | **Eseguire** lo storno, sempre e senza limiti di tempo |
+
+🔒 **Solo storni totali.** 80,00 sbagliati si stornano interi, poi si incassano gli 8,00
+giusti: due movimenti invece di uno, ma il ledger resta leggibile — ogni movimento ha
+esattamente un contrario — e il doppio storno è impedito da un **vincolo del database**
+(indice unico su `ref.reverses`) invece che da un calcolo di quanto è già stato stornato.
 
 > **Perché il validatore non può stornare.** Chi ha il potere di annullare incassi in cassa
 > può annullare anche quelli veri e tenersi il contante: è l'ammanco classico, reso invisibile
@@ -165,6 +184,15 @@ verifica nessuno.
 strada più breve al codice che gira per tutto lo staff e che non si revoca più senza fermare
 la cassa. E soprattutto: l'approvazione sopra soglia (§2) deve avere **un nome**, non una
 postazione.
+
+### Identità, accesso, sicurezza
+
+| Decisione | Ragione |
+|---|---|
+| **Età minima 18 anni**, dichiarata alla registrazione | L'anagrafica chiede già la data di nascita: è un controllo, non un campo nuovo. Uno strumento prepagato è un contratto, e i punti vendita vendono alcolici. Resta una **dichiarazione**, non una verifica: l'età al bancone la controlla il validatore |
+| Conferma del pagamento con **biometria**, e dove manca o fallisce un **PIN di TIN** | Nessuno resta escluso — telefoni senza sensore, dito bagnato dopo una birra. Il PIN vale **solo dentro TIN** e non è mai la password dell'account, che non deve essere digitata in un locale affollato dove chiunque può guardare |
+| **Telefono perso:** si rientra da un altro telefono, il vecchio si disconnette all'istante | Coerente con «un solo dispositivo attivo». Il saldo è sul server, non nel telefono: non c'è nulla da recuperare, solo da riprendere. Nessuna superficie di blocco in più da proteggere |
+| **Ricerca per @handle solo esatta**, nessuna ricerca parziale | Per regalare bisogna già sapere a chi: handle intero o scansione del suo QR. Nessuno può estrarre la lista degli utenti tre lettere alla volta, e nessuno riceve regali da sconosciuti che l'hanno trovato per caso |
 
 > ⚠️ Un punto vendita **non** può registrarsi da solo come azienda terza. Se un food truck
 > esterno incassasse per conto proprio, il denaro non andrebbe più tutto all'organizzatore e
