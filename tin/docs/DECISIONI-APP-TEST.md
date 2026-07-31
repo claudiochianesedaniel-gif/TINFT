@@ -255,7 +255,7 @@ Modello completo in [`LEDGER-STORNI.md`](./LEDGER-STORNI.md).
 > Il minimo per provare la cosa che nessun documento ha mai verificato: il saldo ricaricato
 > all'evento A e speso all'evento B **di un altro organizzatore**. È la promessa del prodotto
 > — saldo riutilizzabile — ed è anche il punto più fragile dell'esenzione "rete limitata"
-> (`BRIEF-LEGALE.md` Q2.4). Vederlo funzionare presto vale più che semplificare.
+> (`BRIEF-LEGALE.md` Q2.5). Vederlo funzionare presto vale più che semplificare.
 
 ## 10 · Disciplina sulle regole economiche
 

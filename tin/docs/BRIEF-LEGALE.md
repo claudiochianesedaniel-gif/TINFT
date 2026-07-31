@@ -74,12 +74,12 @@ licenza regge.
    esercenti, valore massimo per strumento, importo massimo caricabile per cliente?
 3. Esiste un **obbligo di notifica** all'autorità (in Italia Banca d'Italia; altrove
    l'equivalente) al superamento di una soglia? Quale, entro quando, con quali dati?
-3bis. **Un tetto al saldo per cliente e alla ricarica giornaliera è obbligatorio** in uno dei
+4. **Un tetto al saldo per cliente e alla ricarica giornaliera è obbligatorio** in uno dei
    Paesi del pilota, o è solo consigliabile? La decisione presa è di partire **senza tetto**
    (il limite esiste nel codice, impostato su "nessun limite"): se una soglia è imposta per
    legge, va acceso prima del denaro vero — introdurlo dopo significherebbe bloccare clienti
    che hanno già saldi sopra soglia.
-4. Il **saldo riutilizzabile fra eventi** è il punto più fragile? Limitare la validità del
+5. Il **saldo riutilizzabile fra eventi** è il punto più fragile? Limitare la validità del
    saldo a un evento singolo rafforzerebbe l'esenzione, e a che prezzo?
 
 ## Q3 · Il settlement all'organizzatore è davvero pagamento di una fornitura?
