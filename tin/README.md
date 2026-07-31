@@ -38,6 +38,13 @@ qui dentro: sono documenti e prototipi di design da ricreare nello stack target.
 
 Sono i 9 deliverable elencati al §16 del Documento Unico, al completo.
 
+### Lavoro derivato dall'audit
+
+| File | Cosa contiene |
+|---|---|
+| [`docs/BRIEF-LEGALE.md`](./docs/BRIEF-LEGALE.md) | Le otto domande da portare al legale fintech, formulate perché la risposta si traduca in una clausola. Q1 è bloccante. |
+| [`docs/LEDGER-STORNI.md`](./docs/LEDGER-STORNI.md) | Modello dei movimenti di storno (chargeback, rimborsi, contestazioni) e le tre opzioni sul prezzo della ricarica, coi numeri. |
+
 I `.dc.html` sono documenti design-component: si aprono in browser e usano i runtime
 `support.js`, `doc-page.js` (documenti stampabili) e `deck-stage.js` (deck) presenti in
 questa stessa cartella — vanno tenuti accanto ai documenti, i riferimenti sono relativi.

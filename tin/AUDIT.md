@@ -8,6 +8,27 @@
 **coerenza tra documenti** e di **buchi nel modello** — tre dei quali vanno chiusi prima
 di scrivere codice.
 
+## Stato dei rilievi
+
+| # | Rilievo | Stato |
+|---|---|---|
+| A1 | Rimborso contro "niente cash-out" | ⏳ **Aperto** — richiede il legale. Domanda formulata in [`docs/BRIEF-LEGALE.md`](./docs/BRIEF-LEGALE.md) Q1; segnalato nel Documento Unico §10 |
+| A2 | Costo carta assente dalla UI di ricarica | 📋 **Proposta pronta** — tre opzioni con i numeri in [`docs/LEDGER-STORNI.md`](./docs/LEDGER-STORNI.md) parte 2. Da approvare |
+| A3 | Nessuno storno nel ledger | 📋 **Proposta pronta** — modello in [`docs/LEDGER-STORNI.md`](./docs/LEDGER-STORNI.md) parte 1. Enum e rischio R5 già nel Documento Unico |
+| B1 | Vendita P2P: Fase 2 o Fase 3 | ✅ **Risolto** — allineato a Fase 3 ovunque (la vera Fase 2, NFC, è preservata) |
+| B2 | Offline dentro o fuori l'MVP | ✅ **Risolto** — offline **nell'MVP**, tetti bassi al pilota. Corretti i 4 punti divergenti |
+| B3 | Logo descritto ≠ logo disegnato | ✅ **Risolto** — Documento Unico §8 descrive il triangolo col punto |
+| B4 | Domande già chiuse poste come aperte | ✅ **Risolto** — sezione riscritta a "stato", più banner sul documento |
+| C1 | Regalo P2P senza limiti | ⏳ **Aperto** — [`docs/BRIEF-LEGALE.md`](./docs/BRIEF-LEGALE.md) Q4 |
+| C2 | Evento annullato / insolvenza | ⏳ **Aperto** — Q5; rischio R6 aggiunto al Documento Unico |
+| C3 | Prototipo senza anti-frode e listino | ⏳ **Aperto** — da implementare |
+| C4 | QR di incasso da 0,00 TIN | ⏳ **Aperto** — da correggere, anche lato server |
+| C5 | Prototipo in float, saldo clampato | ⏳ **Aperto** — marcato non-normativo nel README |
+| D1 | Refuso "saglia" | ✅ **Risolto** |
+| D2 | Palette di stampa non documentata | ✅ **Risolto** — aggiunta al Documento Unico §8 |
+| D3 | 3% sul venduto o sul ricaricato | ⏳ **Aperto** — nota in [`docs/LEDGER-STORNI.md`](./docs/LEDGER-STORNI.md) |
+| D4 | `support.js` duplicato | ⏳ **Aperto** — si risolve separando i repository |
+
 ---
 
 ## A · Da chiudere prima di costruire

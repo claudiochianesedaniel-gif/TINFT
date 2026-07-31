@@ -117,7 +117,8 @@ Agli eventi affollati la rete crolla. Modello sicuro:
 - **Nome:** TIN (scelto). Alternativa scartata: "Tabo".
 - **Look:** ereditato da TINFT — fondo notte `#0A0A0A`, superficie `#141416`, testo `#ECECEC`.
 - **Colori (solo TINFT, nessun colore nuovo):** azzurro `#4F7CF0` = azioni/navigazione; verde `#35CF93` = denaro/saldo/successo; gradiente azzurro→verde riservato a coin e brand.
-- **Logo:** coin flat (stile stablecoin), cerchio con gradiente azzurro→verde, monogramma **T** con taglio diagonale in negativo. (Volutamente diverso dal glifo ₮ di Tether.)
+- **Logo:** coin flat (stile stablecoin), cerchio pieno con gradiente azzurro→verde, **triangolo equilatero con punto al centro** ritagliato in negativo (prende il colore dello sfondo). (Volutamente diverso dal glifo ₮ di Tether.)
+- **Palette di stampa:** sui documenti su carta bianca l'azzurro e il verde diventano `#2A55C7` e `#1F8A5B`, per contrasto. Stessi ruoli, stesso gradiente.
 - **Tipografia:** Sora (brand/headline) · Space Grotesk (interfaccia) · JetBrains Mono (importi/codici).
 
 ---
@@ -135,11 +136,15 @@ Agli eventi affollati la rete crolla. Modello sicuro:
 **Ledger — regola chiave:** importi in **centesimi interi** (es. `1450` = 14,50 TIN). **Mai float.** Formattazione solo in UI.
 
 ```
-Entry { id, ts, type: topup|spend|gift|settlement|fee,
+Entry { id, ts, type: topup|spend|gift|settlement|fee|reversal,
         from_account, to_account, amount_tin: int,
-        idempotency_key, ref:{event_id,pos_id,nonce,fx_quote_id?} }
+        idempotency_key, ref:{event_id,pos_id,nonce,fx_quote_id?,reverses?} }
 // saldo = Σ(to==acct) − Σ(from==acct)
 ```
+
+`reversal` copre chargeback, rimborsi e pagamenti contestati: append-only significa che uno
+storno è una **nuova entry** che punta a quella originale (`ref.reverses`), mai una modifica.
+Modello completo, con saldo negativo e riserva sul payout, in [`docs/LEDGER-STORNI.md`](./docs/LEDGER-STORNI.md).
 
 **API MVP:** `POST /topup/quote` · `/topup/confirm` · `/charge/intent` · `/charge/confirm` · `/gift` · `/settlement/payout` · `GET /wallet` · `/dashboard`.
 
@@ -156,7 +161,7 @@ Entry { id, ts, type: topup|spend|gift|settlement|fee,
 **Default prudente proposto:**
 - Saldo = passività finché non estinto per legge. Mai a ricavo prima.
 - Inattività minima ≥ 24 mesi (da tarare per Paese).
-- ≥ 2 avvisi prima di qualsiasi azione + rimborso sempre possibile.
+- ≥ 2 avvisi prima di qualsiasi azione + rimborso sempre possibile. ⚠️ **Da chiarire col legale:** il rimborso in denaro è una riconversione, e §1 esclude ogni cash-out del cliente. Le due regole vanno conciliate esplicitamente — vedi [`AUDIT.md`](./AUDIT.md) §A1 e [`docs/BRIEF-LEGALE.md`](./docs/BRIEF-LEGALE.md) Q1.
 - Escheatment dove previsto invece del breakage.
 - Parametri configurabili **per giurisdizione**, non hardcoded.
 - **Tenuto fuori dalle proiezioni di break-even** (upside, non voce su cui costruire il conto economico).
@@ -193,6 +198,8 @@ Il margine scala col GMV, non con hardware da acquistare. Breakage escluso (upsi
 - **R2 Connettività:** rete assente → offline con tetto e voucher firmati.
 - **R3 Adozione:** il pubblico non ricarica → ricarica indolore, regalo del residuo, saldo riutilizzabile.
 - **R4 Fiducia sui fondi:** custodia presso PSP, termini chiari, saldo sempre visibile.
+- **R5 Frode carta e chargeback:** ricarica con carta rubata → TIN spesi → storno bancario mesi dopo. La perdita resta alla piattaforma. Serve un tipo di movimento di storno nel ledger e una riserva sul payout a copertura della finestra: vedi [`docs/LEDGER-STORNI.md`](./docs/LEDGER-STORNI.md).
+- **R6 Evento annullato / organizzatore insolvente:** i clienti hanno saldi, l'evento salta. Chi rimborsa e con quali fondi va scritto nei Termini — vedi [`docs/BRIEF-LEGALE.md`](./docs/BRIEF-LEGALE.md) Q5.
 
 ---
 
@@ -215,10 +222,10 @@ L'esenzione "rete limitata" ha soglie (numero eventi, valore, notifica all'autor
 2. **PSP** con incasso multivaluta, conto di salvaguardia, payout con KYB, **e** percorso verso l'e-money per la Fase 3.
 
 **Poi:**
-3. Scope MVP congelato (solo online, spesa Variante A, regalo gratuito, settlement 3%).
+3. Scope MVP congelato (spesa Variante A, regalo gratuito, settlement 3%, offline con tetto — vedi §7).
 4. Build + hardening (ledger, idempotenza, anti-frode, biometria).
 5. Pilota controllato: 1 evento medio, tetti bassi, organizzatore già su TINFT. Metriche: coda vs contante, scontrino medio, % ricariche completate, incidenti.
-6. Scala: offline, più valute, self-onboarding. Poi valutare Fase 3 (EMI).
+6. Scala: alzare i tetti offline coi dati del pilota, più valute, self-onboarding. Poi valutare Fase 3 (EMI).
 
 **Decisioni aperte:** quali Paesi per il pilota; contatto legale/PSP già esistente o shortlist da preparare.
 

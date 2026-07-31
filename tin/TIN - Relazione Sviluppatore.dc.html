@@ -117,7 +117,7 @@ POST /charge/intent { pos_id, amount_tin: 1450 }
 
 <span class="c">// 2. cliente risolve e conferma</span>
 POST /charge/confirm { intent_id, biometric_ok: true }
-<span class="c">// server: valida nonce+TTL, saglia anti-frode, saldo;</span>
+<span class="c">// server: valida nonce+TTL, soglia anti-frode, saldo;</span>
 <span class="c">// transfer(user → organizer, amount) idempotente su intent_id</span>
 → { status: <span class="s">"ok"</span>, new_balance }              <span class="c">// push a cliente e cassa</span></div>
   <p class="kv" style="margin-top:10px">L'<span class="mono">intent_id</span> è la chiave di idempotenza: un QR vale una sola transazione. TTL breve + nonce monouso impediscono replay.</p>
