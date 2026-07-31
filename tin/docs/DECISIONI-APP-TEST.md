@@ -135,6 +135,14 @@ ragione per cui il validatore è una persona con account (§4).
 
 Tutti configurabili, si alzano coi dati del pilota.
 
+🔒 **Il «giorno» è una finestra mobile di 24 ore**, non la mezzanotte solare.
+
+> Un evento va dalle 22:00 alle 4:00. Col giorno di calendario il tetto **si azzererebbe a
+> mezzanotte, in mezzo alla serata**: chi vuole aggirarlo aspetta trenta minuti e ricomincia,
+> e in una notte il limite vale il doppio proprio nelle ore in cui serve. Con la finestra
+> mobile non esiste nessun momento in cui il contatore riparte da solo, e l'app può dire
+> «torni a poter regalare alle 01:30» — una risposta precisa, non un rimprovero.
+
 🔒 **Vendita P2P a pagamento: esclusa.** È l'unico punto che obbliga alla licenza EMI. Fase 3.
 
 ## 4 · Chi opera in cassa
@@ -470,6 +478,19 @@ destinatario potrà spendere davvero, non un buono per una serata sola.
 > La decisione registrata è la prima. Se l'intenzione era più larga, va detto ora perché
 > cambia il perimetro regolatorio, non una schermata.
 
+## 14bis · Organizzatore sospeso
+
+Se un organizzatore viene sospeso — KYB revocato, frode, fallimento — **si spengono le sue
+casse, e i saldi dei clienti restano spendibili altrove**.
+
+> È il vantaggio nascosto del saldo universale (§14): i TIN del cliente non sono «di» quel
+> organizzatore, quindi restano spendibili a ogni altro evento del circuito. Nessun cliente
+> perde nulla, e il problema resta dove deve stare — fra piattaforma e organizzatore.
+>
+> L'alternativa, congelare tutto, punirebbe migliaia di persone estranee per il
+> comportamento di una: è il tipo di episodio che distrugge la fiducia sui fondi, cioè il
+> rischio R4 dei documenti.
+
 ## 15 · Migliorie adottate
 
 ### Prevenire l'errore, non solo ripararlo
@@ -484,10 +505,20 @@ all'errore di accadere. Queste quattro chiudono il buco a monte.
 | **Evento di prova per lo staff** | Un evento finto dove il validatore si allena senza toccare denaro. Il giorno vero nessuno impara sul cliente in fila — ed è anche come si mostra il prodotto a un organizzatore prima che firmi |
 | **Doppio tocco = «già pagato»** | L'idempotenza c'è nel ledger, ma va vista nell'interfaccia: chi tocca due volte legge «questo pagamento è già andato a buon fine», non un errore che lo spinge a ritentare o a discutere col validatore |
 
+### In cassa
+
+| Miglioria | Perché |
+|---|---|
+| **Importi rapidi personalizzabili** | Tre o quattro scorciatoie sopra il tastierino, impostate dall'organizzatore per punto vendita. **Non è un listino:** nessun prodotto, nessun catalogo, solo gli importi che ricorrono. Riduce tempi ed errori di battitura, che sono la causa degli storni |
+| **Blocco della cassa dopo inattività** | Il telefono di servizio lasciato sul bancone si blocca da solo. È il dispositivo più facile da perdere di vista in tutta la serata, ed è l'unico che può generare richieste di incasso |
+| **Il cliente vede chi lo sta incassando** | Sulla conferma compare il nome del validatore oltre al punto vendita. Chi incassa sa di essere identificato, e il cliente sa con chi ha parlato se qualcosa non torna |
+| **Tetto per singola transazione** | Oltre una cifra alta la cassa non incassa senza sblocco dell'organizzatore. È la rete sotto la conferma dell'importo anomalo: se il validatore confermasse per distrazione, il danno ha comunque un limite |
+
 ### Lato cliente
 
 | Miglioria | Perché |
 |---|---|
+| **Sezione «Eventi» con chi accetta TIN** | La scheda esiste già nei mockup e oggi non fa nulla: diventa l'elenco degli eventi del circuito. È la risposta a «a cosa mi servono i 40 TIN che mi restano» — cioè ciò che rende il saldo riutilizzabile un valore invece di un residuo |
 | **Codice ricevuta breve e pronunciabile** (`TIN-4821-KX`) | Serve a dirlo a voce al banco: nessuno detta un identificativo di trentasei caratteri sopra la musica. Senza, ogni contestazione parte già male |
 | **Regala il residuo a fine serata** | Chi resta con 3,50 TIN riceve la proposta di regalarli. Era già scritto nei documenti come mitigazione del rischio adozione e non era mai stato implementato. Riduce anche il breakage, che è un debito verso il cliente |
 | **Avviso su accesso da un nuovo dispositivo** | Entrando da un altro telefono il vecchio si disconnette: chi lo subisce deve saperlo via email. È la difesa contro le credenziali rubate — senza avviso, il proprietario scopre il furto quando prova a pagare |
