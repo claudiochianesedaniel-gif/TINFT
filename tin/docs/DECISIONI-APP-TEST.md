@@ -501,6 +501,29 @@ all'errore di accadere. Queste quattro chiudono il buco a monte.
 | **Allerta su comportamenti anomali** | Troppi storni su una stessa cassa, incassi fuori orario, un validatore molto sopra la media. L'antifrode dei documenti guarda solo il cliente; questa guarda dentro |
 | **Il validatore vede solo i propri incassi** | Non quelli dei colleghi né il totale del punto vendita. Riduce l'attrito fra il personale e limita cosa vede chi ha in mano il telefono di servizio, che è il dispositivo più facile da perdere. La vista completa del punto vendita resta all'organizzatore |
 
+### Prova di consegna
+
+Il flusso finiva con «consegna il prodotto» e **nessuno registrava se fosse successo**: in una
+contestazione non c'era prova né da una parte né dall'altra.
+
+| Chi | Fa |
+|---|---|
+| **Validatore** | Marca **«consegnato»** con un tocco, dopo aver dato il prodotto |
+| **Cliente** | Dalla ricevuta può dire **«non ricevuto»** e aprire la contestazione (§2) |
+
+Un tocco in più in cassa, dopo che il cliente si è già allontanato — quindi non allunga la
+coda. Chiude il rischio R4 dei documenti, la fiducia del pubblico sui propri soldi: senza,
+in una lite vince sempre chi ha incassato.
+
+### Il saldo in valuta
+
+Sotto i TIN compare l'equivalente nella **valuta del cliente**, non in euro: `128,50 TIN ·
+circa $138`. Predefinita la valuta dell'ultima ricarica, modificabile dalle impostazioni.
+
+> Chi ricarica in dollari ragiona in dollari, e con la ricarica multivaluta è buona parte del
+> pubblico. Il TIN resta l'unità con cui si paga: l'equivalente è solo un aiuto alla lettura,
+> e non intacca l'ancoraggio 1 TIN = €1,00.
+
 ### Lingue
 
 **Italiano e inglese** dal primo giorno. La ricarica multivaluta esiste perché il pubblico è
